@@ -57,23 +57,28 @@ class StateResource extends Resource
                 Forms\Components\TextInput::make('sub_region')->label('Sub-Regione')
                     ->required()
                     ->columnSpan(2)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Forms\Components\TextInput::make('intermediate_region')->label('Regione intermedia')
                     ->required()
                     ->columnSpan(2)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Forms\Components\TextInput::make('region_code')->label('Codice Regione')
                     ->required()
                     ->columnSpan(2)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Forms\Components\TextInput::make('sub_region_code')->label('Codice Sub-Regione')
                     ->required()
                     ->columnSpan(2)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Forms\Components\TextInput::make('intermediate_region_code')->label('Codice Regione intermedia')
                     ->required()
                     ->columnSpan(2)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->toggleable(isToggledHiddenByDefault: true),
             ]);
     }
 

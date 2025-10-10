@@ -5,6 +5,7 @@ namespace App\Filament\User\Resources\ClientResource\Pages;
 use App\Filament\User\Resources\ClientResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Enums\MaxWidth;
 
 class ListClients extends ListRecords
 {
@@ -15,5 +16,10 @@ class ListClients extends ListRecords
         return [
             Actions\CreateAction::make(),
         ];
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null                                  // allarga la tabella a tutta pagina
+    {
+        return MaxWidth::Full;
     }
 }
