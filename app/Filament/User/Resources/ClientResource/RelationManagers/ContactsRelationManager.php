@@ -28,8 +28,8 @@ class ContactsRelationManager extends RelationManager
         return $form
             ->columns(12)
             ->schema([
-                Select::make('outcome_type')
-                    ->label('Esito')
+                Select::make('contact_type')
+                    ->label('Tipo contatto')
                     ->options(ContactType::class)
                     ->columnSpan(3),
                 DatePicker::make('date')

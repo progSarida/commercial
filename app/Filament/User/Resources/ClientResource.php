@@ -16,9 +16,11 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Jenssegers\Agent\Agent;
 
 class ClientResource extends Resource
 {
@@ -111,9 +113,72 @@ class ClientResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $agent = new Agent();
+        $isMobile = $agent->isMobile();
+
         return $table
             ->columns([
-                //
+                TextColumn::make('region.name')->label('Regione')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('province.name')->label('Provincia')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('client_type')->label('Tipo cliente')
+                    // ->badge()
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('name')->label('Nome cliente')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('phone')->label('Telefono')
+                    ->searchable(),
+                TextColumn::make('email')->label('Email')
+                    ->searchable(),
+                TextColumn::make('state.name')->label('Paese')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('city_id')->label('Comune')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('place')->label('Luogo')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('zip_code')->label('CAP')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('site')->label('Sito')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('address')->label('Indirizzo')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('civic')->label('Civico')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('note')->label('Note')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->hidden($isMobile),
             ])
             ->filters([
                 //
