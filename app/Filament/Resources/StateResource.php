@@ -21,7 +21,7 @@ class StateResource extends Resource
 
     public static ?string $pluralModelLabel = 'Stati';
 
-    public static ?string $modelLabel = 'Stati';
+    public static ?string $modelLabel = 'Stato';
 
     protected static ?string $navigationIcon = 'fas-globe-europe';
 
