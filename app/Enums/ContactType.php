@@ -15,7 +15,7 @@ enum ContactType: string implements HasLabel
         return match($this) {
             self::CALL => 'Chiamata',
             self::VISIT => 'Visita',
-            self::DEADLINE => 'scadenza',
+            self::DEADLINE => 'Scadenza',
         };
     }
 }

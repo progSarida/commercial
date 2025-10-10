@@ -32,7 +32,7 @@ return new class extends Migration
 
         Schema::create('contacts', function (Blueprint $table) {                                // tabella contatti
             $table->id();
-            $table->string('contact_type_type')->nullable();                                    // tipo contatto (enum ContactType)
+            $table->string('contact_type')->nullable();                                    // tipo contatto (enum ContactType)
             $table->foreignId('client_id')->constrained()->onUpdate('cascade');                 // id cliente
             $table->date('date')->nullable();                                                   // data
             $table->time('time')->nullable();                                                   // orario
