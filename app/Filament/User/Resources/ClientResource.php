@@ -125,7 +125,7 @@ class ClientResource extends Resource
                     ->numeric()
                     ->sortable(),
                 TextColumn::make('client_type')->label('Tipo cliente')
-                    ->badge()
+                    // ->badge()
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('name')->label('Nome cliente')
