@@ -57,7 +57,7 @@ class UserPanelProvider extends PanelProvider
             ])
             ->userMenuItems([
                 MenuItem::make()
-                ->label('Passa ad amministratore')
+                ->label('Amministratore')
                 ->visible(fn (): bool => Auth::user()->is_admin)
                 ->url('/admin')
                 ->icon('fas-user-lock')

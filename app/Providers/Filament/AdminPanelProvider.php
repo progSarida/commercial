@@ -57,7 +57,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->userMenuItems([
                 MenuItem::make()
-                    ->label('Passa ad operatore')
+                    ->label('Operatore')
                     ->url('/user')
                     ->icon('fas-user'),
                 // ...

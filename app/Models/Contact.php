@@ -32,4 +32,22 @@ class Contact extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    // Query per 'Chiamate'
+    public function scopeCalls($query)
+    {
+        return $query->where('contact_type', ContactType::CALL);
+    }
+
+    // Query per 'Visite'
+    public function scopeVisits($query)
+    {
+        return $query->where('contact_type', ContactType::VISIT);
+    }
+
+    // Query per 'Scadenze clienti'
+    public function scopeDeadlines($query)
+    {
+        return $query->where('contact_type', ContactType::DEADLINE);
+    }
 }

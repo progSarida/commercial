@@ -1,29 +1,36 @@
 <?php
 
-namespace App\Filament\User\Resources\ClientResource\RelationManagers;
+namespace App\Filament\User\Resources;
 
 use App\Enums\ContactType;
 use App\Enums\OutcomeType;
+use App\Filament\User\Resources\DeadlineResource\Pages;
+use App\Filament\User\Resources\DeadlineResource\RelationManagers;
+use App\Models\Contact;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
-use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 
-class ContactsRelationManager extends RelationManager
+class DeadlineResource extends Resource
 {
-    protected static string $relationship = 'contacts';
+    protected static ?string $model = Contact::class;
 
-    protected static ?string $title = 'Contatti';
+    public static ?string $pluralModelLabel = 'Scadenze clienti';
 
-    public function form(Form $form): Form
+    public static ?string $modelLabel = 'Scadenza';
+
+    protected static ?string $navigationIcon = 'fas-calendar-day';
+
+    public static function form(Form $form): Form
     {
         return $form
             ->columns(12)
@@ -31,6 +38,9 @@ class ContactsRelationManager extends RelationManager
                 Select::make('contact_type')
                     ->label('Tipo contatto')
                     ->options(ContactType::class)
+                    ->default(ContactType::DEADLINE)
+                    ->disabled()
+                    ->dehydrated()
                     ->columnSpan(3),
                 DatePicker::make('date')
                     ->label('Data')
@@ -59,13 +69,11 @@ class ContactsRelationManager extends RelationManager
             ]);
     }
 
-    public function table(Table $table): Table
+    public static function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('date')
+            ->query(Contact::deadlines())
             ->columns([
-                Tables\Columns\TextColumn::make('contact_type')
-                    ->label('Tipo contatto'),
                 Tables\Columns\TextColumn::make('date')
                     ->label('Data')
                     ->date('d/m/Y'),
@@ -80,17 +88,39 @@ class ContactsRelationManager extends RelationManager
             ->filters([
                 //
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make(),
-            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListDeadlines::route('/'),
+            'create' => Pages\CreateDeadline::route('/create'),
+            'edit' => Pages\EditDeadline::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Clienti';
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return 4;
     }
 }
