@@ -109,6 +109,13 @@ class ClientResource extends Resource
                     ->preload()
                     ->relationship(name: 'state', titleAttribute: 'name')
                     ->default($italyId)
+                    ->afterStateUpdated(function (callable $set) {
+                            $set('place', null);
+                            $set('region_id', null);
+                            $set('province_id', null);
+                            $set('city_id', null);
+                            $set('zip_code', null);
+                    })
                     ->columnSpan(3),
                 Select::make('region_id')->label('Regione')
                     ->required()
