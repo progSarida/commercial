@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');                                                             // nome tipo servizio
             $table->string('description');                                                      // descrizione tipo servizio
-            $table->integer('position');                                                        // posizione deservizio nella selezione
+            $table->integer('position');                                                        // posizione nella selezione
             $table->boolean('mandatory')->default(0);                                           // flag obbligatorietà servizio
             $table->string('ref');                                                              // riferimento tipo servizio
             $table->timestamps();
