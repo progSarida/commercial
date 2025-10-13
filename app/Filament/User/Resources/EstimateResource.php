@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class EstimateResource extends Resource
@@ -66,7 +67,7 @@ class EstimateResource extends Resource
                     ->offIcon('heroicon-s-x-circle')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->disabled(fn(?Estimate $record) => $record?->path === null),
+                    ->disabled(fn(?Estimate $record) => $record?->path === null && !Auth::user()->close_estimate),
             ])
             ->filters([
                 //
