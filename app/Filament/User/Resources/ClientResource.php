@@ -5,6 +5,7 @@ namespace App\Filament\User\Resources;
 use App\Enums\ClientType;
 use App\Filament\User\Resources\ClientResource\Pages;
 use App\Filament\User\Resources\ClientResource\RelationManagers;
+use App\Filament\User\Resources\ClientResource\RelationManagers\ClientServicesRelationManager;
 use App\Filament\User\Resources\ClientResource\RelationManagers\ContactsRelationManager;
 use App\Models\City;
 use App\Models\Client;
@@ -36,7 +37,7 @@ class ClientResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $italyId = State::where('name', 'Italy')->first()->id;
+        $italyId = State::where('name', 'Italy')->first()?->id;
         return $form
             ->columns(12)
             ->schema([
@@ -75,7 +76,7 @@ class ClientResource extends Resource
                     ->columnSpan(6)
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         $type = $get('client_type');
-                        $italyId = State::where('name', 'Italy')->first()->id ?? null;
+                        $italyId = State::where('name', 'Italy')->first()?->id;
 
                         if ($type === ClientType::CITY->value) {
                             $city = City::with('province.region')->where('name', $state)->first();
@@ -109,12 +110,20 @@ class ClientResource extends Resource
                     ->preload()
                     ->relationship(name: 'state', titleAttribute: 'name')
                     ->default($italyId)
-                    ->afterStateUpdated(function (callable $set) {
+                    ->afterStateUpdated(function (callable $set, callable $get, ) {
+                        $newStateId = $get('state_id');
+                        $italyId = State::where('name', 'Italy')->first()?->id;
+                        // Pulisci i campi solo se cambi verso uno stato diverso da Italy
+                        if ($newStateId !== $italyId) {
                             $set('place', null);
                             $set('region_id', null);
                             $set('province_id', null);
                             $set('city_id', null);
                             $set('zip_code', null);
+                        } else {
+                            // Se torni a Italy, pulisci solo il 'place'
+                            $set('place', null);
+                        }
                     })
                     ->columnSpan(3),
                 Select::make('region_id')->label('Regione')
@@ -164,12 +173,17 @@ class ClientResource extends Resource
                 TextInput::make('place')->label('Luogo')
                     ->required()
                     ->visible(fn (callable $get) => $get('state_id') !== $italyId)
-                    ->columnSpan(6),
+                    ->columnSpan(12),
                 TextInput::make('zip_code')->label('CAP')
                     ->required()
                     ->visible(fn (callable $get) => $get('state_id') === $italyId),
                 Placeholder::make('')
                     ->label('')
+                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
+                    ->columnSpan(4),
+                Placeholder::make('')
+                    ->label('')
+                    ->visible(fn (callable $get) => $get('state_id') !== $italyId)
                     ->columnSpan(4),
                 TextInput::make('address')->label('Indirizzo')
                     ->required()
@@ -277,7 +291,8 @@ class ClientResource extends Resource
     public static function getRelations(): array
     {
         return [
-            ContactsRelationManager::class
+            ClientServicesRelationManager::class,
+            ContactsRelationManager::class,
         ];
     }
 

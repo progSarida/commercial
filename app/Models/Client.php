@@ -34,11 +34,13 @@ class Client extends Model
         return $this->belongsTo(State::class);
     }
 
-    public function region(){
+    public function region()
+    {
         return $this->belongsTo(Region::class);
     }
 
-    public function province(){
+    public function province()
+    {
         return $this->belongsTo(Province::class);
     }
 
@@ -46,7 +48,51 @@ class Client extends Model
         return $this->belongsTo(City::class);
     }
 
-    public function contacts(){
+    public function contacts()
+    {
         return $this->hasMany(Contact::class);
+    }
+
+    public function clientServices()
+    {
+        return $this->hasMany(ClientService::class);
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($client) {
+            //
+        });
+
+        static::created(function ($client) {
+            $services = ServiceType::all();
+            foreach ($services as $service) {
+                ClientService::create([
+                    'client_id' => $client->id,
+                    'service_type_id' => $service->id,
+                    'service_state' => null,
+                    'referent' => null,
+                    'phone' => null,
+                    'email' => null,
+                    'note' => null,
+                ]);
+            }
+        });
+
+        static::updating(function ($client) {
+            //
+        });
+
+        static::saved(function ($client) {
+            //
+        });
+
+        static::deleting(function ($client) {
+            //
+        });
+
+        static::deleted(function ($client) {
+            //
+        });
     }
 }
