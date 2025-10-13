@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class EstimateResource extends Resource
 {
@@ -49,28 +50,23 @@ class EstimateResource extends Resource
                 TextColumn::make('clientServices')
                     ->label('Servizi')
                     ->getStateUsing(function (Estimate $record) {
-                        $services = $record->client->clientServices()
-                            ->whereNotNull('service_state')
-                            ->with('serviceType')
-                            ->get()
-                            ->map(function ($service) {
-                                return $service->serviceType->name . ' - ' . ($service->note ?? 'No note');
-                            })
-                            ->toArray();
-                        return implode(', ', $services) ?: 'Nessun servizio';
+                        return $record->getFormattedClientServices()['label'];
+                    })
+                    ->tooltip(function (Estimate $record) {
+                        return $record->getFormattedClientServices()['tooltip'];
                     }),
                 SelectColumn::make('estimate_state')
                     ->label('Stato')
                     ->options(EstimateState::class)
                     ->sortable()
-                    ->disabled(fn(?Estimate $record) => $record && $record->path === null),
+                    ->disabled(fn(?Estimate $record) => $record?->path === null),
                 ToggleColumn::make('done')
                     ->label('Chiuso')
-                    ->onIcon('heroicon-o-check-circle')
-                    ->offIcon('heroicon-o-x-circle')
+                    ->onIcon('heroicon-s-check-circle')
+                    ->offIcon('heroicon-s-x-circle')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->visible(fn(?Estimate $record) => $record && $record->path !== null),
+                    ->disabled(fn(?Estimate $record) => $record?->path === null),
             ])
             ->filters([
                 //
@@ -92,6 +88,8 @@ class EstimateResource extends Resource
                     ])
                     ->action(function (Estimate $record, array $data): void {
                         $record->update($data);
+                        // Forza il refresh della tabella
+                        $record->refresh();
                     })
                     ->visible(fn(Estimate $record) => $record->estimate_state !== EstimateState::APPROVED),
 
@@ -100,6 +98,25 @@ class EstimateResource extends Resource
                     ->icon('heroicon-o-eye')
                     ->url(fn(Estimate $record) => $record->path ? asset('storage/' . $record->path) : null)
                     ->openUrlInNewTab()
+                    ->visible(fn(Estimate $record) => $record->path !== null),
+
+                Tables\Actions\Action::make('delete_file')
+                    ->label('Elimina File')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Elimina File')
+                    ->modalDescription('Sei sicuro di voler eliminare il file caricato?')
+                    ->modalSubmitActionLabel('Elimina')
+                    ->modalCancelActionLabel('Annulla')
+                    ->action(function (Estimate $record): void {
+                        if ($record->path && Storage::disk('public')->exists($record->path)) {
+                            Storage::disk('public')->delete($record->path);
+                        }
+                        $record->update(['path' => null]);
+                        // Forza il refresh della tabella
+                        $record->refresh();
+                    })
                     ->visible(fn(Estimate $record) => $record->path !== null),
             ])
             ->bulkActions([

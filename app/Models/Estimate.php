@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContactType;
 use App\Enums\EstimateState;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Estimate extends Model
 {
@@ -46,6 +47,24 @@ class Estimate extends Model
         return $this->belongsTo(User::class, 'state_user_id');
     }
 
+    public function getFormattedClientServices(): array
+    {
+        $services = $this->client->clientServices()
+            ->whereNotNull('service_state')
+            ->with('serviceType')
+            ->get()
+            ->map(function ($service) {
+                return $service->serviceType->name . ' - ' . ($service->note ?? 'No note');
+            })
+            ->toArray();
+
+        return [
+            'count' => count($services),
+            'label' => count($services) > 0 ? count($services) . ' servizi registrati' : 'Nessun servizio',
+            'tooltip' => !empty($services) ? implode("\n", $services) : 'Nessun servizio',
+        ];
+    }
+
     protected static function booted()
     {
         static::creating(function ($estimate) {
@@ -57,8 +76,17 @@ class Estimate extends Model
         });
 
         static::updating(function ($estimate) {
-            if($estimate->path !== null && $estimate->estimate_state === null){
-                $estimate->estimate_state = EstimateState::PROPOSED;
+            if($estimate->estimate_state === null && $estimate->path !== null){             // primo caricamento file
+                $estimate->estimate_state = EstimateState::PROPOSED;                        // metto stato a 'Proposto'
+            }
+            else if($estimate->path === null){                                              // cancello file
+                $estimate->estimate_state = null;                                           // metto stato a null
+            }
+            if ($estimate->isDirty('done')) {                                               // se modifico 'done'
+                $estimate->done_user_id = Auth::id();                                       // aggiorno l'id dello user che ha modificato 'done' per ultimo
+            }
+            if ($estimate->isDirty('estimate_state')) {                                     // se modifico 'estimate_state'
+                $estimate->state_user_id = Auth::id();                                      // aggiorno l'id dello user che ha modificato 'estimate_state' per ultimo
             }
         });
 

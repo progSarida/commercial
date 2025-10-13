@@ -79,6 +79,15 @@ class Contact extends Model
             //
         });
 
+        static::updated(function ($contact) {
+            if($contact->outcome_type !== OutcomeType::ESTIMATE){
+                $estimate = Estimate::where('contact_id', $contact->id)->first();
+                if($estimate){
+                    $estimate->delete();
+                }       
+            }
+        });
+
         static::saved(function ($contact) {
             //
         });
