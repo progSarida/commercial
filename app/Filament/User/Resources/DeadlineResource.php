@@ -24,7 +24,7 @@ class DeadlineResource extends Resource
 {
     protected static ?string $model = Contact::class;
 
-    public static ?string $pluralModelLabel = 'Scadenze clienti';
+    public static ?string $pluralModelLabel = 'Scadenze';
 
     public static ?string $modelLabel = 'Scadenza';
 
