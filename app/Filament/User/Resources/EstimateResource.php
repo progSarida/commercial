@@ -26,7 +26,7 @@ class EstimateResource extends Resource
 
     public static ?string $modelLabel = 'Preventivo';
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-magnifying-glass';
+    protected static ?string $navigationIcon = 'heroicon-s-document-magnifying-glass';
 
     public static function form(Form $form): Form
     {
@@ -60,14 +60,14 @@ class EstimateResource extends Resource
                     ->label('Stato')
                     ->options(EstimateState::class)
                     ->sortable()
-                    ->disabled(fn(?Estimate $record) => $record?->path === null),
+                    ->disabled(fn(?Estimate $record) => $record?->path === null || !Auth::user()->close_estimate),
                 ToggleColumn::make('done')
                     ->label('Chiuso')
                     ->onIcon('heroicon-s-check-circle')
                     ->offIcon('heroicon-s-x-circle')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->disabled(fn(?Estimate $record) => $record?->path === null && !Auth::user()->close_estimate),
+                    ->disabled(fn(?Estimate $record) => $record?->path === null || !Auth::user()->close_estimate),
             ])
             ->filters([
                 //
@@ -149,6 +149,6 @@ class EstimateResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return 2;
+        return 3;
     }
 }
