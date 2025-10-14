@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('is_admin')->default(0);                                // flag per indicare se l'utente è amministratore
-            $table->boolean('close_estimate')->default(0);                          // flag per indicare se l'utente puòchiudere i preventivi
+            $table->boolean('close_estimate')->default(0);                          // flag per indicare se l'utente può chiudere i preventivi
             $table->rememberToken();
             $table->timestamps();
         });
