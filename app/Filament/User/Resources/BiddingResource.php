@@ -2,10 +2,15 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Enums\ClientType;
 use App\Filament\User\Resources\BiddingResource\Pages;
 use App\Filament\User\Resources\BiddingResource\RelationManagers;
 use App\Models\Bidding;
+use App\Models\ServiceType;
 use Filament\Forms;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -26,8 +31,29 @@ class BiddingResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
+            ->columns(12)
             ->schema([
-                //
+                CheckboxList::make('serviceTypes')
+                    ->label('Gara relativa al servizio di')
+                    ->relationship('serviceTypes', 'name')
+                    ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
+                    ->columns(6)
+                    ->columnSpan(12)
+                    ->gridDirection('row'),
+                Select::make('client_type')
+                    ->label('Tipo')
+                    ->options(ClientType::class)
+                    ->columnSpan(3),
+                TextInput::make('description')
+                    ->label('Descrizione')
+                    ->required()
+                    ->columnSpan(6)
+                    ->maxLength(255),
+                TextInput::make('amount')
+                    ->label('Importo')
+                    ->numeric()
+                    ->columnSpan(6)
+                    ->prefix('€'),
             ]);
     }
 
