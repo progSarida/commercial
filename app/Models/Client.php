@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ClientType;
-
 use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model

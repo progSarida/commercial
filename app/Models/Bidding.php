@@ -7,6 +7,7 @@ use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\ClientType;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Bidding extends Model
 {
@@ -56,10 +57,10 @@ class Bidding extends Model
     ];
 
     protected $casts = [
-        'bidding_processing_state_id' => BiddingProcessingState::class,
-        'priority_id' => BiddingPriorityType::class,
-        'procedure_type_id' => BiddingProcedureType::class,
-        'client_type_id' => ClientType::class,
+        'bidding_processing_state' => BiddingProcessingState::class,
+        'bidding_priority_type' => BiddingPriorityType::class,
+        'bidding_procedure_type' => BiddingProcedureType::class,
+        'client_type' => ClientType::class,
     ];
 
     public function serviceTypes()
@@ -85,6 +86,16 @@ class Bidding extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
     }
 
     // public function contractingStation()
@@ -115,5 +126,32 @@ class Bidding extends Model
     public function source3()
     {
         return $this->belongsTo(BiddingDataSource::class, 'source3_id');
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($bidding) {
+            $bidding->modified_user_id = Auth::user()->id;
+        });
+
+        static::created(function ($bidding) {
+            //
+        });
+
+        static::updating(function ($bidding) {
+            $bidding->modified_user_id = Auth::user()->id;
+        });
+
+        static::saved(function ($bidding) {
+            //
+        });
+
+        static::deleting(function ($bidding) {
+            //
+        });
+
+        static::deleted(function ($bidding) {
+            //
+        });
     }
 }

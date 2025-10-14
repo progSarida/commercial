@@ -16,7 +16,7 @@ return new class extends Migration
             // 'services' => tabella 'bidding_service_type'
             $table->text('description')->nullable();                                                                                        // descrizione gara
             $table->decimal('amount', 15, 2)->nullable();                                                                                   // importo gara
-            $table->string('residents', 10)->nullable();                                                                                    // numero residenti
+            $table->integer('residents')->nullable();                                                                                       // numero residenti
             $table->foreignId('bidding_state_id')->nullable()->constrained('bidding_states')->onDelete('set null');                         // id stato gara
             // 'bidding_processing_state_id' => 'bidding_processig_state'
             $table->string('bidding_processing_state')->nullable();                                                                         // stato lavorazione gara (enum BiddingProcessingState)
@@ -28,12 +28,12 @@ return new class extends Migration
             $table->string('contact', 250)->nullable();                                                                                     // nome contatto
             // entity_type_id' => 'client_type'
             $table->string('client_type')->nullable();                                                                                      // tipo cliente (enum ClientType)
-            $table->string('client_name', 150)->nullable();                                                                                 // nome cliente
-            $table->foreignId('client_id')->nullable()->constrained('clients')->onDelete('cascade');                                        // id cliente
+            // $table->string('client_name', 150)->nullable();                                                                                 // nome cliente                             ( ?? )
+            $table->foreignId('client_id')->nullable()->constrained('clients')->onDelete('cascade');                                        // id cliente 
             $table->string('contracting_station', 500)->nullable();                                                                         // gestore appalto
-            // $table->foreignId('contracting_station_id')->nullable()->constrained('contracting_stations')->onDelete('set null');             // id gestore appalto ( ?? mai usata ?? )
+            // $table->foreignId('contracting_station_id')->nullable()->constrained('contracting_stations')->onDelete('set null');             // id gestore appalto                    ( mai usata ?? )
             $table->string('region_id', 3)->nullable();                                                                                     // id regione
-            $table->string('province', 250)->nullable();                                                                                    // nome provincia
+            // $table->string('province', 250)->nullable();                                                                                    // nome provincia                           ( ?? )
             $table->string('province_id', 3)->nullable();                                                                                   // id provincia
             // 'procedure_type_id' => 'bidding_procedure_type'
             $table->string('bidding_procedure_type')->nullable();                                                                           // tipo procedura (enum BiddingProcedureType)
