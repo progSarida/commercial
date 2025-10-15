@@ -29,12 +29,12 @@ return new class extends Migration
             // entity_type_id' => 'client_type'
             $table->string('client_type')->nullable();                                                                                      // tipo cliente (enum ClientType)
             // $table->string('client_name', 150)->nullable();                                                                                 // nome cliente                             ( ?? )
-            $table->foreignId('client_id')->nullable()->constrained('clients')->onDelete('cascade');                                        // id cliente 
+            $table->foreignId('client_id')->nullable()->constrained('clients')->onDelete('cascade');                                        // id cliente
             $table->string('contracting_station', 500)->nullable();                                                                         // gestore appalto
             // $table->foreignId('contracting_station_id')->nullable()->constrained('contracting_stations')->onDelete('set null');             // id gestore appalto                    ( mai usata ?? )
-            $table->string('region_id', 3)->nullable();                                                                                     // id regione
+            $table->foreignId('region_id', 3)->nullable()->constrained('regions')->onDelete('set null');                                    // id regione
             // $table->string('province', 250)->nullable();                                                                                    // nome provincia                           ( ?? )
-            $table->string('province_id', 3)->nullable();                                                                                   // id provincia
+            $table->foreignId('province_id', 3)->nullable()->constrained('provinces')->onDelete('set null');                                // id provincia
             // 'procedure_type_id' => 'bidding_procedure_type'
             $table->string('bidding_procedure_type')->nullable();                                                                           // tipo procedura (enum BiddingProcedureType)
             $table->string('procedure_portal', 500)->nullable();                                                                            // portale procedura
