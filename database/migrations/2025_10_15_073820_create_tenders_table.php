@@ -83,6 +83,7 @@ return new class extends Migration
             $table->string('staff_utility')->nullable();                                                            // utilità costo del personale
             $table->string('staff_method')->nullable();                                                             // metodo costo del personale
             $table->string('staff_processing_state')->nullable();                                                   // stato lavorazione costo del personale (enum TenderItemProcessingState)
+            $table->string('other')->nullable();                                                                    // altro contenuto obbligatorio dell'offerta
             $table->string('other_utility')->nullable();                                                            // utilità altro
             $table->string('other_method')->nullable();                                                             // metodo altro
             $table->string('other_processing_state')->nullable();                                                   // stato lavorazione altro (enum TenderItemProcessingState)
@@ -106,6 +107,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('tender_necessary_docs');
         Schema::dropIfExists('tenders');
+        Schema::enableForeignKeyConstraints();
     }
 };

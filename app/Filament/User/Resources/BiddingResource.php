@@ -271,7 +271,7 @@ class BiddingResource extends Resource
                     ->dehydrated()
                     ->visible(fn ($state) => $state !== null)
                     ->columnSpan(8),
-                Placeholder::make('updated_at')
+                Placeholder::make('')
                     ->label('Ultima modifica: ')
                     ->content(fn ($record) => $record?->updated_at?->format('d/m/Y') ?? '')
                     ->visible(fn (callable $get) => $get('modified_user_id') !== null)
@@ -307,7 +307,9 @@ class BiddingResource extends Resource
                         return $record->serviceTypes->pluck('name')->join(' - ');
                     }),
                 TextColumn::make('description')
-                    ->label('Descrizione'),
+                    ->label('Descrizione')
+                    ->limit(50)
+                    ->tooltip(fn ($record) => $record->description),
                 TextColumn::make('client.name')
                     ->label('Ente'),
                 TextColumn::make('province.name')

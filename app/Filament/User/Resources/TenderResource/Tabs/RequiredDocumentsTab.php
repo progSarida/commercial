@@ -3,12 +3,17 @@
 namespace App\Filament\User\Resources\TenderResource\Tabs;
 
 use App\Enums\TenderItemProcessingState;
+use App\Enums\TenderMandatoryContentMethod;
+use App\Enums\TenderMandatoryContentUtility;
+use App\Enums\TenderProjectFormat;
 use App\Models\Bidding;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 
@@ -154,11 +159,155 @@ class RequiredDocumentsTab
                 ->options(TenderItemProcessingState::class)
                 ->columnSpan(2),
             Checkbox::make('project_require_check')
-                ->label('Necessità di referenze relative a svolgimento servizi analoghi')
+                ->label('E\' prevista la realizzazione di un progetto di gestione')
                 ->live()
                 ->default(false)
-                ->columnSpan(6),
+                ->columnSpan(4),
+            Placeholder::make('')->columnSpan(2),
             Placeholder::make('')->visible(fn (callable $get) => !$get('project_require_check'))->columnSpan(6),
+            Select::make('tender_project_format')
+                ->label('Formato')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderProjectFormat::class)
+                ->columnSpan(3),
+            Select::make('project_processing_state')
+                ->label('Stato lavorazione')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderItemProcessingState::class)
+                ->columnSpan(3),
+            Textarea::make('project_points')
+                ->label('Punti principali del  progetto di gestione')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(12),
+            TextInput::make('project_max_page')
+                ->label('N.ro max pagine')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            TextInput::make('project_format')
+                ->label('Formato')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            TextInput::make('project_character')
+                ->label('Carattere')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            TextInput::make('project_dimension')
+                ->label('Dimensione')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            TextInput::make('project_spacing')
+                ->label('Interlinea')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            TextInput::make('project_printed')
+                ->label('Stampato')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            Placeholder::make('')
+                ->label('')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            Placeholder::make('')
+                ->label('')
+                ->content('Contenuto obbligatorio  dell\'offerta economica')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(8),
+            Placeholder::make('')
+                ->label('Contenuto 1')
+                ->content('Oneri di sicurezza')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            Placeholder::make('')->columnSpan(2),
+            Select::make('security_utility')
+                ->label('Utilità')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderMandatoryContentUtility::class)
+                ->columnSpan(2),
+            Select::make('security_method')
+                ->label('Metodo')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderMandatoryContentMethod::class)
+                ->columnSpan(2),
+            Select::make('security_processing_state')
+                ->label('Stato lavorazione')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderItemProcessingState::class)
+                ->columnSpan(2),
+            Placeholder::make('')
+                ->label('Contenuto 2')
+                ->content('Costo del  personale')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            Placeholder::make('')->columnSpan(2),
+            Select::make('staff_utility')
+                ->label('Utilità')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderMandatoryContentUtility::class)
+                ->columnSpan(2),
+            Select::make('staff_method')
+                ->label('Metodo')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderMandatoryContentMethod::class)
+                ->columnSpan(2),
+            Select::make('staff_processing_state')
+                ->label('Stato lavorazione')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderItemProcessingState::class)
+                ->columnSpan(2),
+            TextInput::make('other')
+                ->label('Contenuto 3')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            Placeholder::make('')->columnSpan(2),
+            Select::make('other_utility')
+                ->label('Utilità')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderMandatoryContentUtility::class)
+                ->columnSpan(2),
+            Select::make('other_method')
+                ->label('Metodo')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderMandatoryContentMethod::class)
+                ->columnSpan(2),
+            Select::make('other_processing_state')
+                ->label('Stato lavorazione')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->options(TenderItemProcessingState::class)
+                ->columnSpan(2),
+            Textarea::make('note')
+                ->label('Note')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(12),
+            Placeholder::make('')
+                ->label('')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->columnSpan(4),
+            Placeholder::make('necessaryDocsTitle')
+                ->label('')
+                ->content('Riepilogo dei documenti necessari per la partecipazione all\'appalto')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->extraAttributes(['class' => 'text-center font-semibold text-lg'])
+                ->columnSpan(12),
+
+            Repeater::make('necessaryDocs')
+                ->label('')
+                ->visible(fn (callable $get) => $get('project_require_check'))
+                ->relationship('necessaryDocs')
+                ->schema([
+                    TextInput::make('doc')
+                        ->label('Documento')
+                        ->required()
+                        ->columnSpan(8),
+                    Select::make('doc_processing_state')
+                        ->label('Stato lavorazione')
+                        ->options(TenderItemProcessingState::class)
+                        ->columnSpan(4),
+                ])
+                ->columns(12)
+                ->defaultItems(0)
+                ->addActionLabel('Aggiungi documento')
+                ->collapsible()
+                ->columnSpan(12),
         ];
     }
 }
