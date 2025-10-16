@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Filament\User\Resources;
-
 use App\Enums\ContactType;
 use App\Enums\OutcomeType;
 use App\Filament\User\Resources\CallResource\Pages;
@@ -19,17 +17,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
-
 class CallResource extends Resource
 {
     protected static ?string $model = Contact::class;
-
     public static ?string $pluralModelLabel = 'Chiamate';
-
     public static ?string $modelLabel = 'Chiamata';
-
     protected static ?string $navigationIcon = 'fas-phone';
-
     public static function form(Form $form): Form
     {
         return $form
@@ -41,34 +34,33 @@ class CallResource extends Resource
                     ->default(ContactType::CALL)
                     ->disabled()
                     ->dehydrated()
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 DatePicker::make('date')
                     ->label('Data')
                     ->required()
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 TimePicker::make('time')
                     ->label('Orario')
                     ->required()
                     ->seconds(false)
                     ->displayFormat('H:i')
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('outcome_type')
                     ->label('Esito')
                     ->options(OutcomeType::class)
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Textarea::make('note')
                     ->label('Note')
-                    ->columnSpan(9),
+                    ->columnSpan(['sm' => 'full', 'md' => 9]),
                 Select::make('user_id')
                     ->label('Utente')
                     ->relationship('user', 'name')
                     ->default(Auth::user()->id)
                     ->disabled(!Auth::user()->is_admin)
                     ->dehydrated()
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
             ]);
     }
-
     public static function table(Table $table): Table
     {
         return $table
@@ -97,14 +89,12 @@ class CallResource extends Resource
                 ]),
             ]);
     }
-
     public static function getRelations(): array
     {
         return [
             //
         ];
     }
-
     public static function getPages(): array
     {
         return [
@@ -113,12 +103,10 @@ class CallResource extends Resource
             'edit' => Pages\EditCall::route('/{record}/edit'),
         ];
     }
-
     public static function getNavigationGroup(): ?string
     {
         return 'Clienti';
     }
-
     public static function getNavigationSort(): ?int
     {
         return 2;

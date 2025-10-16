@@ -54,14 +54,14 @@ class BiddingResource extends Resource
                     ->relationship('serviceTypes', 'name')
                     ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
                     ->columns(6)
-                    ->columnSpan(24)
+                    ->columnSpan(['sm' => 'full', 'md' => 24])
                     ->gridDirection('row'),
                 Select::make('client_type')
                     ->label('Tipo')
                     ->required()
                     ->live()
                     ->options(ClientType::class)
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Select::make('client_id')
                     ->label('Ente')
                     ->hintAction(
@@ -93,28 +93,28 @@ class BiddingResource extends Resource
                     ->searchable()
                     ->preload()
                     ->reactive()
-                    ->columnSpan(9),
+                    ->columnSpan(['sm' => 'full', 'md' => 9]),
                 Select::make('province_id')
                     ->label('Provincia')
                     ->required()
                     ->relationship( name: 'province', titleAttribute: 'name', )
                     ->disabled()
                     ->dehydrated()
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Select::make('region_id')
                     ->label('Regione')
                     ->required()
                     ->relationship( name: 'region', titleAttribute: 'name', )
                     ->disabled()
                     ->dehydrated()
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Textarea::make('description')
                     ->label('Descrizione')
-                    ->columnSpan(24)
+                    ->columnSpan(['sm' => 'full', 'md' => 24])
                     ->maxLength(255),
                 TextInput::make('amount')
                     ->label('Importo')
-                    ->columnSpan(4)
+                    ->columnSpan(['sm' => 'full', 'md' => 4])
                     ->prefix('€')
                     ->inputMode('decimal')
                     ->formatStateUsing(fn ($state) => $state ? number_format((float)$state, 2, ',', '.') : '')
@@ -130,7 +130,7 @@ class BiddingResource extends Resource
                     }),
                 TextInput::make('residents')
                     ->label('Abitanti')
-                    ->columnSpan(4)
+                    ->columnSpan(['sm' => 'full', 'md' => 4])
                     ->inputMode('numeric')
                     ->formatStateUsing(fn ($state) => $state ? number_format((int)$state, 0, ',', '.') : '')
                     ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
@@ -141,20 +141,20 @@ class BiddingResource extends Resource
                         titleAttribute: 'name', 
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Select::make('bidding_processing_state')
                     ->label('Stato lavorazione')
                     ->live()
                     ->options(BiddingProcessingState::class)
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 Select::make('bidding_priority_type')
                     ->label('Priorità')
                     ->live()
                     ->options(BiddingPriorityType::class)
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Textarea::make('bidding_note')
                     ->label('Note gara')
-                    ->columnSpan(24)
+                    ->columnSpan(['sm' => 'full', 'md' => 24])
                     ->maxLength(255),
                 Select::make('bidding_type_id')
                     ->label('Tipo gara')
@@ -163,7 +163,7 @@ class BiddingResource extends Resource
                         titleAttribute: 'name', 
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 Select::make('bidding_adjudication_type_id')
                     ->label('Tipo aggiudicazione')
                     ->relationship( 
@@ -171,14 +171,14 @@ class BiddingResource extends Resource
                         titleAttribute: 'name', 
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 DatePicker::make('clarification_request_deadline_date')
                     ->label('Data scadenza chiarimenti')
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TimePicker::make('clarification_request_deadline_time')
                     ->label('Orario scadenza chiarimenti')
                     ->default('06:00')
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Checkbox::make('mandatory_inspection')
                     ->label('Sopralluogo obbligatorio')
                     ->live()
@@ -188,112 +188,112 @@ class BiddingResource extends Resource
                         else
                             $set('inspection_deadline_time', null);
                     })
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('inspection_deadline_date')
                     ->label('Data scadenza sopralluogo')
                     ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TimePicker::make('inspection_deadline_time')
                     ->label('Orario scadenza sopralluogo')
                     ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
                     ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('deadline_date')
                     ->label('Data scadenza gara')
                     ->required()
-                    ->columnSpan(4),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TimePicker::make('deadline_time')
                     ->label('Orario scadenza gara')
                     ->default('06:00')
                     ->required()
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('send_date')
                     ->label('Data invio offerta')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TimePicker::make('send_time')
                     ->label('Orario invio offerta')
                     ->default('06:00')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 DatePicker::make('opening_date')
                     ->label('Data apertura offerte')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TimePicker::make('opening_time')
                     ->label('Orario apertura offerte')
                     ->default('06:00')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('contact')
                     ->label('Nome contatto')
-                    ->columnSpan(10),
+                    ->columnSpan(['sm' => 'full', 'md' => 10]),
                 TextInput::make('note')
                     ->label('Note')
-                    ->columnSpan(14),
+                    ->columnSpan(['sm' => 'full', 'md' => 14]),
                 TextInput::make('contracting_station')
                     ->label('Gestore appalto')
-                    ->columnSpan(17),
+                    ->columnSpan(['sm' => 'full', 'md' => 17]),
                 Select::make('bidding_procedure_type')
                     ->label('Procedura')
                     ->live()
                     ->options(BiddingProcedureType::class)
-                    ->columnSpan(7),
+                    ->columnSpan(['sm' => 'full', 'md' => 7]),
                 TextInput::make('procedure_portal')
                     ->label('Portale procedura')
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 TextInput::make('cig')
                     ->label('CIG')
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 TextInput::make('procedure_id')
                     ->label('ID Procedura')
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 TextInput::make('year')
                     ->label('Durata anni')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('month')
                     ->label('Durata mesi')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('day')
                     ->label('Durata giorni')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 DatePicker::make('renew')
                     ->label('Rinnovo')
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 Select::make('assigned_user_id')
                     ->label('Assegnato a')
                     ->relationship('assignedUser', 'name')
                     ->options(User::pluck('name', 'id')->toArray())
                     ->columns(6)
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 Select::make('modified_user_id')
                     ->label('Modificato da')
                     ->relationship('modifiedUser', 'name')
                     ->options(User::pluck('name', 'id')->toArray())
-                    ->columns(6)
+                    // ->columns(6)
                     ->disabled()
                     ->dehydrated()
                     ->visible(fn ($state) => $state !== null)
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 Placeholder::make('')
                     ->label('Ultima modifica: ')
                     ->content(fn ($record) => $record?->updated_at?->format('d/m/Y') ?? '')
                     ->visible(fn (callable $get) => $get('modified_user_id') !== null)
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 0, 'md' =>8]),
                 Placeholder::make('')
                     ->visible(fn (callable $get) => $get('modified_user_id') === null)
-                    ->columnSpan(16),
+                    ->columnSpan(['sm' => 0, 'md' =>16]),
                 Select::make('source1_id')
                     ->label('Fonte dati 1')
                     ->relationship('source1', 'name')
                     ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 Select::make('source2_id')
                     ->label('Fonte dati 2')
                     ->relationship('source2', 'name')
                     ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
                 Select::make('source3_id')
                     ->label('Fonte dati 3')
                     ->relationship('source3', 'name')
                     ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columnSpan(8),
+                    ->columnSpan(['sm' => 'full', 'md' => 8]),
             ]);
     }
 

@@ -46,7 +46,7 @@ class TenderResource extends Resource
             ->schema([
                 Select::make('client_id')
                     ->label('Ente')
-                    ->columnSpan(4)
+                    ->columnSpan(['sm' => 'full', 'md' => 4])
                     ->live()
                     ->preload()
                     ->disabled(fn (callable $get) => $get('bidding_id'))
@@ -54,7 +54,7 @@ class TenderResource extends Resource
                     ->relationship(name: 'client', titleAttribute: 'name'),
                 Select::make('bidding_id')
                     ->label('Gara')
-                    ->columnSpan(6)
+                    ->columnSpan(['sm' => 'full', 'md' => 6])
                     ->live()
                     ->searchable()
                     ->preload()
@@ -84,7 +84,7 @@ class TenderResource extends Resource
                     }),
                 Select::make('biddingProcessingState')
                     ->label('Stato gara')
-                    ->columnSpan(2)
+                    ->columnSpan(['sm' => 'full', 'md' => 2])
                     ->options(BiddingProcessingState::class)
                     ->default(BiddingProcessingState::TODO)
                     ->afterStateUpdated(function ($state, callable $get) {
@@ -102,14 +102,14 @@ class TenderResource extends Resource
                         Tab::make('Dati Generali')
                             ->columns(12)
                             ->schema(GeneralDataTab::make()),
-                        Tab::make('Tipo Procedura')
+                        Tab::make('Procedura')
                             ->columns(12)
                             ->schema(ProcedureTypeTab::make()),
-                        Tab::make('Documenti Richiesti')
+                        Tab::make('Documenti')
                             ->columns(12)
                             ->schema(RequiredDocumentsTab::make()),
                     ])
-                    ->columnSpan(12)
+                    ->columnSpan(['sm' => 'full', 'md' => 12])
                     ->activeTab(1)
             ]);
     }
