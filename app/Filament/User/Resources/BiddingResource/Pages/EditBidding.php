@@ -29,7 +29,7 @@ class EditBidding extends EditRecord
                         $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousBidding->id]));
                     } else {
                         Notification::make()
-                            ->title('Nessuna gara precedente trovata')
+                            ->title('Nessuna scadenza precedente trovata')
                             ->warning()
                             ->send();
                     }
@@ -47,7 +47,7 @@ class EditBidding extends EditRecord
                         $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextBidding->id]));
                     } else {
                         Notification::make()
-                            ->title('Nessuna gara successiva trovata')
+                            ->title('Nessuna scadenza successiva trovata')
                             ->warning()
                             ->send();
                     }
