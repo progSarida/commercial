@@ -36,19 +36,6 @@ class TenderResource extends Resource
 
     protected static ?string $navigationIcon = 'fas-suitcase';
 
-    /**
-     * Helper function to retrieve the Bidding model based on record or bidding_id.
-     *
-     * @param mixed $record The Tender record (null in create mode).
-     * @param mixed $biddingId The bidding_id from the form state (optional).
-     * @return Bidding|null
-     */
-    protected static function getBiddingModel($record = null, $biddingId = null): ?Bidding
-    {
-        $id = $biddingId ?? ($record->bidding_id ?? null);
-        return $id ? Bidding::find($id) : null;
-    }
-
     public static function form(Form $form): Form
     {
         return $form
@@ -71,7 +58,7 @@ class TenderResource extends Resource
                     ->searchable()
                     ->preload()
                     ->relationship(
-                        name: 'bidding', 
+                        name: 'bidding',
                         titleAttribute: 'description',
                         modifyQueryUsing: fn ($query, $get) => $query
                             ->where('bidding_processing_state', '!=', BiddingProcessingState::PENDING)
@@ -83,56 +70,58 @@ class TenderResource extends Resource
                             $client = Client::find($bidding->client_id);
                             if (!$get('client_id')) {
                                 $set('client_id', $client->id);
-                                $set('clientName', $client->name);
-                                $set('clientAddress', $client->address);
-                                $set('clientZipcode', $client->zip_code);
-                                $set('clientProvince', $client->province->name);
-                                $set('clientRegion', $client->region->name);
-                                $set('clientPhone', $client->phone);
-                                $set('clientEmail', $client->email);
                             }
-                            $set('residents', $bidding->residents);
-                            $set('biddingCig', $bidding->cig);
-                            $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
-                            $set('biddingInspection', $bidding->mandatory_inspection);
-                            $string = '';
-                            if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
-                            if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
-                            if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
-                            $set('biddingDuration', $string);
-                            $set('biddingSendDate', $bidding->send_date);
-                            $set('biddingSendTime', $bidding->send_time);
-                            $set('biddingOpeningDate', $bidding->opening_date);
-                            $set('biddingOpeningTime', $bidding->opening_time);
-                            $set('biddingProcessingState', $bidding->bidding_processing_state);
+                            static::updateFormFields($bidding, $client, $set);
+                            // $set('clientName', $client->name);
+                            // $set('clientAddress', $client->address);
+                            // $set('clientZipcode', $client->zip_code);
+                            // $set('clientProvince', $client->province->name);
+                            // $set('clientRegion', $client->region->name);
+                            // $set('clientPhone', $client->phone);
+                            // $set('clientEmail', $client->email);
+                            // $set('residents', $bidding->residents);
+                            // $set('biddingCig', $bidding->cig);
+                            // $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
+                            // $set('biddingInspection', $bidding->mandatory_inspection);
+                            // $string = '';
+                            // if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
+                            // if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
+                            // if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
+                            // $set('biddingDuration', $string);
+                            // $set('biddingSendDate', $bidding->send_date);
+                            // $set('biddingSendTime', $bidding->send_time);
+                            // $set('biddingOpeningDate', $bidding->opening_date);
+                            // $set('biddingOpeningTime', $bidding->opening_time);
+                            // $set('biddingProcessingState', $bidding->bidding_processing_state);
                         }
                     })
                     ->afterStateHydrated(function ($state, callable $set, $record) {
                         $bidding = static::getBiddingModel($record, $state);
                         if ($bidding) {
                             $client = Client::find($bidding->client_id);
-                            $set('client_id', $client->id);
-                            $set('clientName', $client->name);
-                            $set('clientAddress', $client->address);
-                            $set('clientZipcode', $client->zip_code);
-                            $set('clientProvince', $client->province->name);
-                            $set('clientRegion', $client->region->name);
-                            $set('clientPhone', $client->phone);
-                            $set('clientEmail', $client->email);
-                            $set('residents', $bidding->residents);
-                            $set('biddingCig', $bidding->cig);
-                            $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
-                            $set('biddingInspection', $bidding->mandatory_inspection);
-                            $string = '';
-                            if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
-                            if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
-                            if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
-                            $set('biddingDuration', $string);
-                            $set('biddingSendDate', $bidding->send_date);
-                            $set('biddingSendTime', $bidding->send_time);
-                            $set('biddingOpeningDate', $bidding->opening_date);
-                            $set('biddingOpeningTime', $bidding->opening_time);
-                            $set('biddingProcessingState', $bidding->bidding_processing_state);
+                            static::updateFormFields($bidding, $client, $set);
+                            // $set('client_id', $client->id);
+                            // $set('clientName', $client->name);
+                            // $set('clientAddress', $client->address);
+                            // $set('clientZipcode', $client->zip_code);
+                            // $set('clientProvince', $client->province->name);
+                            // $set('clientRegion', $client->region->name);
+                            // $set('clientPhone', $client->phone);
+                            // $set('clientEmail', $client->email);
+                            // $set('residents', $bidding->residents);
+                            // $set('biddingCig', $bidding->cig);
+                            // $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
+                            // $set('biddingInspection', $bidding->mandatory_inspection);
+                            // $string = '';
+                            // if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
+                            // if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
+                            // if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
+                            // $set('biddingDuration', $string);
+                            // $set('biddingSendDate', $bidding->send_date);
+                            // $set('biddingSendTime', $bidding->send_time);
+                            // $set('biddingOpeningDate', $bidding->opening_date);
+                            // $set('biddingOpeningTime', $bidding->opening_time);
+                            // $set('biddingProcessingState', $bidding->bidding_processing_state);
                         }
                     }),
                 Select::make('biddingProcessingState')
@@ -241,5 +230,51 @@ class TenderResource extends Resource
     public static function getNavigationSort(): ?int
     {
         return 2;
+    }
+
+    /**
+     * Helper function to retrieve the Bidding model based on record or bidding_id.
+     *
+     * @param mixed $record The Tender record (null in create mode).
+     * @param mixed $biddingId The bidding_id from the form state (optional).
+     * @return Bidding|null
+     */
+    protected static function getBiddingModel($record = null, $biddingId = null): ?Bidding
+    {
+        $id = $biddingId ?? ($record->bidding_id ?? null);
+        return $id ? Bidding::find($id) : null;
+    }
+
+    /**
+     * Updates form fields based on the selected bidding.
+     *
+     * @param Bidding|null $bidding The bidding model.
+     * @param Client|null $client The client model.
+     * @param callable $set Form state setter.
+     * @return void
+     */
+    private static function updateFormFields(?Bidding $bidding, Client $client, callable $set): void
+    {
+        $set('clientName', $client->name);
+        $set('clientAddress', $client->address);
+        $set('clientZipcode', $client->zip_code);
+        $set('clientProvince', $client->province->name);
+        $set('clientRegion', $client->region->name);
+        $set('clientPhone', $client->phone);
+        $set('clientEmail', $client->email);
+        $set('residents', $bidding->residents);
+        $set('biddingCig', $bidding->cig);
+        $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
+        $set('biddingInspection', $bidding->mandatory_inspection);
+        $string = '';
+        if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
+        if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
+        if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
+        $set('biddingDuration', $string);
+        $set('biddingSendDate', $bidding->send_date);
+        $set('biddingSendTime', $bidding->send_time);
+        $set('biddingOpeningDate', $bidding->opening_date);
+        $set('biddingOpeningTime', $bidding->opening_time);
+        $set('biddingProcessingState', $bidding->bidding_processing_state);
     }
 }
