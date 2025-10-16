@@ -73,9 +73,9 @@ class EstimateResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                    ->label('')
-                    ->icon(''),
+                // Tables\Actions\EditAction::make()
+                //     ->label('')
+                //     ->icon(''),
                 Tables\Actions\Action::make('upload_file')
                     ->label('Carica File')
                     ->icon('heroicon-o-arrow-up-tray')

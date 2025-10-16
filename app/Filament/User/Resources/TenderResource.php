@@ -25,6 +25,7 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -118,7 +119,23 @@ class TenderResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('client.name')
+                    ->label('Cliente'),
+                TextColumn::make('bidding.serviceTypes')
+                    ->label('Servizi')
+                    ->formatStateUsing(function ($record) {
+                        return $record->bidding->serviceTypes->pluck('name')->join(' - ');
+                    }),
+                TextColumn::make('bidding.description')
+                    ->label('Gara')
+                    ->limit(50)
+                    ->tooltip(fn ($record) => $record->bidding->description),
+                TextColumn::make('bidding.deadline_date')
+                    ->label('Gara')
+                    ->date('d/m/Y'),
+                TextColumn::make('bidding.inspection_deadline_date')
+                    ->label('Sopralluogo')
+                    ->date('d/m/Y'),
             ])
             ->filters([
                 //
