@@ -3,6 +3,9 @@
 namespace App\Filament\User\Resources;
 
 use App\Enums\BiddingProcessingState;
+use App\Filament\User\Resources\TenderResource\Tabs\GeneralDataTab;
+use App\Filament\User\Resources\TenderResource\Tabs\ProcedureTypeTab;
+use App\Filament\User\Resources\TenderResource\Tabs\RequiredDocumentsTab;
 use App\Filament\User\Resources\TenderResource\Pages;
 use App\Filament\User\Resources\TenderResource\RelationManagers;
 use App\Models\Bidding;
@@ -42,8 +45,7 @@ class TenderResource extends Resource
             ->columns(12)
             ->schema([
                 Select::make('client_id')
-                    ->label('')
-                    ->prefix('Ente')
+                    ->label('Ente')
                     ->columnSpan(4)
                     ->live()
                     ->preload()
@@ -51,8 +53,7 @@ class TenderResource extends Resource
                     ->dehydrated(fn (callable $get) => $get('bidding_id'))
                     ->relationship(name: 'client', titleAttribute: 'name'),
                 Select::make('bidding_id')
-                    ->label('')
-                    ->prefix('Gara')
+                    ->label('Gara')
                     ->columnSpan(6)
                     ->live()
                     ->searchable()
@@ -72,27 +73,6 @@ class TenderResource extends Resource
                                 $set('client_id', $client->id);
                             }
                             static::updateFormFields($bidding, $client, $set);
-                            // $set('clientName', $client->name);
-                            // $set('clientAddress', $client->address);
-                            // $set('clientZipcode', $client->zip_code);
-                            // $set('clientProvince', $client->province->name);
-                            // $set('clientRegion', $client->region->name);
-                            // $set('clientPhone', $client->phone);
-                            // $set('clientEmail', $client->email);
-                            // $set('residents', $bidding->residents);
-                            // $set('biddingCig', $bidding->cig);
-                            // $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
-                            // $set('biddingInspection', $bidding->mandatory_inspection);
-                            // $string = '';
-                            // if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
-                            // if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
-                            // if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
-                            // $set('biddingDuration', $string);
-                            // $set('biddingSendDate', $bidding->send_date);
-                            // $set('biddingSendTime', $bidding->send_time);
-                            // $set('biddingOpeningDate', $bidding->opening_date);
-                            // $set('biddingOpeningTime', $bidding->opening_time);
-                            // $set('biddingProcessingState', $bidding->bidding_processing_state);
                         }
                     })
                     ->afterStateHydrated(function ($state, callable $set, $record) {
@@ -100,32 +80,10 @@ class TenderResource extends Resource
                         if ($bidding) {
                             $client = Client::find($bidding->client_id);
                             static::updateFormFields($bidding, $client, $set);
-                            // $set('client_id', $client->id);
-                            // $set('clientName', $client->name);
-                            // $set('clientAddress', $client->address);
-                            // $set('clientZipcode', $client->zip_code);
-                            // $set('clientProvince', $client->province->name);
-                            // $set('clientRegion', $client->region->name);
-                            // $set('clientPhone', $client->phone);
-                            // $set('clientEmail', $client->email);
-                            // $set('residents', $bidding->residents);
-                            // $set('biddingCig', $bidding->cig);
-                            // $set('serviceTypes', $bidding->serviceTypes->pluck('id')->toArray());
-                            // $set('biddingInspection', $bidding->mandatory_inspection);
-                            // $string = '';
-                            // if ($bidding->year && $bidding->year > 0) $string .= $bidding->year . ' anni ';
-                            // if ($bidding->month && $bidding->month > 0) $string .= $bidding->month . ' mesi ';
-                            // if ($bidding->day && $bidding->day > 0) $string .= $bidding->day . ' giorni ';
-                            // $set('biddingDuration', $string);
-                            // $set('biddingSendDate', $bidding->send_date);
-                            // $set('biddingSendTime', $bidding->send_time);
-                            // $set('biddingOpeningDate', $bidding->opening_date);
-                            // $set('biddingOpeningTime', $bidding->opening_time);
-                            // $set('biddingProcessingState', $bidding->bidding_processing_state);
                         }
                     }),
                 Select::make('biddingProcessingState')
-                    ->label('')
+                    ->label('Stato gara')
                     ->columnSpan(2)
                     ->options(BiddingProcessingState::class)
                     ->default(BiddingProcessingState::TODO)
@@ -143,44 +101,13 @@ class TenderResource extends Resource
                     ->tabs([
                         Tab::make('Dati Generali')
                             ->columns(12)
-                            ->schema([
-                                TextInput::make('clientName')->label('')->prefix('Ente')->columnSpan(4)->disabled(),
-                                TextInput::make('residents')->label('')->prefix('Abitanti')->columnSpan(2)->disabled(),
-                                TextInput::make('clientAddress')->label('')->prefix('Indirizzo')->columnSpan(6)->disabled(),
-                                Placeholder::make('')->columnSpan(4),
-                                TextInput::make('clientZipcode')->label('')->prefix('CAP')->columnSpan(2)->disabled(),
-                                TextInput::make('clientProvince')->label('')->prefix('Provincia')->columnSpan(3)->disabled(),
-                                TextInput::make('clientRegion')->label('')->prefix('Regione')->columnSpan(3)->disabled(),
-                                Placeholder::make('')->columnSpan(2),
-                                TextInput::make('biddingCig')->label('')->prefix('CIG')->columnSpan(3)->disabled(),
-                                TextInput::make('clientPhone')->label('')->prefix('Telefono')->columnSpan(3)->disabled(),
-                                TextInput::make('clientEmail')->label('')->prefix('Email')->columnSpan(4)->disabled(),
-                                TextInput::make('manage_current')->label('')->prefix('Gestione attuale')->columnSpan(6),
-                                TextInput::make('manage_offer')->label('')->prefix('Gestione offerta')->columnSpan(6),
-                                TextInput::make('revenue')->label('')->prefix('Gettito')->columnSpan(3),
-                                TextInput::make('conditions')->label('')->prefix('Condizioni')->columnSpan(9),
-                                CheckboxList::make('serviceTypes')->label('Gara relativa al servizio di')
-                                    ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
-                                    ->columns(6)->columnSpan(12)->gridDirection('row')->disabled()->dehydrated(false),
-                                Checkbox::make('invitation_require_check')->label('Richiesta invito')->columnSpan(2),
-                                Checkbox::make('biddingInspection')->label('Sopralluogo obbligatorio')->disabled()->columnSpan(3),
-                                TextInput::make('biddingDuration')->label('')->prefix('Durata')->columnSpan(4)->disabled(),
-                                Placeholder::make('')->columnSpan(3),
-                                DatePicker::make('biddingSendDate')->label('')->prefix('Data consegna')->columnSpan(3)->disabled(),
-                                TimePicker::make('biddingSendTime')->label('')->prefix('Orario consegna')->columnSpan(3)->disabled(),
-                                TextInput::make('mode')->label('')->prefix('Modalità')->columnSpan(4),
-                                Placeholder::make('')->columnSpan(2),
-                                DatePicker::make('biddingOpeningDate')->label('')->prefix('Data apertura offerte')->columnSpan(4)->disabled(),
-                                TimePicker::make('biddingOpeningTime')->label('')->prefix('Orario apertura offerte')->columnSpan(4)->disabled(),
-                            ]),
+                            ->schema(GeneralDataTab::make()),
                         Tab::make('Tipo Procedura')
-                            ->schema([
-                                // ...
-                            ]),
+                            ->columns(12)
+                            ->schema(ProcedureTypeTab::make()),
                         Tab::make('Documenti Richiesti')
-                            ->schema([
-                                // ...
-                            ]),
+                            ->columns(12)
+                            ->schema(RequiredDocumentsTab::make()),
                     ])
                     ->columnSpan(12)
                     ->activeTab(1)
@@ -276,5 +203,7 @@ class TenderResource extends Resource
         $set('biddingOpeningDate', $bidding->opening_date);
         $set('biddingOpeningTime', $bidding->opening_time);
         $set('biddingProcessingState', $bidding->bidding_processing_state);
+        $set('biddingMandatoryInspection', $bidding->mandatory_inspection);
+        $set('biddingMandatoryInspectionDeadline', $bidding->inspection_deadline_date);
     }
 }

@@ -45,15 +45,12 @@ class ClientResource extends Resource
                     ->options(ClientType::class)
                     ->required()
                     ->live()
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
 
-                // Select per name (visibile solo per CITY e PROVINCE)
                 Select::make('name')->label('Nome')
                     ->options(function (callable $get, $record) {
                         $type = $get('client_type');
-                        // Ottieni i nomi già usati nella tabella clients per il tipo selezionato
                         $usedNames = Client::where('client_type', $type)->pluck('name')->toArray();
-                        // In modalità edit, includi il nome del cliente corrente (se esiste)
                         $currentName = $record ? $record->name : null;
 
                         if ($type === ClientType::CITY->value) {
@@ -73,7 +70,7 @@ class ClientResource extends Resource
                     ->searchable()
                     ->required()
                     ->live()
-                    ->columnSpan(6)
+                    ->columnSpan(['sm' => 'full', 'md' => 6])
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         $type = $get('client_type');
                         $italyId = State::where('name', 'Italy')->first()?->id;
@@ -102,7 +99,7 @@ class ClientResource extends Resource
                     ->rules(function ($record) {
                         return ['unique:clients,name' . ($record ? ',' . $record->id : '')];
                     })
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 Select::make('state_id')->label('Paese')
                     ->required()
                     ->searchable()
@@ -110,10 +107,9 @@ class ClientResource extends Resource
                     ->preload()
                     ->relationship(name: 'state', titleAttribute: 'name')
                     ->default($italyId)
-                    ->afterStateUpdated(function (callable $set, callable $get, ) {
+                    ->afterStateUpdated(function (callable $set, callable $get) {
                         $newStateId = $get('state_id');
                         $italyId = State::where('name', 'Italy')->first()?->id;
-                        // Pulisci i campi solo se cambi verso uno stato diverso da Italy
                         if ($newStateId !== $italyId) {
                             $set('place', null);
                             $set('region_id', null);
@@ -121,11 +117,10 @@ class ClientResource extends Resource
                             $set('city_id', null);
                             $set('zip_code', null);
                         } else {
-                            // Se torni a Italy, pulisci solo il 'place'
                             $set('place', null);
                         }
                     })
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('region_id')->label('Regione')
                     ->required()
                     ->searchable()
@@ -133,7 +128,7 @@ class ClientResource extends Resource
                     ->preload()
                     ->relationship(name: 'region', titleAttribute: 'name')
                     ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('province_id')->label('Provincia')
                     ->required()
                     ->searchable()
@@ -145,7 +140,7 @@ class ClientResource extends Resource
                         modifyQueryUsing: fn ($query, callable $get) => $get('region_id') ? $query->where('region_id', $get('region_id')) : $query->whereRaw('1 = 1')
                     )
                     ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('city_id')->label('Comune')
                     ->required()
                     ->searchable()
@@ -169,40 +164,41 @@ class ClientResource extends Resource
                         }
                     })
                     ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TextInput::make('place')->label('Luogo')
                     ->required()
                     ->visible(fn (callable $get) => $get('state_id') !== $italyId)
-                    ->columnSpan(12),
+                    ->columnSpan(['sm' => 'full', 'md' => 12]),
                 TextInput::make('zip_code')->label('CAP')
                     ->required()
-                    ->visible(fn (callable $get) => $get('state_id') === $italyId),
+                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
+                    ->columnSpan(['sm' => 'full', 'md' => 2]),
                 Placeholder::make('')
                     ->label('')
                     ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(4),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 Placeholder::make('')
                     ->label('')
                     ->visible(fn (callable $get) => $get('state_id') !== $italyId)
-                    ->columnSpan(4),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TextInput::make('address')->label('Indirizzo')
                     ->required()
-                    ->columnSpan(6),
+                    ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('civic')->label('Civico')
                     ->required()
-                    ->columnSpan(2),
+                    ->columnSpan(['sm' => 'full', 'md' => 2]),
                 TextInput::make('phone')->label('Telefono')
                     ->tel()
                     ->required()
-                    ->columnSpan(3),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 TextInput::make('email')->label('Email')
                     ->email()
                     ->required()
-                    ->columnSpan(5),
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TextInput::make('site')->label('Sito')
-                    ->columnSpan(4),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 Textarea::make('note')->label('Note')
-                    ->columnSpan(12),
+                    ->columnSpan(['sm' => 'full', 'md' => 12]),
             ]);
     }
 
