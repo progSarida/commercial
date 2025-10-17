@@ -15,12 +15,12 @@ class BiddingTypesTableSeeder extends Seeder
      */
     public function run()
     {
-
+        
 
         DB::table('bidding_types')->delete();
-
+        
         DB::table('bidding_types')->insert(array (
-            0 =>
+            0 => 
             array (
                 'id' => 1,
                 'name' => 'RdO',
@@ -29,7 +29,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:28:03',
                 'updated_at' => '2025-05-09 09:32:06',
             ),
-            1 =>
+            1 => 
             array (
                 'id' => 2,
                 'name' => 'Lettera di Invito',
@@ -38,7 +38,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:28:03',
                 'updated_at' => '2025-05-09 09:32:33',
             ),
-            2 =>
+            2 => 
             array (
                 'id' => 3,
                 'name' => 'Manifestazione di Interesse',
@@ -47,7 +47,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:28:27',
                 'updated_at' => '2025-05-09 09:32:42',
             ),
-            3 =>
+            3 => 
             array (
                 'id' => 4,
                 'name' => 'Avviso Pubblico',
@@ -56,7 +56,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:28:27',
                 'updated_at' => '2025-02-05 09:28:27',
             ),
-            4 =>
+            4 => 
             array (
                 'id' => 5,
                 'name' => 'Procedura Aperta',
@@ -65,7 +65,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:28:39',
                 'updated_at' => '2025-05-09 09:32:12',
             ),
-            5 =>
+            5 => 
             array (
                 'id' => 6,
                 'name' => 'Trattativa',
@@ -74,7 +74,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-07 08:10:53',
                 'updated_at' => '2025-02-07 08:10:53',
             ),
-            6 =>
+            6 => 
             array (
                 'id' => 7,
                 'name' => 'Trattativa Privata',
@@ -83,7 +83,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-07 08:10:53',
                 'updated_at' => '2025-02-07 08:10:53',
             ),
-            7 =>
+            7 => 
             array (
                 'id' => 8,
                 'name' => 'Iscrizione Albo Fornitori',
@@ -92,7 +92,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-12 15:00:48',
                 'updated_at' => '2025-02-12 15:00:48',
             ),
-            8 =>
+            8 => 
             array (
                 'id' => 9,
                 'name' => 'Indagine di mercato',
@@ -101,7 +101,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-13 14:19:39',
                 'updated_at' => '2025-02-13 14:19:39',
             ),
-            9 =>
+            9 => 
             array (
                 'id' => 10,
                 'name' => 'Procedura Negoziata',
@@ -110,7 +110,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-02-28 14:08:38',
                 'updated_at' => '2025-02-28 14:08:46',
             ),
-            10 =>
+            10 => 
             array (
                 'id' => 11,
                 'name' => 'Procedura ristretta',
@@ -119,7 +119,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'created_at' => '2025-05-13 07:42:10',
                 'updated_at' => '2025-05-13 07:42:10',
             ),
-            11 =>
+            11 => 
             array (
                 'id' => 12,
                 'name' => 'Non prevista',
@@ -129,7 +129,7 @@ class BiddingTypesTableSeeder extends Seeder
                 'updated_at' => '2025-06-06 10:02:53',
             ),
         ));
-
-
+        
+        
     }
 }

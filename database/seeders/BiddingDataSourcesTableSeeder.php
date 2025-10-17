@@ -15,12 +15,12 @@ class BiddingDataSourcesTableSeeder extends Seeder
      */
     public function run()
     {
-
+        
 
         DB::table('bidding_data_sources')->delete();
-
+        
         DB::table('bidding_data_sources')->insert(array (
-            0 =>
+            0 => 
             array (
                 'id' => 1,
                 'name' => 'Contatto diretto',
@@ -29,7 +29,7 @@ class BiddingDataSourcesTableSeeder extends Seeder
                 'created_at' => '2025-02-11 15:19:13',
                 'updated_at' => '2025-02-11 15:19:13',
             ),
-            1 =>
+            1 => 
             array (
                 'id' => 2,
                 'name' => 'Roga',
@@ -38,7 +38,7 @@ class BiddingDataSourcesTableSeeder extends Seeder
                 'created_at' => '2025-02-11 15:19:13',
                 'updated_at' => '2025-02-11 15:19:13',
             ),
-            2 =>
+            2 => 
             array (
                 'id' => 3,
                 'name' => 'Presidia',
@@ -47,7 +47,7 @@ class BiddingDataSourcesTableSeeder extends Seeder
                 'created_at' => '2025-02-11 15:19:32',
                 'updated_at' => '2025-02-11 15:19:32',
             ),
-            3 =>
+            3 => 
             array (
                 'id' => 4,
                 'name' => 'Telemat',
@@ -56,7 +56,7 @@ class BiddingDataSourcesTableSeeder extends Seeder
                 'created_at' => '2025-02-11 15:19:32',
                 'updated_at' => '2025-02-11 15:19:32',
             ),
-            4 =>
+            4 => 
             array (
                 'id' => 5,
                 'name' => 'Mondo Appalti',
@@ -66,7 +66,7 @@ class BiddingDataSourcesTableSeeder extends Seeder
                 'updated_at' => '2025-02-11 15:38:14',
             ),
         ));
-
-
+        
+        
     }
 }

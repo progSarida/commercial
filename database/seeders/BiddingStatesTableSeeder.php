@@ -15,12 +15,12 @@ class BiddingStatesTableSeeder extends Seeder
      */
     public function run()
     {
-
+        
 
         DB::table('bidding_states')->delete();
-
+        
         DB::table('bidding_states')->insert(array (
-            0 =>
+            0 => 
             array (
                 'id' => 1,
                 'name' => 'Da valutare',
@@ -29,7 +29,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:26:12',
                 'updated_at' => '2025-05-22 13:38:34',
             ),
-            1 =>
+            1 => 
             array (
                 'id' => 2,
                 'name' => 'Rimandato',
@@ -38,7 +38,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:26:12',
                 'updated_at' => '2025-06-06 10:00:49',
             ),
-            2 =>
+            2 => 
             array (
                 'id' => 3,
                 'name' => 'In corso',
@@ -47,7 +47,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:26:44',
                 'updated_at' => '2025-05-22 12:46:41',
             ),
-            3 =>
+            3 => 
             array (
                 'id' => 4,
                 'name' => 'Inviato. In attesa di riscontro',
@@ -56,7 +56,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:26:44',
                 'updated_at' => '2025-06-06 10:00:42',
             ),
-            4 =>
+            4 => 
             array (
                 'id' => 5,
                 'name' => 'Completato',
@@ -65,7 +65,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-02-05 09:27:18',
                 'updated_at' => '2025-06-06 10:00:35',
             ),
-            5 =>
+            5 => 
             array (
                 'id' => 6,
                 'name' => 'Annullato',
@@ -74,7 +74,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-02-07 08:10:13',
                 'updated_at' => '2025-06-06 09:59:54',
             ),
-            6 =>
+            6 => 
             array (
                 'id' => 8,
                 'name' => 'Scartata',
@@ -83,7 +83,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-11 05:51:26',
                 'updated_at' => '2025-06-06 10:00:30',
             ),
-            7 =>
+            7 => 
             array (
                 'id' => 11,
                 'name' => 'Non pertinente',
@@ -92,7 +92,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-11 06:04:46',
                 'updated_at' => '2025-06-06 10:00:16',
             ),
-            8 =>
+            8 => 
             array (
                 'id' => 12,
                 'name' => 'Non fattibile',
@@ -101,7 +101,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-11 06:25:02',
                 'updated_at' => '2025-06-06 10:00:09',
             ),
-            9 =>
+            9 => 
             array (
                 'id' => 14,
                 'name' => 'Chiedere rettifica',
@@ -110,7 +110,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-11 07:40:43',
                 'updated_at' => '2025-06-06 09:59:48',
             ),
-            10 =>
+            10 => 
             array (
                 'id' => 15,
                 'name' => 'Scartata-Distante',
@@ -119,7 +119,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-13 14:29:40',
                 'updated_at' => '2025-06-06 10:00:23',
             ),
-            11 =>
+            11 => 
             array (
                 'id' => 16,
                 'name' => 'Non di interesse',
@@ -128,7 +128,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-13 14:32:34',
                 'updated_at' => '2025-06-06 10:00:01',
             ),
-            12 =>
+            12 => 
             array (
                 'id' => 17,
                 'name' => 'Completato',
@@ -137,7 +137,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'created_at' => '2025-05-15 17:42:50',
                 'updated_at' => '2025-06-06 09:59:39',
             ),
-            13 =>
+            13 => 
             array (
                 'id' => 19,
                 'name' => 'Fattibile',
@@ -147,7 +147,7 @@ class BiddingStatesTableSeeder extends Seeder
                 'updated_at' => '2025-06-06 10:00:54',
             ),
         ));
-
-
+        
+        
     }
 }
