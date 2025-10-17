@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Database\Seeder;
 
@@ -16,9 +17,9 @@ class ClientServicesTableSeeder extends Seeder
     {
         
 
-        \DB::table('client_services')->delete();
+        DB::table('client_services')->delete();
         
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 1,
@@ -6520,7 +6521,7 @@ class ClientServicesTableSeeder extends Seeder
                 'updated_at' => '2025-02-27 15:53:45',
             ),
         ));
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 501,
@@ -13022,7 +13023,7 @@ class ClientServicesTableSeeder extends Seeder
                 'updated_at' => '2025-02-25 12:22:30',
             ),
         ));
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 1001,
@@ -19524,7 +19525,7 @@ class ClientServicesTableSeeder extends Seeder
                 'updated_at' => '2025-03-03 16:36:29',
             ),
         ));
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 1501,
@@ -26026,7 +26027,7 @@ class ClientServicesTableSeeder extends Seeder
                 'updated_at' => '2025-03-18 16:48:57',
             ),
         ));
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 2001,
@@ -32528,7 +32529,7 @@ class ClientServicesTableSeeder extends Seeder
                 'updated_at' => '2025-05-09 12:03:23',
             ),
         ));
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 2501,
@@ -39030,7 +39031,7 @@ class ClientServicesTableSeeder extends Seeder
                 'updated_at' => '2025-05-09 17:54:50',
             ),
         ));
-        \DB::table('client_services')->insert(array (
+        DB::table('client_services')->insert(array (
             0 => 
             array (
                 'id' => 3001,
