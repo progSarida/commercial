@@ -27,5 +27,7 @@ class DatabaseSeeder extends Seeder
         $this->call(BiddingStatesTableSeeder::class);
         $this->call(BiddingDataSourcesTableSeeder::class);
         $this->call(BiddingAdjudicationTypesTableSeeder::class);
+        $this->call(ClientsTableSeeder::class);
+        $this->call(ClientServicesTableSeeder::class);
     }
 }

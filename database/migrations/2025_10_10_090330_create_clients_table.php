@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('zip_code')->nullable();                                                             // cap
             $table->string('address')->nullable();                                                              // indirizzo
             $table->string('civic')->nullable();                                                                // nunero civico
-            $table->string('note')->nullable();                                                                 // note
+            $table->text('note')->nullable();                                                                   // note
             $table->timestamps();
         });
 
