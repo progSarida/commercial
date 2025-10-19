@@ -60,7 +60,7 @@ return new class extends Migration
             $table->string('pass_oe_require_processing_state')->nullable();                                         // stato lavorazione PASS OE (enum TenderItemProcessingState)
             $table->string('inspection_processing_state')->nullable();                                              // stato lavorazione sopralluogo (enum TenderItemProcessingState)
             $table->boolean('deposit_require_check')->default(0);                                                   // richiesta cauzione provvisoria
-            $table->decimal('deposit_require_amount', 15, 2)->nullable();                                           // importo cauzione provvisoria
+            $table->string('deposit_require_amount')->nullable();                                                   // importo cauzione provvisoria
             $table->date('deposit_require_date')->nullable();                                                       // data richiesta cauzione provvisoria
             $table->string('deposit_require_processing_state')->nullable();                                         // stato richiesta cauzione provvisoria (enum TenderItemProcessingState)
             $table->boolean('authority_tax_require_check')->default(0);                                             // richiesta versamento contributo autorità di vigilanza
