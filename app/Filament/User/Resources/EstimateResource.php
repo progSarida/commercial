@@ -14,7 +14,9 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -70,7 +72,23 @@ class EstimateResource extends Resource
                     ->disabled(fn(?Estimate $record) => $record?->path === null || !Auth::user()->close_estimate),
             ])
             ->filters([
-                //
+                SelectFilter::make('file_status')
+                    ->label('Documento')
+                    ->options([
+                        'requested' => 'Richiesto',
+                        'uploaded' => 'Caricato',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        $value = $data['value'] ?? null;
+                        if ($value === 'uploaded') {
+                            $query->whereNotNull('path');
+                        } elseif ($value === 'requested') {
+                            $query->whereNull('path');
+                        }
+                    }),
+                SelectFilter::make('estimate_state')->label('Stato preventivo')
+                    ->options(EstimateState::class)
+                    ->multiple()->preload(),
             ])
             ->actions([
                 // Tables\Actions\EditAction::make()

@@ -6,6 +6,7 @@ use App\Enums\BiddingProcessingState;
 use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\ClientType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -126,6 +127,11 @@ class Bidding extends Model
     public function source3()
     {
         return $this->belongsTo(BiddingDataSource::class, 'source3_id');
+    }
+
+    public function scopeUpcoming(Builder $query): void
+    {
+        $query->whereDate('deadline_date', '>=', today()->toDateString());
     }
 
     protected static function booted()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Enums\BiddingFilter;
 use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\BiddingProcessingState;
@@ -14,6 +15,7 @@ use App\Models\Client;
 use App\Models\Province;
 use App\Models\ServiceType;
 use App\Models\User;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -30,6 +32,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -300,6 +304,7 @@ class BiddingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('deadline_date', 'asc')
             ->columns([
                 TextColumn::make('serviceTypes')
                     ->label('Servizi')
@@ -308,10 +313,12 @@ class BiddingResource extends Resource
                     }),
                 TextColumn::make('description')
                     ->label('Descrizione')
-                    ->limit(50)
+                    ->searchable()
+                    ->limit(40)
                     ->tooltip(fn ($record) => $record->description),
                 TextColumn::make('client.name')
-                    ->label('Ente'),
+                    ->label('Ente')
+                    ->searchable(),
                 TextColumn::make('province.name')
                     ->label('Prov.'),
                 TextColumn::make('deadline_date')
@@ -328,8 +335,168 @@ class BiddingResource extends Resource
                 TextColumn::make('biddingState.name')
                     ->label('Stato gara'),
             ])
+            ->filtersFormWidth('md')
             ->filters([
-                //
+                SelectFilter::make('bidding_filter')
+                    ->label('Filtri rapidi')
+                    ->options(BiddingFilter::class)
+                    ->multiple()
+                    ->preload()
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['values'])) {
+                            foreach ($data['values'] as $value) {
+                                switch ($value) {
+                                    case BiddingFilter::TENDER30->value:
+                                        $query->whereNotNull('deadline_date')
+                                            ->whereDate('deadline_date', '>=', Carbon::today())
+                                            ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
+                                        break;
+                                    case BiddingFilter::INSPECTION30->value:
+                                        $query->whereNotNull('inspection_deadline_date')
+                                            ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                                            ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
+                                        break;
+                                    case BiddingFilter::TENDER15->value:
+                                        $query->whereNotNull('deadline_date')
+                                            ->whereDate('deadline_date', '>=', Carbon::today())
+                                            ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
+                                        break;
+                                    case BiddingFilter::INSPECTION15->value:
+                                        $query->whereNotNull('inspection_deadline_date')
+                                            ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                                            ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
+                                        break;
+                                    case BiddingFilter::SEND30->value:
+                                        $query->whereNotNull('send_date')
+                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
+                                            ->whereDate('send_date', '<', Carbon::today());
+                                        break;
+                                    case BiddingFilter::SEND60->value:
+                                        $query->whereNotNull('send_date')
+                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
+                                            ->whereDate('send_date', '<', Carbon::today());
+                                        break;
+                                    case BiddingFilter::SEND90->value:
+                                        $query->whereNotNull('send_date')
+                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
+                                            ->whereDate('send_date', '<', Carbon::today());
+                                        break;
+                                    case BiddingFilter::SEND180->value:
+                                        $query->whereNotNull('send_date')
+                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
+                                            ->whereDate('send_date', '<', Carbon::today());
+                                        break;
+                                }
+                            }
+                        }
+                    }),
+                Filter::make('past_deadline')
+                    ->form([
+                        Checkbox::make('show_past_deadline')
+                            ->label('Mostra scadute'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['show_past_deadline'])) {
+                            $query->upcoming(); // Usa lo scope definito nel modello
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        return empty($data['show_past_deadline']) ? '' : 'Incluse scadute';
+                    }),
+                Filter::make('inspection_date_range')
+                    ->columns(2)
+                    ->form([
+                        DatePicker::make('inspection_from_date')
+                            ->label('Sopralluogo da')
+                            ->columnSpan(1),
+                        DatePicker::make('inspection_to_date')
+                            ->label('Sopralluogo a')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['inspection_from_date'])) {
+                            $query->whereDate('inspection_deadline_', '>=', $data['inspection_from_date']);
+                        }
+                        if (! empty($data['inspection_to_date'])) {
+                            $query->whereDate('inspection_deadline_date', '<=', $data['inspection_to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['inspection_from_date'] && $data['inspection_to_date']) {
+                            return "Sopralluoghi dal {$data['inspection_from_date']} al {$data['inspection_to_date']}";
+                        }
+                        if ($data['inspection_from_date']) {
+                            return "Sopralluoghi dal {$data['inspection_from_date']}";
+                        }
+                        if ($data['inspection_to_date']) {
+                            return "Sopralluoghi al {$data['inspection_to_date']}";
+                        }
+                        return null;
+                    }),
+                Filter::make('deadline_date_range')
+                    ->columns(2)
+                    ->form([
+                        DatePicker::make('deadline_from_date')
+                            ->label('Scadenza da')
+                            ->columnSpan(1),
+                        DatePicker::make('deadline_to_date')
+                            ->label('Scadenza a')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['deadline_from_date'])) {
+                            $query->whereDate('deadline_date', '>=', $data['deadline_from_date']);
+                        }
+                        if (! empty($data['deadline_to_date'])) {
+                            $query->whereDate('deadline_date', '<=', $data['deadline_to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['deadline_from_date'] && $data['deadline_to_date']) {
+                            return "Scadenze dal {$data['deadline_from_date']} al {$data['deadline_to_date']}";
+                        }
+                        if ($data['deadline_from_date']) {
+                            return "Scadenze da {$data['deadline_from_date']}";
+                        }
+                        if ($data['deadline_to_date']) {
+                            return "Scadenze al {$data['deadline_to_date']}";
+                        }
+                        return null;
+                    }),
+                // SelectFilter::make('services')->label('Gara relativa al servizio di')
+                //     ->relationship('serviceTypes', 'name')
+                //     ->multiple()->preload(),
+                SelectFilter::make('services')
+                    ->label('Gara relativa al servizio di')
+                    ->relationship('serviceTypes', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['values'])) {
+                            foreach ($data['values'] as $value) {
+                                $query->whereHas('serviceTypes', function (Builder $subQuery) use ($value) {
+                                    $subQuery->where('service_types.id', $value); // Specifica la tabella
+                                });
+                            }
+                        }
+                    }),
+                SelectFilter::make('bidding_type_id')->label('Tipo gara')
+                    ->relationship( 
+                        name: 'biddingType', 
+                        titleAttribute: 'name', 
+                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                    )
+                    ->multiple()->preload(),
+                SelectFilter::make('bidding_state_id')->label('Stato gara')
+                    ->relationship( 
+                        name: 'biddingState', 
+                        titleAttribute: 'name', 
+                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                    )
+                    ->multiple()->preload(),
+                SelectFilter::make('bidding_processing_state')->label('Stato lavorazione')
+                    ->options(BiddingProcessingState::class)
+                    ->multiple()->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

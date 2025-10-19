@@ -20,6 +20,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -245,19 +246,15 @@ class ClientResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
                 TextColumn::make('site')->label('Sito')
-                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
                 TextColumn::make('address')->label('Indirizzo')
-                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
                 TextColumn::make('civic')->label('Civico')
-                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
                 TextColumn::make('note')->label('Note')
-                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
                 TextColumn::make('created_at')
@@ -272,7 +269,17 @@ class ClientResource extends Resource
                     ->hidden($isMobile),
             ])
             ->filters([
-                //
+                SelectFilter::make('client_type')->label('Tipo cliente')
+                    ->options(ClientType::class)
+                    ->multiple()->preload(),
+                SelectFilter::make('region_id')->label('Regione')
+                    ->relationship(name: 'region', titleAttribute: 'name')
+                    ->searchable()
+                    ->preload()->optionsLimit(5),
+                SelectFilter::make('province_id')->label('Provincia')
+                    ->relationship(name: 'province', titleAttribute: 'name')
+                    ->searchable()
+                    ->preload()->optionsLimit(5),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

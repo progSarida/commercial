@@ -5,6 +5,8 @@ use App\Enums\OutcomeType;
 use App\Filament\User\Resources\CallResource\Pages;
 use App\Filament\User\Resources\CallResource\RelationManagers;
 use App\Models\Contact;
+use App\Models\Province;
+use App\Models\Region;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -13,6 +15,8 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -66,6 +70,9 @@ class CallResource extends Resource
         return $table
             ->query(Contact::calls())
             ->columns([
+                Tables\Columns\TextColumn::make('client.name')
+                    ->searchable()
+                    ->label('Cliente'),
                 Tables\Columns\TextColumn::make('date')
                     ->label('Data')
                     ->date('d/m/Y'),
@@ -78,7 +85,60 @@ class CallResource extends Resource
                     ->label('Note'),
             ])
             ->filters([
-                //
+                SelectFilter::make('region_id')
+                    ->label('Regione')
+                    ->options(fn () => Region::pluck('name', 'id')->toArray())
+                    ->query(function (Builder $query, array $data) {
+                        $value = $data['value'] ?? null;
+                        if ($value) {
+                            $query->whereHas('client', fn (Builder $q) => $q->where('region_id', $value));
+                        }
+                    })
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('province_id')
+                    ->label('Provincia')
+                    ->options(fn () => Province::pluck('name', 'id')->toArray())
+                    ->query(function (Builder $query, array $data) {
+                        $value = $data['value'] ?? null;
+                        if ($value) {
+                            $query->whereHas('client', fn (Builder $q) => $q->where('province_id', $value));
+                        }
+                    })
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('user_id')->label('Utente')
+                    ->relationship(name: 'user', titleAttribute: 'name')
+                    ->searchable()
+                    ->preload()->optionsLimit(5),
+                Filter::make('date_range')
+                    ->form([
+                        DatePicker::make('from_date')
+                            ->label('Da data'),
+                        DatePicker::make('to_date')
+                            ->label('A data'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['from_date'])) {
+                            $query->whereDate('date', '>=', $data['from_date']);
+                        }
+                        if (! empty($data['to_date'])) {
+                            $query->whereDate('date', '<=', $data['to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['from_date'] && $data['to_date']) {
+                            return "Dal {$data['from_date']} al {$data['to_date']}";
+                        }
+                        if ($data['from_date']) {
+                            return "Da {$data['from_date']}";
+                        }
+                        if ($data['to_date']) {
+                            return "Fino a {$data['to_date']}";
+                        }
+                        return null;
+                    })
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
