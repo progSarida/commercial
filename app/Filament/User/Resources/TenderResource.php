@@ -48,6 +48,7 @@ class TenderResource extends Resource
                 Select::make('client_id')
                     ->label('Ente')
                     ->columnSpan(['sm' => 'full', 'md' => 4])
+                    ->searchable()
                     ->live()
                     ->preload()
                     ->disabled(fn (callable $get) => $get('bidding_id'))
