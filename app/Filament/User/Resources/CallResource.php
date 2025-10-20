@@ -41,6 +41,7 @@ class CallResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 2]),
                 Select::make('client_id')
                     ->label('Cliente')
+                    ->searchable()
                     ->relationship( name: 'client', titleAttribute: 'name')
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 DatePicker::make('date')

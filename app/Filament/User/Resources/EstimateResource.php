@@ -6,6 +6,7 @@ use App\Enums\EstimateState;
 use App\Filament\User\Resources\EstimateResource\Pages;
 use App\Models\Estimate;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
@@ -14,6 +15,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,6 +73,7 @@ class EstimateResource extends Resource
                     ->offColor('danger')
                     ->disabled(fn(?Estimate $record) => $record?->path === null || !Auth::user()->close_estimate),
             ])
+            ->filtersFormWidth('md')
             ->filters([
                 SelectFilter::make('file_status')
                     ->label('Documento')
@@ -89,6 +92,36 @@ class EstimateResource extends Resource
                 SelectFilter::make('estimate_state')->label('Stato preventivo')
                     ->options(EstimateState::class)
                     ->multiple()->preload(),
+                Filter::make('date_range')
+                    ->columns(2)
+                    ->form([
+                        DatePicker::make('from_date')
+                            ->label('Da data')
+                            ->columnSpan(1),
+                        DatePicker::make('to_date')
+                            ->label('A data')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['from_date'])) {
+                            $query->whereDate('date', '>=', $data['from_date']);
+                        }
+                        if (! empty($data['to_date'])) {
+                            $query->whereDate('date', '<=', $data['to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['from_date'] && $data['to_date']) {
+                            return "Preventivi dal {$data['from_date']} al {$data['to_date']}";
+                        }
+                        if ($data['from_date']) {
+                            return "Preventivi dal {$data['from_date']}";
+                        }
+                        if ($data['to_date']) {
+                            return "Preventivi al {$data['to_date']}";
+                        }
+                        return null;
+                    }),
             ])
             ->actions([
                 // Tables\Actions\EditAction::make()

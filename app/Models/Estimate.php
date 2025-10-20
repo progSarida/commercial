@@ -65,6 +65,20 @@ class Estimate extends Model
         ];
     }
 
+    public function getFormattedPrintClientServices(): string
+    {
+        $services = $this->client->clientServices()
+            ->whereNotNull('service_state')
+            ->with('serviceType')
+            ->get()
+            ->map(function ($service) {
+                return $service->serviceType->name . ' ';
+            })
+            ->toArray();
+
+        return implode(", ", $services);
+    }
+
     protected static function booted()
     {
         static::creating(function ($estimate) {
