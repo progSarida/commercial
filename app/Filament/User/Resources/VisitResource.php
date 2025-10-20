@@ -38,21 +38,25 @@ class VisitResource extends Resource
                     ->default(ContactType::VISIT)
                     ->disabled()
                     ->dehydrated()
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                    ->columnSpan(['sm' => 'full', 'md' => 2]),
+                Select::make('client_id')
+                    ->label('Cliente')
+                    ->relationship( name: 'client', titleAttribute: 'name')
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 DatePicker::make('date')
                     ->label('Data')
                     ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                    ->columnSpan(['sm' => 'full', 'md' => 2]),
                 TimePicker::make('time')
                     ->label('Orario')
                     ->required()
                     ->seconds(false)
                     ->displayFormat('H:i')
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                    ->columnSpan(['sm' => 'full', 'md' => 2]),
                 Select::make('outcome_type')
                     ->label('Esito')
                     ->options(OutcomeType::class)
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                    ->columnSpan(['sm' => 'full', 'md' => 2]),
                 Textarea::make('note')
                     ->label('Note')
                     ->columnSpan(['sm' => 'full', 'md' => 9]),
