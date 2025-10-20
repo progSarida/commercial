@@ -114,8 +114,7 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Textarea::make('description')
                     ->label('Descrizione')
-                    ->columnSpan(['sm' => 'full', 'md' => 24])
-                    ->maxLength(255),
+                    ->columnSpan(['sm' => 'full', 'md' => 24]),
                 TextInput::make('amount')
                     ->label('Importo')
                     ->columnSpan(['sm' => 'full', 'md' => 4])
@@ -158,8 +157,7 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Textarea::make('bidding_note')
                     ->label('Note gara')
-                    ->columnSpan(['sm' => 'full', 'md' => 24])
-                    ->maxLength(255),
+                    ->columnSpan(['sm' => 'full', 'md' => 24]),
                 Select::make('bidding_type_id')
                     ->label('Tipo gara')
                     ->relationship( 
