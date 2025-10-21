@@ -37,7 +37,7 @@
 
         /* Solid border only after the third row of each bidding */
         tr.bidding-third-row {
-            border-bottom: 2px solid black;
+            border-bottom: 2px dashed black;
         }
 
         /* No border for first and second rows of the same bidding */

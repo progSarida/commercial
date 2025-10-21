@@ -17,7 +17,7 @@ class ContactExporter extends Exporter
             ExportColumn::make('id')
                 ->label('#'),
             ExportColumn::make('contact_type')
-                ->label('ETipo contatto')
+                ->label('Tipo contatto')
                 ->formatStateUsing(function ($state) {
                     if ($state instanceof \App\Enums\ContactType) {
                         return $state->getLabel();

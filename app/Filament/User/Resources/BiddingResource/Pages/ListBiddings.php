@@ -30,6 +30,14 @@ class ListBiddings extends ListRecords
                         $filters = $livewire->tableFilters ?? [];
                         $search = $livewire->tableSearch ?? null;
 
+                        if(count($records) === 0){
+                            Notification::make()
+                                ->title('Nessun elemento da stampare')
+                                ->warning()
+                                ->send();
+                            return false;
+                        }
+
                         return response()
                             ->streamDownload(function () use ($records, $search, $filters) {
                                 echo Pdf::loadHTML(
@@ -51,7 +59,7 @@ class ListBiddings extends ListRecords
             ExportAction::make('esporta')
                 ->icon('heroicon-s-table-cells')
                 ->label('Esporta')
-                ->tooltip('Esporta elenco clienti')
+                ->tooltip('Esporta elenco gare')
                 ->color('primary')
                 ->exporter(BiddingExporter::class)
         ];

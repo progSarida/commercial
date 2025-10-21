@@ -31,7 +31,14 @@ class ListClients extends ListRecords
                     $records = $livewire->getFilteredTableQuery()->get();                                               // recupero risultato della query
                     $filters = $livewire->tableFilters ?? [];                                                           // recupero i filtri
                     $search = $livewire->tableSearch ?? null;
-                    // recupero la ricerca
+
+                    if(count($records) === 0){
+                        Notification::make()
+                            ->title('Nessun elemento da stampare')
+                            ->warning()
+                            ->send();
+                        return false;
+                    }
 
                     return response()
                         ->streamDownload(function () use ($records, $search, $filters) {
