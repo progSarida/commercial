@@ -52,6 +52,7 @@ class UserResource extends Resource
                     ->offColor('danger'),
                 Placeholder::make('')->label(''),
                 Forms\Components\Select::make('roles')
+                    ->label('Ruolo')
                     ->relationship('roles', 'name')
                     // ->multiple()
                     ->preload()
