@@ -21,7 +21,7 @@ class BiddingAdjudicationTypeResource extends Resource
 
     public static ?string $pluralModelLabel = 'Tipo aggiudicazione';
 
-    public static ?string $modelLabel = 'Tipo oaggiudicazione';
+    public static ?string $modelLabel = 'Tipo aggiudicazione';
 
     protected static ?string $navigationIcon = 'fas-list';
 

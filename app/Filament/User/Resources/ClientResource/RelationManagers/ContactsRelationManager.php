@@ -55,7 +55,8 @@ class ContactsRelationManager extends RelationManager
                     ->label('Utente')
                     ->relationship('user', 'name')
                     ->default(Auth::user()->id)
-                    ->disabled(!Auth::user()->is_admin)
+                    // ->disabled(!Auth::user()->is_admin)
+                    ->disabled(!Auth::user()->hasRole('super_admin'))
                     ->dehydrated()
                     ->columnSpan(3),
             ]);

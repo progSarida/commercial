@@ -65,7 +65,8 @@ class VisitResource extends Resource
                     ->label('Utente')
                     ->relationship('user', 'name')
                     ->default(Auth::user()->id)
-                    ->disabled(!Auth::user()->is_admin)
+                    // ->disabled(!Auth::user()->is_admin)
+                    ->disabled(!Auth::user()->hasRole('super_admin'))
                     ->dehydrated()
                     ->columnSpan(['sm' => 'full', 'md' => 3]),
             ]);

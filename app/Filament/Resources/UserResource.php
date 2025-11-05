@@ -4,6 +4,7 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
@@ -49,6 +50,12 @@ class UserResource extends Resource
                     ->columnSpan(2)
                     ->onColor('success')
                     ->offColor('danger'),
+                Placeholder::make('')->label(''),
+                Forms\Components\Select::make('roles')
+                    ->relationship('roles', 'name')
+                    // ->multiple()
+                    ->preload()
+                    ->searchable(),
             ]);
     }
 
@@ -58,12 +65,12 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('name')->label('Nome'),
                 TextColumn::make('email')->label('Email'),
-                ToggleColumn::make('is_admin')
-                    ->label('Amministratore')
-                    ->onIcon('heroicon-s-check-circle')
-                    ->offIcon('heroicon-s-x-circle')
-                    ->onColor('success')
-                    ->offColor('danger'),
+                // ToggleColumn::make('is_admin')
+                //     ->label('Amministratore')
+                //     ->onIcon('heroicon-s-check-circle')
+                //     ->offIcon('heroicon-s-x-circle')
+                //     ->onColor('success')
+                //     ->offColor('danger'),
                 ToggleColumn::make('close_estimate')
                     ->label('Chiusura preventivi')
                     ->onIcon('heroicon-s-check-circle')
