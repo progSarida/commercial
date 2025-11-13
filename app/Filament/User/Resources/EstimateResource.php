@@ -125,7 +125,8 @@ class EstimateResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
                 Tables\Actions\Action::make('upload_file')
                     ->label('Carica File')
                     ->icon('heroicon-o-arrow-up-tray')
