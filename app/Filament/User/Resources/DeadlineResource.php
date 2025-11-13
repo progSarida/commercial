@@ -147,6 +147,7 @@ class DeadlineResource extends Resource
                     })
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -167,6 +168,7 @@ class DeadlineResource extends Resource
             'index' => Pages\ListDeadlines::route('/'),
             'create' => Pages\CreateDeadline::route('/create'),
             'edit' => Pages\EditDeadline::route('/{record}/edit'),
+            'view' => Pages\ViewDeadline::route('/{record}'),
         ];
     }
     public static function getNavigationGroup(): ?string

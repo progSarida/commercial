@@ -147,6 +147,7 @@ class VisitResource extends Resource
                     })
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -167,6 +168,7 @@ class VisitResource extends Resource
             'index' => Pages\ListVisits::route('/'),
             'create' => Pages\CreateVisit::route('/create'),
             'edit' => Pages\EditVisit::route('/{record}/edit'),
+            'view' => Pages\ViewVisit::route('/{record}'),
         ];
     }
     public static function getNavigationGroup(): ?string

@@ -282,6 +282,7 @@ class ClientResource extends Resource
                     ->preload()->optionsLimit(5),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -305,6 +306,7 @@ class ClientResource extends Resource
             'index' => Pages\ListClients::route('/'),
             'create' => Pages\CreateClient::route('/create'),
             'edit' => Pages\EditClient::route('/{record}/edit'),
+            'view' => Pages\ViewClient::route('/{record}'),
         ];
     }
 

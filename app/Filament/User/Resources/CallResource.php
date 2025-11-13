@@ -147,6 +147,7 @@ class CallResource extends Resource
                     })
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -167,6 +168,7 @@ class CallResource extends Resource
             'index' => Pages\ListCalls::route('/'),
             'create' => Pages\CreateCall::route('/create'),
             'edit' => Pages\EditCall::route('/{record}/edit'),
+            'view' => Pages\ViewCall::route('/{record}'),
         ];
     }
     public static function getNavigationGroup(): ?string

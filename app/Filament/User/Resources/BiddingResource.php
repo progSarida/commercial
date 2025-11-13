@@ -85,7 +85,7 @@ class BiddingResource extends Resource
                     )
                     ->required()
                     ->relationship(
-                        name: 'client', 
+                        name: 'client',
                         titleAttribute: 'name',
                         modifyQueryUsing: fn ($query, callable $get) => $get('client_type') ? $query->where('client_type', $get('client_type')) : $query->whereRaw('1 = 0')
                     )
@@ -139,9 +139,9 @@ class BiddingResource extends Resource
                     ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
                 Select::make('bidding_state_id')
                     ->label('Stato gara')
-                    ->relationship( 
-                        name: 'biddingState', 
-                        titleAttribute: 'name', 
+                    ->relationship(
+                        name: 'biddingState',
+                        titleAttribute: 'name',
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
@@ -160,17 +160,17 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 24]),
                 Select::make('bidding_type_id')
                     ->label('Tipo gara')
-                    ->relationship( 
-                        name: 'biddingType', 
-                        titleAttribute: 'name', 
+                    ->relationship(
+                        name: 'biddingType',
+                        titleAttribute: 'name',
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 Select::make('bidding_adjudication_type_id')
                     ->label('Tipo aggiudicazione')
-                    ->relationship( 
-                        name: 'biddingAdjudicationType', 
-                        titleAttribute: 'name', 
+                    ->relationship(
+                        name: 'biddingAdjudicationType',
+                        titleAttribute: 'name',
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->columnSpan(['sm' => 'full', 'md' => 8]),
@@ -479,16 +479,16 @@ class BiddingResource extends Resource
                         }
                     }),
                 SelectFilter::make('bidding_type_id')->label('Tipo gara')
-                    ->relationship( 
-                        name: 'biddingType', 
-                        titleAttribute: 'name', 
+                    ->relationship(
+                        name: 'biddingType',
+                        titleAttribute: 'name',
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->multiple()->preload(),
                 SelectFilter::make('bidding_state_id')->label('Stato gara')
-                    ->relationship( 
-                        name: 'biddingState', 
-                        titleAttribute: 'name', 
+                    ->relationship(
+                        name: 'biddingState',
+                        titleAttribute: 'name',
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->multiple()->preload(),
@@ -497,7 +497,9 @@ class BiddingResource extends Resource
                     ->multiple()->preload(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -519,6 +521,7 @@ class BiddingResource extends Resource
             'index' => Pages\ListBiddings::route('/'),
             'create' => Pages\CreateBidding::route('/create'),
             'edit' => Pages\EditBidding::route('/{record}/edit'),
+            'view' => Pages\ViewBidding::route('/{record}'),
         ];
     }
 
