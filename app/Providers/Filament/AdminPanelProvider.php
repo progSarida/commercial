@@ -2,7 +2,8 @@
 
 namespace App\Providers\Filament;
 
-use App\Http\Middlewares\CheckDbSession;
+use App\Http\Middleware\CheckDbSession;
+use App\Http\Middleware\EnsureUserCanAccessPanel;
 use Filament\Http\Middleware\Authenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -51,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
+                // EnsureUserCanAccessPanel::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
