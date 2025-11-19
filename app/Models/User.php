@@ -61,7 +61,7 @@ class User extends Authenticatable  implements FilamentUser
         return false;
     }
 
-        public function loginRedirect(): ?Response
+    public function loginRedirect(): ?Response
     {
         $destinationPanelId = null;
         if ($this->hasRole('super_admin'))
