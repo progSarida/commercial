@@ -183,18 +183,18 @@ class ClientResource extends Resource
                     ->visible(fn (callable $get) => $get('state_id') !== $italyId)
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TextInput::make('address')->label('Indirizzo')
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('civic')->label('Civico')
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 2]),
                 TextInput::make('phone')->label('Telefono')
                     ->tel()
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 3]),
                 TextInput::make('email')->label('Email')
                     ->email()
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TextInput::make('site')->label('Sito')
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
@@ -469,17 +469,17 @@ class ClientResource extends Resource
                     ->visible(fn (callable $get) => $get('state_id') !== $italyId)
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TextInput::make('address')->label('Indirizzo')
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('civic')->label('Civico')
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 2]),
                 TextInput::make('phone')->label('Telefono')
                     ->tel()
-                    ->required()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 3]),
                 TextInput::make('email')->label('Email')
-                    ->email()
+                    // ->email()
                     ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TextInput::make('site')->label('Sito')
