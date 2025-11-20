@@ -479,8 +479,8 @@ class ClientResource extends Resource
                     // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 3]),
                 TextInput::make('email')->label('Email')
-                    // ->email()
-                    ->required()
+                    ->email()
+                    // ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TextInput::make('site')->label('Sito')
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
