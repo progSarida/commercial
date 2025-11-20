@@ -537,7 +537,7 @@ class BiddingResource extends Resource
 
     public static function saveClient(array $data, Client $client): void
     {
-        $client->name = $data['type'];
+        $client->name = $data['name'];
         $client->client_type = $data['client_type'];
         $client->phone = $data['phone'];
         $client->email = $data['email'];
