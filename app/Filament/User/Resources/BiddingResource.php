@@ -546,7 +546,9 @@ class BiddingResource extends Resource
         $client->region_id = $data['region_id'];
         $client->province_id = $data['province_id'];
         $client->city_id = $data['city_id'];
-        $client->place = $data['place'];
+        if (isset($data['place'])) {
+            $client->place = $data['place'];
+        }
         $client->zip_code = $data['zip_code'];
         $client->address = $data['address'];
         $client->civic = $data['civic'];
