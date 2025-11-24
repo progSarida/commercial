@@ -7,6 +7,7 @@ use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\BiddingProcessingState;
 use App\Enums\ClientType;
+use App\Enums\YesNo;
 use App\Filament\User\Resources\BiddingResource\Pages;
 use App\Filament\User\Resources\BiddingResource\RelationManagers;
 use App\Models\Bidding;
@@ -22,7 +23,9 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -37,6 +40,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class BiddingResource extends Resource
 {
@@ -55,6 +60,7 @@ class BiddingResource extends Resource
             ->schema([
                 CheckboxList::make('serviceTypes')
                     ->label('Gara relativa al servizio di')
+                    ->required()
                     ->relationship('serviceTypes', 'name')
                     ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
                     ->columns(6)
@@ -115,26 +121,67 @@ class BiddingResource extends Resource
                 Textarea::make('description')
                     ->label('Descrizione')
                     ->columnSpan(['sm' => 'full', 'md' => 24]),
+                // TextInput::make('amount')
+                //     ->label('Importo')
+                //     ->columnSpan(['sm' => 'full', 'md' => 4])
+                //     ->prefix('€')
+                //     ->live()
+                //     ->inputMode('decimal')
+                //     ->formatStateUsing(fn ($state) => $state ? number_format((float)$state, 2, ',', '.') : '')
+                //     ->dehydrateStateUsing(function ($state) {
+                //         if (!$state) return null;
+                //         if (str_contains($state, ',')) {
+                //             $value = str_replace('.', '', $state);
+                //             $value = str_replace(',', '.', $value);
+                //         } else {
+                //             $value = $state;
+                //         }
+                //         return (float)$value;
+                //     }),
                 TextInput::make('amount')
                     ->label('Importo')
-                    ->columnSpan(['sm' => 'full', 'md' => 4])
                     ->prefix('€')
+                    ->columnSpan(['sm' => 'full', 'md' => 4])
+                    ->live(onBlur: true)
                     ->inputMode('decimal')
-                    ->formatStateUsing(fn ($state) => $state ? number_format((float)$state, 2, ',', '.') : '')
-                    ->dehydrateStateUsing(function ($state) {
-                        if (!$state) return null;
-                        if (str_contains($state, ',')) {
-                            $value = str_replace('.', '', $state);
-                            $value = str_replace(',', '.', $value);
-                        } else {
-                            $value = $state;
+                    ->extraInputAttributes(['class' => 'text-right'])
+                    // 1. Quando il record viene caricato → formatta con . e ,
+                    ->formatStateUsing(fn ($state) =>
+                        $state !== null && $state !== ''
+                            ? number_format((float) $state, 2, ',', '.')
+                            : ''
+                    )
+                    // 2. Ogni volta che l'utente digita → riformatta ISTANTANEAMENTE
+                    ->afterStateUpdated(function ($state, $component) {
+                        if (blank($state)) {
+                            $component->state('');
+                            return;
                         }
-                        return (float)$value;
-                    }),
+
+                        // Pulizia: accetta solo numeri, punto, virgola e -
+                        $clean = preg_replace('/[^\d,\.-]/', '', $state);
+
+                        // Convertiamo in float per gestire correttamente la virgola come decimale
+                        $number = str_replace(',', '.', $clean);
+                        $float = floatval($number);
+
+                        // Riformatta come vuoi tu: 1.234.567,89
+                        $formatted = number_format($float, 2, ',', '.');
+
+                        // Ri-aggiorna il campo con il valore formattato
+                        $component->state($formatted);
+                    })
+                    // 3. Al salvataggio → converte "1.234.567,89" → 1234567.89 (float)
+                    ->dehydrateStateUsing(fn ($state): ?float =>
+                        blank($state)
+                            ? null
+                            : (float) str_replace(['.', ','], ['', '.'], $state)
+                ),
                 TextInput::make('residents')
                     ->label('Abitanti')
                     ->columnSpan(['sm' => 'full', 'md' => 4])
                     ->inputMode('numeric')
+                    ->extraInputAttributes(['class' => 'text-right'])
                     ->formatStateUsing(fn ($state) => $state ? number_format((int)$state, 0, ',', '.') : '')
                     ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
                 Select::make('bidding_state_id')
@@ -176,6 +223,7 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 8]),
                 DatePicker::make('clarification_request_deadline_date')
                     ->label('Data scadenza chiarimenti')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TimePicker::make('clarification_request_deadline_time')
                     ->label('Orario scadenza chiarimenti')
@@ -193,36 +241,52 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('inspection_deadline_date')
                     ->label('Data scadenza sopralluogo')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TimePicker::make('inspection_deadline_time')
                     ->label('Orario scadenza sopralluogo')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
                     ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('deadline_date')
                     ->label('Data scadenza gara')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TimePicker::make('deadline_time')
                     ->label('Orario scadenza gara')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->default('06:00')
                     ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('send_date')
                     ->label('Data invio offerta')
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
+                    ->extraInputAttributes(['class' => 'text-center'])
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TimePicker::make('send_time')
                     ->label('Orario invio offerta')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->default('06:00')
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 DatePicker::make('opening_date')
                     ->label('Data apertura offerte')
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
+                    ->extraInputAttributes(['class' => 'text-center'])
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TimePicker::make('opening_time')
                     ->label('Orario apertura offerte')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->default('06:00')
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
+                Select::make('awarded')
+                    ->label('Aggiudicata')
+                    ->options(YesNo::class)
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
+                DatePicker::make('closure_date')
+                    ->label('Data chiusura procedura')
+                    ->extraInputAttributes(['class' => 'text-center'])
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TextInput::make('contact')
                     ->label('Nome contatto')
                     ->columnSpan(['sm' => 'full', 'md' => 10]),
@@ -236,6 +300,7 @@ class BiddingResource extends Resource
                     ->label('Procedura')
                     ->live()
                     ->options(BiddingProcedureType::class)
+                    ->default(BiddingProcedureType::TELEMATIC)
                     ->columnSpan(['sm' => 'full', 'md' => 7]),
                 TextInput::make('procedure_portal')
                     ->label('Portale procedura')
@@ -248,15 +313,19 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 8]),
                 TextInput::make('year')
                     ->label('Durata anni')
+                    ->extraInputAttributes(['class' => 'text-right'])
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('month')
                     ->label('Durata mesi')
+                    ->extraInputAttributes(['class' => 'text-right'])
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 TextInput::make('day')
                     ->label('Durata giorni')
+                    ->extraInputAttributes(['class' => 'text-right'])
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 DatePicker::make('renew')
                     ->label('Rinnovo')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->columnSpan(['sm' => 'full', 'md' => 6]),
                 Select::make('assigned_user_id')
                     ->label('Assegnato a')
@@ -296,6 +365,53 @@ class BiddingResource extends Resource
                     ->relationship('source3', 'name')
                     ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
                     ->columnSpan(['sm' => 'full', 'md' => 8]),
+                FileUpload::make('temp_zip')
+                    ->label('Carica ZIP con allegati')
+                    ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                    ->maxSize(102400)
+                    ->disk('public')
+                    ->directory('biddings-temp')
+                    ->visibility('public')
+                    ->multiple(false)
+                    ->preserveFilenames()
+                    ->columnSpanFull()
+                    ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
+
+                Section::make('Allegati')
+                    ->collapsed()
+                    ->visible(fn($record) => $record && $record->attachment_path)
+                    ->schema([
+                        Placeholder::make('attachments')
+                            ->label('')
+                            ->content(function ($record) {
+                                if (!$record || !$record->attachment_path) {
+                                    return 'Nessun allegato.';
+                                }
+
+                                $files = Storage::disk('public')->files($record->attachment_path);
+
+                                if (empty($files)) {
+                                    return 'Nessuna cartella allegati trovata.';
+                                }
+
+                                return new \Illuminate\Support\HtmlString(
+                                    collect($files)->sort()->map(function ($file) {
+                                        $name = basename($file);
+                                        $url = Storage::url($file);
+
+                                        return <<<HTML
+                                        <div class="flex items-center gap-3 py-1">
+                                            <a href="{$url}" target="_blank" class="text-primary-600 hover:underline font-medium">
+                                                {$name}
+                                            </a>
+                                        </div>
+                                        HTML;
+                                    })->implode('')
+                                );
+                            })
+                            ->extraAttributes(['style' => 'line-height:1.8'])
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -321,12 +437,15 @@ class BiddingResource extends Resource
                     ->label('Prov.'),
                 TextColumn::make('deadline_date')
                     ->label('Gara')
+                    ->sortable()
                     ->date('d/m/Y'),
                 TextColumn::make('inspection_deadline_date')
                     ->label('Sopralluogo')
+                    ->sortable()
                     ->date('d/m/Y'),
                 TextColumn::make('clarification_request_deadline_date')
                     ->label('Chiarimenti')
+                    ->sortable()
                     ->date('d/m/Y'),
                 TextColumn::make('biddingType.name')
                     ->label('Tipo gara'),
@@ -543,13 +662,21 @@ class BiddingResource extends Resource
         $client->email = $data['email'];
         $client->site = $data['site'];
         $client->state_id = $data['state_id'];
-        $client->region_id = $data['region_id'];
-        $client->province_id = $data['province_id'];
-        $client->city_id = $data['city_id'];
+        if (isset($data['region_id'])) {
+            $client->region_id = $data['region_id'];
+        }
+        if (isset($data['province_id'])) {
+            $client->region_id = $data['province_id'];
+        }
+        if (isset($data['city_id'])) {
+            $client->region_id = $data['city_id'];
+        }
         if (isset($data['place'])) {
             $client->place = $data['place'];
         }
-        $client->zip_code = $data['zip_code'];
+        if (isset($data['zip_code'])) {
+            $client->region_id = $data['zip_code'];
+        }
         $client->address = $data['address'];
         $client->civic = $data['civic'];
         $client->note = $data['note'];

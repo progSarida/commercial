@@ -7,6 +7,8 @@ use App\Models\Bidding;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 
 class EditBidding extends EditRecord
 {
@@ -94,7 +96,83 @@ class EditBidding extends EditRecord
                     }
                 }),
             // Cancellazione gara
-            Actions\DeleteAction::make(),
+            // Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()->color('success'),
+            $this->getCancelFormAction(),
+            $this->getDeleteFormAction()
+                ->extraAttributes([
+                    'class' => ' md:ml-auto md:w-auto ',
+                ]),
+        ];
+    }
+
+    protected function getDeleteFormAction()
+    {
+        return Actions\DeleteAction::make('delete')
+                ->requiresConfirmation()
+                ->modalHeading('Conferma eliminazione contatto')
+                ->modalDescription('Sei sicuro di voler eliminare questo contatto? Questa azione non può essere annullata.')
+                ->modalSubmitActionLabel('Elimina')
+                ->modalCancelActionLabel('Annulla');
+    }
+
+    protected function getCancelFormAction(): Actions\Action
+    {
+        return Actions\Action::make('cancel')
+            ->label('Indietro')
+            ->color('gray')
+            ->url(function () {
+                if ($this->previousUrl && str($this->previousUrl)->contains('/contacts?')) {
+                    return $this->previousUrl;
+                }
+                return BiddingResource::getUrl('index');
+            });
+    }
+
+    protected function afterSave(): void
+    {
+        $this->handleZipUpload($this->record, $this->data);
+    }
+
+    protected static function handleZipUpload($record, array $data): void
+    {
+        // Se non c'è ZIP caricato o già processato → esci
+        if (empty($data['temp_zip']) || $record->attachment_path) {
+            return;
+        }
+
+        $zipPath = array_values($data['temp_zip'])[0];
+        $fullZipPath = storage_path('app/public/' . $zipPath);
+
+        if (!file_exists($fullZipPath)) {
+            return;
+        }
+
+        // CARTELLA FINALE CON L'ID
+        $extractPath = "biddings_attach/{$record->id}";
+        Storage::disk('public')->makeDirectory($extractPath);
+
+        $zip = new ZipArchive();
+        if ($zip->open($fullZipPath) === true) {
+            $zip->extractTo(storage_path('app/public/' . $extractPath));
+            $zip->close();
+
+            // Cancella lo ZIP temporaneo
+            Storage::disk('public')->delete($zipPath);
+
+            // SALVA IL PERCORSO NEL DATABASE
+            $record->update([
+                'attachment_path' => $extractPath,
+            ]);
+
+            // Opzionale: svuota il campo temp così non riappare
+            // (non serve se usi ->visible() sopra)
+        }
     }
 }

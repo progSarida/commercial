@@ -30,6 +30,7 @@ class ProcedureTypeTab
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             DatePicker::make('invitation_request_date')
                 ->label('Effettuata in data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('invitation_request_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             Select::make('invitation_request_processing_state')
@@ -57,6 +58,7 @@ class ProcedureTypeTab
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             DatePicker::make('reliance_date')
                 ->label('Documentazione predisposta in data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('reliance_require_check') || $get('reliance_admit_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             Select::make('reliance_processing_state')
@@ -98,6 +100,7 @@ class ProcedureTypeTab
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             DatePicker::make('collection_request_date')
                 ->label('Chiesti in data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('collection_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             Select::make('collection_request_processing_state')

@@ -43,6 +43,7 @@ class RequiredDocumentsTab
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
             DatePicker::make('service_reference_date_1')
                 ->label('Data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('service_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => $get('service_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>3]),
@@ -52,6 +53,7 @@ class RequiredDocumentsTab
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
             DatePicker::make('service_reference_date_2')
                 ->label('Data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('service_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => $get('service_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>3]),
@@ -76,6 +78,7 @@ class RequiredDocumentsTab
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
             DatePicker::make('bank_reference_date_1')
                 ->label('Data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('bank_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => $get('bank_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>3]),
@@ -85,6 +88,7 @@ class RequiredDocumentsTab
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
             DatePicker::make('bank_reference_date_2')
                 ->label('Data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('bank_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => $get('bank_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>3]),
@@ -96,6 +100,7 @@ class RequiredDocumentsTab
             Placeholder::make('')->visible(fn (callable $get) => !$get('pass_oe_require_check'))->columnSpan(['sm' => 0, 'md' =>6]),
             DatePicker::make('pass_oe_deadline_date')
                 ->label('Da effettuarsi in data/entro il')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('pass_oe_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Select::make('bank_reference_processing_state')
@@ -111,6 +116,7 @@ class RequiredDocumentsTab
             Placeholder::make('')->visible(fn (callable $get) => !$get('biddingMandatoryInspection'))->columnSpan(['sm' => 0, 'md' =>6]),
             DatePicker::make('biddingMandatoryInspectionDeadline')
                 ->label('Da effettuarsi in data/entro il')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->disabled()
                 ->visible(fn (callable $get) => $get('biddingMandatoryInspection'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
@@ -131,6 +137,7 @@ class RequiredDocumentsTab
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             DatePicker::make('deposit_require_date')
                 ->label('Richiesta in data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('deposit_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             Select::make('deposit_require_processing_state')
@@ -151,6 +158,7 @@ class RequiredDocumentsTab
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             DatePicker::make('authority_tax_payment_date')
                 ->label('Effettuato in data')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('authority_tax_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             Select::make('authority_tax_processing_state')

@@ -59,6 +59,7 @@ class TenderResource extends Resource
                     ->relationship(name: 'client', titleAttribute: 'name'),
                 Select::make('bidding_id')
                     ->label('Gara')
+                    ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 6])
                     ->live()
                     ->searchable()

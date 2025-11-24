@@ -22,7 +22,7 @@ class EditTender extends EditRecord
         // Se non c'è una Bidding collegata, non ha senso mostrare i pulsanti di navigazione
         if (!$currentBiddingId) {
             return [
-                Actions\DeleteAction::make(),
+                // Actions\DeleteAction::make(),
             ];
         }
 
@@ -63,12 +63,12 @@ class EditTender extends EditRecord
                 ->action(function (Tender $record) {
                     $currentBidding = $record->bidding;
                     if (!$currentBidding) return;
-                    
+
                     // Trova la Bidding successiva
                     $nextBidding = Bidding::where('deadline_date', '>', $currentBidding->deadline_date)
                         ->orderBy('deadline_date', 'asc')
                         ->first();
-                        
+
                     if ($nextBidding) {
                         // Trova il Tender collegato alla Bidding successiva
                         $nextTender = Tender::where('bidding_id', $nextBidding->id)->first();
@@ -78,7 +78,7 @@ class EditTender extends EditRecord
                             return;
                         }
                     }
-                    
+
                     Notification::make()
                         ->title('Nessun appalto trovato per una scadenza successiva')
                         ->warning()
@@ -95,23 +95,23 @@ class EditTender extends EditRecord
                 ->action(function (Tender $record) {
                     $currentBidding = $record->bidding;
                     if (!$currentBidding || $currentBidding->inspection_deadline_date === null) return;
-                    
+
                     // Trova la Bidding precedente per data sopralluogo
                     $previousInspection = Bidding::whereNotNull('inspection_deadline_date')
                         ->where('inspection_deadline_date', '<', $currentBidding->inspection_deadline_date)
                         ->orderBy('inspection_deadline_date', 'desc')
                         ->first();
-                        
+
                     if ($previousInspection) {
                         // Trova il Tender collegato alla Bidding precedente
                         $previousTender = Tender::where('bidding_id', $previousInspection->id)->first();
-                        
+
                         if ($previousTender) {
                             $this->redirect(TenderResource::getUrl('edit', ['record' => $previousTender->id]));
                             return;
                         }
                     }
-                    
+
                     Notification::make()
                         ->title('Nessun appalto trovato per un sopralluogo precedente')
                         ->warning()
@@ -133,7 +133,7 @@ class EditTender extends EditRecord
                         ->where('inspection_deadline_date', '>', $currentBidding->inspection_deadline_date)
                         ->orderBy('inspection_deadline_date', 'asc')
                         ->first();
-                        
+
                     if ($nextInspection) {
                         // Trova il Tender collegato alla Bidding successiva
                         $nextTender = Tender::where('bidding_id', $nextInspection->id)->first();
@@ -143,7 +143,7 @@ class EditTender extends EditRecord
                             return;
                         }
                     }
-                    
+
                     Notification::make()
                         ->title('Nessun appalto trovato per un sopralluogo successivo')
                         ->warning()
@@ -151,12 +151,47 @@ class EditTender extends EditRecord
                 }),
 
             // Cancellazione gara
-            Actions\DeleteAction::make(),
+            // Actions\DeleteAction::make(),
         ];
     }
 
     public function getMaxContentWidth(): MaxWidth|string|null                                  // allarga la tabella a tutta pagina
     {
         return MaxWidth::Full;
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()->color('success'),
+            $this->getCancelFormAction(),
+            $this->getDeleteFormAction()
+                ->extraAttributes([
+                    'class' => ' md:ml-auto md:w-auto ',
+                ]),
+        ];
+    }
+
+    protected function getDeleteFormAction()
+    {
+        return Actions\DeleteAction::make('delete')
+                ->requiresConfirmation()
+                ->modalHeading('Conferma eliminazione contatto')
+                ->modalDescription('Sei sicuro di voler eliminare questo contatto? Questa azione non può essere annullata.')
+                ->modalSubmitActionLabel('Elimina')
+                ->modalCancelActionLabel('Annulla');
+    }
+
+    protected function getCancelFormAction(): Actions\Action
+    {
+        return Actions\Action::make('cancel')
+            ->label('Indietro')
+            ->color('gray')
+            ->url(function () {
+                if ($this->previousUrl && str($this->previousUrl)->contains('/contacts?')) {
+                    return $this->previousUrl;
+                }
+                return TenderResource::getUrl('index');
+            });
     }
 }

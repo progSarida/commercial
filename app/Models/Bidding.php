@@ -6,9 +6,11 @@ use App\Enums\BiddingProcessingState;
 use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\ClientType;
+use App\Enums\YesNo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class Bidding extends Model
 {
@@ -55,6 +57,9 @@ class Bidding extends Model
         'source1_id',
         'source2_id',
         'source3_id',
+        'attachment_path',
+        'awarded',
+        'closure_date',
     ];
 
     protected $casts = [
@@ -62,6 +67,7 @@ class Bidding extends Model
         'bidding_priority_type' => BiddingPriorityType::class,
         'bidding_procedure_type' => BiddingProcedureType::class,
         'client_type' => ClientType::class,
+        'awarded' => YesNo::class,
     ];
 
     public function serviceTypes()
@@ -137,7 +143,7 @@ class Bidding extends Model
     protected static function booted()
     {
         static::creating(function ($bidding) {
-            $bidding->modified_user_id = Auth::user()->id;
+            // $bidding->modified_user_id = Auth::user()->id;
         });
 
         static::created(function ($bidding) {
@@ -145,6 +151,10 @@ class Bidding extends Model
         });
 
         static::updating(function ($bidding) {
+            // $bidding->modified_user_id = Auth::user()->id;
+        });
+
+        static::saving(function ($bidding) {
             $bidding->modified_user_id = Auth::user()->id;
         });
 
@@ -157,7 +167,9 @@ class Bidding extends Model
         });
 
         static::deleted(function ($bidding) {
-            //
+            if ($bidding->attachment_path) {
+                Storage::disk('public')->deleteDirectory($bidding->attachment_path);
+            }
         });
     }
 }

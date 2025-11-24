@@ -36,6 +36,7 @@ class ContactsRelationManager extends RelationManager
                     ->columnSpan(3),
                 DatePicker::make('date')
                     ->label('Data')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->required()
                     ->columnSpan(3),
                 TimePicker::make('time')

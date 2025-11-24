@@ -16,7 +16,7 @@ class GeneralDataTab
     {
         return [
             TextInput::make('clientName')->label('Ente')->columnSpan(['sm' => 'full', 'md' => 4])->disabled(),
-            TextInput::make('residents')->label('Abitanti')->columnSpan(['sm' => 'full', 'md' => 2])->disabled(),
+            TextInput::make('residents')->label('Abitanti')->extraInputAttributes(['class' => 'text-right'])->columnSpan(['sm' => 'full', 'md' => 2])->disabled(),
             TextInput::make('clientAddress')->label('Indirizzo')->columnSpan(['sm' => 'full', 'md' => 6])->disabled(),
             Placeholder::make('')->columnSpan(['sm' => 0, 'md' =>4]),
             TextInput::make('clientZipcode')->label('CAP')->columnSpan(['sm' => 'full', 'md' => 2])->disabled(),
@@ -60,10 +60,12 @@ class GeneralDataTab
             Placeholder::make('')->columnSpan(['sm' => 0, 'md' =>3]),
             DatePicker::make('biddingSendDate')
                 ->label('Data consegna')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->columnSpan(['sm' => 'full', 'md' => 3])
                 ->disabled(),
             TimePicker::make('biddingSendTime')
                 ->label('Orario consegna')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->columnSpan(['sm' => 'full', 'md' => 3])
                 ->disabled(),
             TextInput::make('mode')
@@ -72,10 +74,12 @@ class GeneralDataTab
             Placeholder::make('')->columnSpan(['sm' => 0, 'md' =>2]),
             DatePicker::make('biddingOpeningDate')
                 ->label('Data apertura offerte')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->columnSpan(['sm' => 'full', 'md' => 4])
                 ->disabled(),
             TimePicker::make('biddingOpeningTime')
                 ->label('Orario apertura offerte')
+                ->extraInputAttributes(['class' => 'text-center'])
                 ->columnSpan(['sm' => 'full', 'md' => 4])
                 ->disabled(),
         ];

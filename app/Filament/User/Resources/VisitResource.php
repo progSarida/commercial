@@ -46,6 +46,7 @@ class VisitResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 DatePicker::make('date')
                     ->label('Data')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 2]),
                 TimePicker::make('time')
