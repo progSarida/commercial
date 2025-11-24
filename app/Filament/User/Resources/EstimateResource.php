@@ -25,12 +25,11 @@ use Illuminate\Support\Facades\Storage;
 class EstimateResource extends Resource
 {
     protected static ?string $model = Estimate::class;
-
     public static ?string $pluralModelLabel = 'Preventivi';
-
     public static ?string $modelLabel = 'Preventivo';
-
     protected static ?string $navigationIcon = 'heroicon-s-document-magnifying-glass';
+    protected static ?string $navigationGroup = 'Contatti';
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {
@@ -193,15 +192,5 @@ class EstimateResource extends Resource
             'edit' => Pages\EditEstimate::route('/{record}/edit'),
             'view' => Pages\ViewEstimate::route('/{record}'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Gestione';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 3;
     }
 }

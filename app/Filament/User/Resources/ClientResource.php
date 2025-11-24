@@ -29,12 +29,11 @@ use Jenssegers\Agent\Agent;
 class ClientResource extends Resource
 {
     protected static ?string $model = Client::class;
-
     public static ?string $pluralModelLabel = 'Elenco clienti';
-
     public static ?string $modelLabel = 'Cliente';
-
     protected static ?string $navigationIcon = 'fas-users';
+    protected static ?string $navigationGroup = 'Clienti';
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {
@@ -309,16 +308,6 @@ class ClientResource extends Resource
             'edit' => Pages\EditClient::route('/{record}/edit'),
             'view' => Pages\ViewClient::route('/{record}'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Clienti';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 1;
     }
 
     public static function modalForm(Form $form): Form

@@ -27,6 +27,8 @@ class CallResource extends Resource
     public static ?string $pluralModelLabel = 'Chiamate';
     public static ?string $modelLabel = 'Chiamata';
     protected static ?string $navigationIcon = 'fas-phone';
+    protected static ?string $navigationGroup = 'Contatti';
+    protected static ?int $navigationSort = 2;
     public static function form(Form $form): Form
     {
         return $form
@@ -172,13 +174,5 @@ class CallResource extends Resource
             'edit' => Pages\EditCall::route('/{record}/edit'),
             'view' => Pages\ViewCall::route('/{record}'),
         ];
-    }
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Clienti';
-    }
-    public static function getNavigationSort(): ?int
-    {
-        return 2;
     }
 }

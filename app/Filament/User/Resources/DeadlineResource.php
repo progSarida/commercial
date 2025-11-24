@@ -27,6 +27,8 @@ class DeadlineResource extends Resource
     public static ?string $pluralModelLabel = 'Scadenze';
     public static ?string $modelLabel = 'Scadenza';
     protected static ?string $navigationIcon = 'fas-calendar-day';
+    protected static ?string $navigationGroup = 'Contatti';
+    protected static ?int $navigationSort = 1;
     public static function form(Form $form): Form
     {
         return $form
@@ -172,13 +174,5 @@ class DeadlineResource extends Resource
             'edit' => Pages\EditDeadline::route('/{record}/edit'),
             'view' => Pages\ViewDeadline::route('/{record}'),
         ];
-    }
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Clienti';
-    }
-    public static function getNavigationSort(): ?int
-    {
-        return 4;
     }
 }

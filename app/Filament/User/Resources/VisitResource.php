@@ -27,6 +27,8 @@ class VisitResource extends Resource
     public static ?string $pluralModelLabel = 'Visite';
     public static ?string $modelLabel = 'Visita';
     protected static ?string $navigationIcon = 'fas-car';
+    protected static ?string $navigationGroup = 'Contatti';
+    protected static ?int $navigationSort = 3;
     public static function form(Form $form): Form
     {
         return $form
@@ -172,13 +174,5 @@ class VisitResource extends Resource
             'edit' => Pages\EditVisit::route('/{record}/edit'),
             'view' => Pages\ViewVisit::route('/{record}'),
         ];
-    }
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Clienti';
-    }
-    public static function getNavigationSort(): ?int
-    {
-        return 3;
     }
 }

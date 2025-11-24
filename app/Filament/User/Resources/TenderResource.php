@@ -37,11 +37,15 @@ class TenderResource extends Resource
 {
     protected static ?string $model = Tender::class;
 
-    public static ?string $pluralModelLabel = 'Appalti';
+    public static ?string $pluralModelLabel = 'Dettaglio gare';
 
     public static ?string $modelLabel = 'appalto';
 
     protected static ?string $navigationIcon = 'fas-suitcase';
+
+    protected static ?string $navigationGroup = 'Gestione';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
@@ -362,16 +366,6 @@ class TenderResource extends Resource
             'edit' => Pages\EditTender::route('/{record}/edit'),
             'view' => Pages\ViewTender::route('/{record}'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Gestione';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 2;
     }
 
     /**

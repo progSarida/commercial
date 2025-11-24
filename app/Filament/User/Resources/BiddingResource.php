@@ -53,6 +53,10 @@ class BiddingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-s-document-text';
 
+    protected static ?string $navigationGroup = 'Gestione';
+
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -642,16 +646,6 @@ class BiddingResource extends Resource
             'edit' => Pages\EditBidding::route('/{record}/edit'),
             'view' => Pages\ViewBidding::route('/{record}'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Gestione';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 1;
     }
 
     public static function saveClient(array $data, Client $client): void
