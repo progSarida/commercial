@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('biddings', function (Blueprint $table) {
-           $table->string('attachment_path')->nullable()->after('source3_id');                      // percorso allegati
+           $table->string('awarded')->nullable()->after('attachment_path');                         // nostra aggiudicazione gara
+           $table->date('closure_date')->nullable()->after('awarded');                              // data chiusura procedura
         });
     }
 
