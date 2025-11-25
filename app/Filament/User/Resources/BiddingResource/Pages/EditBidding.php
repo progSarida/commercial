@@ -105,6 +105,7 @@ class EditBidding extends EditRecord
         return [
             $this->getSaveFormAction()->color('success'),
             $this->getCancelFormAction(),
+            $this->getResetFormAction(),
             $this->getDeleteFormAction()
                 ->extraAttributes([
                     'class' => ' md:ml-auto md:w-auto ',
@@ -116,8 +117,8 @@ class EditBidding extends EditRecord
     {
         return Actions\DeleteAction::make('delete')
                 ->requiresConfirmation()
-                ->modalHeading('Conferma eliminazione contatto')
-                ->modalDescription('Sei sicuro di voler eliminare questo contatto? Questa azione non può essere annullata.')
+                ->modalHeading('Conferma eliminazione gara')
+                ->modalDescription('Sei sicuro di voler eliminare questa gara? Questa azione non può essere annullata.')
                 ->modalSubmitActionLabel('Elimina')
                 ->modalCancelActionLabel('Annulla');
     }
@@ -128,10 +129,21 @@ class EditBidding extends EditRecord
             ->label('Indietro')
             ->color('gray')
             ->url(function () {
-                if ($this->previousUrl && str($this->previousUrl)->contains('/contacts?')) {
+                if ($this->previousUrl && str($this->previousUrl)->contains('/biddings?')) {
                     return $this->previousUrl;
                 }
                 return BiddingResource::getUrl('index');
+            });
+    }
+
+    protected function getResetFormAction(): Actions\Action
+    {
+        return Actions\Action::make('reset')
+            ->label('Annulla')
+            ->color('gray')
+            ->action(function () {
+                $this->data = $this->getRecord()->toArray();
+                $this->fillForm();
             });
     }
 
