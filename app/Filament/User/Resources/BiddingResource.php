@@ -424,6 +424,46 @@ class BiddingResource extends Resource
         return $table
             ->defaultSort('deadline_date', 'asc')
             ->columns([
+                TextColumn::make('deadline_status')
+                    ->label('Scadenza')
+                    ->badge()
+                    ->getStateUsing(function ($record) {
+                        if (!$record->deadline_date) {
+                            return null;
+                        }
+
+                        $daysUntil = now()->startOfDay()->diffInDays(
+                            Carbon::parse($record->deadline_date)->startOfDay(),
+                            false
+                        );
+
+                        return match (true) {
+                            $daysUntil < 0 => 'Scaduta',
+                            $daysUntil === 0 => 'Oggi',
+                            // $daysUntil <= 3 => '3 giorni',
+                            // $daysUntil <= 7 => '7 giorni',
+                            // $daysUntil <= 15 => '15 giorni',
+                            default => $daysUntil . ' giorni',
+                        };
+                    })
+                    ->color(function ($record) {
+                        if (!$record->deadline_date) {
+                            return 'gray';
+                        }
+
+                        $daysUntil = now()->startOfDay()->diffInDays(
+                            Carbon::parse($record->deadline_date)->startOfDay(),
+                            false
+                        );
+
+                        return match (true) {
+                            $daysUntil <= 0 => 'danger',
+                            $daysUntil <= 3 => 'warning',
+                            $daysUntil <= 7 => 'info',
+                            $daysUntil <= 15 => 'success',
+                            default => 'gray',
+                        };
+                    }),
                 TextColumn::make('serviceTypes')
                     ->label('Servizi')
                     ->formatStateUsing(function ($record) {
@@ -438,7 +478,8 @@ class BiddingResource extends Resource
                     ->label('Ente')
                     ->searchable(),
                 TextColumn::make('province.name')
-                    ->label('Prov.'),
+                    ->label('Prov.')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('deadline_date')
                     ->label('Gara')
                     ->sortable()
@@ -446,11 +487,13 @@ class BiddingResource extends Resource
                 TextColumn::make('inspection_deadline_date')
                     ->label('Sopralluogo')
                     ->sortable()
-                    ->date('d/m/Y'),
+                    ->date('d/m/Y')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('clarification_request_deadline_date')
                     ->label('Chiarimenti')
                     ->sortable()
-                    ->date('d/m/Y'),
+                    ->date('d/m/Y')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('biddingType.name')
                     ->label('Tipo gara'),
                 TextColumn::make('biddingState.name')

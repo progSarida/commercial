@@ -68,6 +68,13 @@ class Bidding extends Model
         'bidding_procedure_type' => BiddingProcedureType::class,
         'client_type' => ClientType::class,
         'awarded' => YesNo::class,
+        'deadline_date' => 'date',
+        'deadline_time' => 'date',
+        'send_date' => 'date',
+        'clarification_request_deadline_date' => 'date',
+        'inspection_deadline_date' => 'date',
+        'opening_date' => 'date',
+        'closure_date' => 'date',
     ];
 
     public function serviceTypes()
