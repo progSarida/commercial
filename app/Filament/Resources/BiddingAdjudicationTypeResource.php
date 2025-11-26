@@ -18,12 +18,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class BiddingAdjudicationTypeResource extends Resource
 {
     protected static ?string $model = BiddingAdjudicationType::class;
-
     public static ?string $pluralModelLabel = 'Tipo aggiudicazione';
-
     public static ?string $modelLabel = 'Tipo aggiudicazione';
-
     protected static ?string $navigationIcon = 'fas-list';
+    protected static ?string $navigationGroup = 'Tabelle';
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {
@@ -89,15 +88,5 @@ class BiddingAdjudicationTypeResource extends Resource
             'create' => Pages\CreateBiddingAdjudicationType::route('/create'),
             'edit' => Pages\EditBiddingAdjudicationType::route('/{record}/edit'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Gare';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 4;
     }
 }

@@ -20,12 +20,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ServiceTypeResource extends Resource
 {
     protected static ?string $model = ServiceType::class;
-
     public static ?string $pluralModelLabel = 'Servizi offerti';
-
     public static ?string $modelLabel = 'Servizio';
-
     protected static ?string $navigationIcon = 'fas-list';
+    protected static ?string $navigationGroup = 'Tabelle';
+    protected static ?int $navigationSort = 6;
 
     public static function form(Form $form): Form
     {
@@ -103,15 +102,5 @@ class ServiceTypeResource extends Resource
             'create' => Pages\CreateServiceType::route('/create'),
             'edit' => Pages\EditServiceType::route('/{record}/edit'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Clienti';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 1;
     }
 }

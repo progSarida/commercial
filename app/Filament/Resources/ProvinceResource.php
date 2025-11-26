@@ -16,12 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ProvinceResource extends Resource
 {
     protected static ?string $model = Province::class;
-
     public static ?string $pluralModelLabel = 'Province';
-
     public static ?string $modelLabel = 'Provincia';
-
     protected static ?string $navigationIcon = 'fas-map-marker-alt';
+    protected static ?string $navigationGroup = 'Tabelle';
+    protected static ?int $navigationSort = 8;
 
     public static function form(Form $form): Form
     {
@@ -90,15 +89,5 @@ class ProvinceResource extends Resource
             'create' => Pages\CreateProvince::route('/create'),
             'edit' => Pages\EditProvince::route('/{record}/edit'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Anagrafiche territoriali';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 3;
     }
 }

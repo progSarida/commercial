@@ -18,12 +18,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class BiddingStateResource extends Resource
 {
     protected static ?string $model = BiddingState::class;
-
     public static ?string $pluralModelLabel = 'Stati gara';
-
     public static ?string $modelLabel = 'Stato gara';
-
     protected static ?string $navigationIcon = 'fas-list';
+    protected static ?string $navigationGroup = 'Tabelle';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
@@ -89,15 +88,5 @@ class BiddingStateResource extends Resource
             'create' => Pages\CreateBiddingState::route('/create'),
             'edit' => Pages\EditBiddingState::route('/{record}/edit'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Gare';
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return 2;
     }
 }
