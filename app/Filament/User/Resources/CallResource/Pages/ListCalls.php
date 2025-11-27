@@ -9,7 +9,9 @@ use Filament\Actions;
 use Filament\Actions\ExportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Colors\Color;
 use Illuminate\Support\Facades\Blade;
+
 
 class ListCalls extends ListRecords
 {
@@ -23,7 +25,7 @@ class ListCalls extends ListRecords
                 ->icon('heroicon-o-printer')
                 ->label('Stampa')
                 ->tooltip('Stampa elenco chiamate')
-                ->color('primary')
+                ->color(Color::rgb('rgb(255, 0, 0)'))
                 ->action(function ($livewire) {
                     $records = $livewire->getFilteredTableQuery()->get(); // Recupera i risultati della query
                     $filters = $livewire->tableFilters ?? []; // Recupera i filtri
@@ -60,7 +62,7 @@ class ListCalls extends ListRecords
                 ->icon('heroicon-s-table-cells')
                 ->label('Esporta')
                 ->tooltip('Esporta elenco chiamate')
-                ->color('primary')
+                ->color(Color::rgb('rgb(0, 153, 0)'))
                 ->exporter(ContactExporter::class)
         ];
     }

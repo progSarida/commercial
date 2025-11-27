@@ -9,6 +9,7 @@ use Filament\Actions;
 use Filament\Actions\ExportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Colors\Color;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Blade;
 
@@ -25,7 +26,7 @@ class ListClients extends ListRecords
                 ->label('Stampa')
                 ->tooltip('Stampa elenco clienti')
                 // ->iconButton()                                                                                       // mostro solo icona
-                ->color('primary')
+                ->color(Color::rgb('rgb(255, 0, 0)'))
                 // ->keyBindings(['alt+s'])
                 ->action(function ($livewire) {
                     $records = $livewire->getFilteredTableQuery()->get();                                               // recupero risultato della query
@@ -62,7 +63,7 @@ class ListClients extends ListRecords
                 ->icon('heroicon-s-table-cells')
                 ->label('Esporta')
                 ->tooltip('Esporta elenco clienti')
-                ->color('primary')
+                ->color(Color::rgb('rgb(0, 153, 0)'))
                 ->exporter(ClientExporter::class)
         ];
     }

@@ -11,6 +11,7 @@ use Filament\Actions;
 use Filament\Actions\ExportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Colors\Color;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Storage;
@@ -70,7 +71,7 @@ class ListBiddings extends ListRecords
                     ->icon('heroicon-o-printer')
                     ->label('Stampa')
                     ->tooltip('Stampa elenco gare')
-                    ->color('primary')
+                    ->color(Color::rgb('rgb(255, 0, 0)'))
                     ->action(function ($livewire) {
                         $records = $livewire->getFilteredTableQuery()->get();
                         $filters = $livewire->tableFilters ?? [];
@@ -106,7 +107,7 @@ class ListBiddings extends ListRecords
                 ->icon('heroicon-s-table-cells')
                 ->label('Esporta')
                 ->tooltip('Esporta elenco gare')
-                ->color('primary')
+                ->color(Color::rgb('rgb(0, 153, 0)'))
                 ->exporter(BiddingExporter::class)
         ];
     }

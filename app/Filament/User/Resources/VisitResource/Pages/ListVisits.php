@@ -9,6 +9,7 @@ use Filament\Actions;
 use Filament\Actions\ExportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Colors\Color;
 use Illuminate\Support\Facades\Blade;
 
 class ListVisits extends ListRecords
@@ -23,7 +24,7 @@ class ListVisits extends ListRecords
                 ->icon('heroicon-o-printer')
                 ->label('Stampa')
                 ->tooltip('Stampa elenco visite')
-                ->color('primary')
+                ->color(Color::rgb('rgb(255, 0, 0)'))
                 ->action(function ($livewire) {
                     $records = $livewire->getFilteredTableQuery()->get(); // Recupera i risultati della query
                     $filters = $livewire->tableFilters ?? []; // Recupera i filtri
@@ -60,7 +61,7 @@ class ListVisits extends ListRecords
                 ->icon('heroicon-s-table-cells')
                 ->label('Esporta')
                 ->tooltip('Esporta elenco visite')
-                ->color('primary')
+                ->color(Color::rgb('rgb(0, 153, 0)'))
                 ->exporter(ContactExporter::class)
         ];
     }
