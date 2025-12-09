@@ -16,85 +16,81 @@ class EditBidding extends EditRecord
 
     protected function getHeaderActions(): array
     {
+        $currentBidding = $this->record;
+        // Precedente per deadline_date: data precedente O stessa data con ID minore
+        $previousDeadline = Bidding::where(function ($query) use ($currentBidding) {
+                $query->where('deadline_date', '<', $currentBidding->deadline_date)
+                    ->orWhere(function ($q) use ($currentBidding) {
+                        $q->where('deadline_date', '=', $currentBidding->deadline_date)
+                          ->where('id', '<', $currentBidding->id);
+                    });
+            })
+            ->orderBy('deadline_date', 'desc')->orderBy('id', 'desc')->first();
+        // Successivo per deadline_date: data successiva O stessa data con ID maggiore
+        $nextDeadline = Bidding::where(function ($query) use ($currentBidding) {
+                $query->where('deadline_date', '>', $currentBidding->deadline_date)
+                    ->orWhere(function ($q) use ($currentBidding) {
+                        $q->where('deadline_date', '=', $currentBidding->deadline_date)
+                          ->where('id', '>', $currentBidding->id);
+                    });
+            })
+            ->orderBy('deadline_date', 'asc')->orderBy('id', 'asc')->first();
+        // Precedente per inspection_deadline_date: data precedente O stessa data con ID minore
+        $previousInspection = Bidding::whereNotNull('inspection_deadline_date')
+            ->when($currentBidding->inspection_deadline_date, function ($query, $date) use ($currentBidding) {
+                return $query->where(function ($q) use ($date, $currentBidding) {
+                    $q->where('inspection_deadline_date', '<', $date)
+                        ->orWhere(function ($subQ) use ($date, $currentBidding) {
+                            $subQ->where('inspection_deadline_date', '=', $date)
+                                 ->where('id', '<', $currentBidding->id);
+                        });
+                });
+            })
+            ->orderBy('inspection_deadline_date', 'desc')->orderBy('id', 'desc')->first();
+        // Successivo per inspection_deadline_date: data successiva O stessa data con ID maggiore
+        $nextInspection = Bidding::whereNotNull('inspection_deadline_date')
+            ->when($currentBidding->inspection_deadline_date, function ($query, $date) use ($currentBidding) {
+                return $query->where(function ($q) use ($date, $currentBidding) {
+                    $q->where('inspection_deadline_date', '>', $date)
+                        ->orWhere(function ($subQ) use ($date, $currentBidding) {
+                            $subQ->where('inspection_deadline_date', '=', $date)
+                                 ->where('id', '>', $currentBidding->id);
+                        });
+                });
+            })
+            ->orderBy('inspection_deadline_date', 'asc')->orderBy('id', 'asc')->first();
+
         return [
-            // Scorrimento in  base a data di scadenza gara
+            // Scorrimento in base a data di scadenza gara
             Actions\Action::make('previous_deadline')
                 ->label('Scadenza Prec.')
                 ->color('success')
                 ->icon('heroicon-o-arrow-left-circle')
-                ->action(function () {
-                    $currentBidding = $this->record;
-                    $previousBidding = Bidding::where('deadline_date', '<', $currentBidding->deadline_date)
-                        ->orderBy('deadline_date', 'desc')
-                        ->first();
-                    if ($previousBidding) {
-                        $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousBidding->id]));
-                    } else {
-                        Notification::make()
-                            ->title('Nessuna scadenza precedente trovata')
-                            ->warning()
-                            ->send();
-                    }
-                }),
+                ->visible(fn() => $previousDeadline !== null)
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousDeadline->id]))),
+
             Actions\Action::make('next_deadline')
                 ->label('Scadenza Succ.')
                 ->color('success')
                 ->icon('heroicon-o-arrow-right-circle')
-                ->action(function () {
-                    $currentBidding = $this->record;
-                    $nextBidding = Bidding::where('deadline_date', '>', $currentBidding->deadline_date)
-                        ->orderBy('deadline_date', 'asc')
-                        ->first();
-                    if ($nextBidding) {
-                        $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextBidding->id]));
-                    } else {
-                        Notification::make()
-                            ->title('Nessuna scadenza successiva trovata')
-                            ->warning()
-                            ->send();
-                    }
-                }),
+                ->visible(fn() => $nextDeadline !== null)
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextDeadline->id]))),
+
             // Scorrimento in base a data di sopralluogo
             Actions\Action::make('previous_inspection')
                 ->label('Sopralluogo Prec.')
                 ->color('info')
                 ->icon('heroicon-o-arrow-left-circle')
-                ->visible(fn () => $this->record->inspection_deadline_date !== null)
-                ->action(function () {
-                    $currentBidding = $this->record;
-                    $previousInspection = Bidding::whereNotNull('inspection_deadline_date')
-                        ->where('inspection_deadline_date', '<', $currentBidding->inspection_deadline_date)
-                        ->orderBy('inspection_deadline_date', 'desc')
-                        ->first();
-                    if ($previousInspection) {
-                        $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousInspection->id]));
-                    } else {
-                        Notification::make()
-                            ->title('Nessun sopralluogo precedente trovato')
-                            ->warning()
-                            ->send();
-                    }
-                }),
+                ->visible(fn() => $currentBidding->inspection_deadline_date !== null && $previousInspection !== null)
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousInspection->id]))),
+
             Actions\Action::make('next_inspection')
                 ->label('Sopralluogo Succ.')
                 ->color('info')
                 ->icon('heroicon-o-arrow-right-circle')
-                ->visible(fn () => $this->record->inspection_deadline_date !== null)
-                ->action(function () {
-                    $currentBidding = $this->record;
-                    $nextInspection = Bidding::whereNotNull('inspection_deadline_date')
-                        ->where('inspection_deadline_date', '>', $currentBidding->inspection_deadline_date)
-                        ->orderBy('inspection_deadline_date', 'asc')
-                        ->first();
-                    if ($nextInspection) {
-                        $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextInspection->id]));
-                    } else {
-                        Notification::make()
-                            ->title('Nessun sopralluogo successivo trovato')
-                            ->warning()
-                            ->send();
-                    }
-                }),
+                ->visible(fn() => $currentBidding->inspection_deadline_date !== null && $nextInspection !== null)
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextInspection->id]))),
+
             // Cancellazione gara
             // Actions\DeleteAction::make(),
         ];
@@ -182,9 +178,6 @@ class EditBidding extends EditRecord
             $record->update([
                 'attachment_path' => $extractPath,
             ]);
-
-            // Opzionale: svuota il campo temp così non riappare
-            // (non serve se usi ->visible() sopra)
         }
     }
 }
