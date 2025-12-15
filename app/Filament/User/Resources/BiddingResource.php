@@ -693,29 +693,29 @@ class BiddingResource extends Resource
 
     public static function saveClient(array $data, Client $client): void
     {
-        $client->name = $data['name'];
         $client->client_type = $data['client_type'];
-        $client->phone = $data['phone'];
-        $client->email = $data['email'];
-        $client->site = $data['site'];
+        $client->name = $data['name'];
         $client->state_id = $data['state_id'];
         if (isset($data['region_id'])) {
             $client->region_id = $data['region_id'];
         }
         if (isset($data['province_id'])) {
-            $client->region_id = $data['province_id'];
+            $client->province_id = $data['province_id'];
         }
         if (isset($data['city_id'])) {
-            $client->region_id = $data['city_id'];
+            $client->city_id = $data['city_id'];
+        }
+        if (isset($data['zip_code'])) {
+            $client->zip_code = $data['zip_code'];
         }
         if (isset($data['place'])) {
             $client->place = $data['place'];
         }
-        if (isset($data['zip_code'])) {
-            $client->region_id = $data['zip_code'];
-        }
         $client->address = $data['address'];
         $client->civic = $data['civic'];
+        $client->phone = $data['phone'];
+        $client->email = $data['email'];
+        $client->site = $data['site'];
         $client->note = $data['note'];
         $client->save();
         Notification::make()
