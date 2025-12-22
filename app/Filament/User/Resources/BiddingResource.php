@@ -373,13 +373,49 @@ class BiddingResource extends Resource
                     ->label('Carica ZIP con allegati')
                     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
                     ->maxSize(102400)
-                    ->disk('public')
+                    // ->disk('public')
                     ->directory('biddings-temp')
-                    ->visibility('public')
+                    // ->visibility('public')
                     ->multiple(false)
                     ->preserveFilenames()
                     ->columnSpanFull()
                     ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
+
+                // Section::make('Allegati')
+                //     ->collapsed()
+                //     ->visible(fn($record) => $record && $record->attachment_path)
+                //     ->schema([
+                //         Placeholder::make('attachments')
+                //             ->label('')
+                //             ->content(function ($record) {
+                //                 if (!$record || !$record->attachment_path) {
+                //                     return 'Nessun allegato.';
+                //                 }
+
+                //                 $files = Storage::disk('public')->files($record->attachment_path);
+
+                //                 if (empty($files)) {
+                //                     return 'Nessuna cartella allegati trovata.';
+                //                 }
+
+                //                 return new \Illuminate\Support\HtmlString(
+                //                     collect($files)->sort()->map(function ($file) {
+                //                         $name = basename($file);
+                //                         $url = Storage::url($file);
+
+                //                         return <<<HTML
+                //                         <div class="flex items-center gap-3 py-1">
+                //                             <a href="{$url}" target="_blank" class="text-primary-600 hover:underline font-medium">
+                //                                 {$name}
+                //                             </a>
+                //                         </div>
+                //                         HTML;
+                //                     })->implode('')
+                //                 );
+                //             })
+                //             ->extraAttributes(['style' => 'line-height:1.8'])
+                //             ->columnSpanFull(),
+                //     ]),
 
                 Section::make('Allegati')
                     ->collapsed()
@@ -392,20 +428,34 @@ class BiddingResource extends Resource
                                     return 'Nessun allegato.';
                                 }
 
-                                $files = Storage::disk('public')->files($record->attachment_path);
+                                // dd([
+                                //     'path' => $record->attachment_path,
+                                //     'default_disk' => config('filesystems.default'),
+                                //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
+                                //     'files_on_default' => Storage::files($record->attachment_path),
+                                //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
+                                // ]);
+
+                                $files = Storage::files($record->attachment_path);
 
                                 if (empty($files)) {
                                     return 'Nessuna cartella allegati trovata.';
                                 }
 
+                                $disk = Storage::getDefaultDriver();
+
                                 return new \Illuminate\Support\HtmlString(
-                                    collect($files)->sort()->map(function ($file) {
+                                    collect($files)->sort()->map(function ($file) use ($disk) {
                                         $name = basename($file);
-                                        $url = Storage::url($file);
+
+                                        // Se è S3 usa temporaryUrl, altrimenti url normale
+                                        $url = config("filesystems.disks.{$disk}.driver") === 's3'
+                                            ? Storage::temporaryUrl($file, now()->addMinutes(5))
+                                            : Storage::url($file);
 
                                         return <<<HTML
                                         <div class="flex items-center gap-3 py-1">
-                                            <a href="{$url}" target="_blank" class="text-primary-600 hover:underline font-medium">
+                                            <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
                                                 {$name}
                                             </a>
                                         </div>

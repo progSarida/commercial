@@ -132,7 +132,7 @@ class EstimateResource extends Resource
                     ->form([
                         FileUpload::make('path')
                             ->label('File')
-                            ->disk('public')
+                            // ->disk('public')
                             ->directory('estimates')
                             ->preserveFilenames()
                             ->required(),
@@ -147,7 +147,8 @@ class EstimateResource extends Resource
                 Tables\Actions\Action::make('view_file')
                     ->label('Visualizza')
                     ->icon('heroicon-o-eye')
-                    ->url(fn(Estimate $record) => $record->path ? asset('storage/' . $record->path) : null)
+                    // ->url(fn(Estimate $record) => $record->path ? asset('storage/' . $record->path) : null)
+                    ->url(fn($record): ?string => $record && $record->path ? Storage::temporaryUrl($record->path,now()->addMinutes(1)) : null)
                     ->openUrlInNewTab()
                     ->visible(fn(Estimate $record) => $record->path !== null),
 
