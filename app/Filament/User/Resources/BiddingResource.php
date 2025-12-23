@@ -449,9 +449,7 @@ class BiddingResource extends Resource
                                         $name = basename($file);
 
                                         // Se è S3 usa temporaryUrl, altrimenti url normale
-                                        $url = config("filesystems.disks.{$disk}.driver") === 's3'
-                                            ? Storage::temporaryUrl($file, now()->addMinutes(5))
-                                            : Storage::url($file);
+                                        $url = Storage::temporaryUrl($file, now()->addMinutes(5));
 
                                         return <<<HTML
                                         <div class="flex items-center gap-3 py-1">
