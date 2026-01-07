@@ -80,9 +80,10 @@ class CreateBidding extends CreateRecord
         file_put_contents($tempZipPath, $zipContents);
 
         try {
-            // CARTELLA FINALE CON L'ID
+            // CARTELLA FINALE CON L'ID - usa il disco di default (public o S3)
+            $targetDisk = config('filesystems.default', 'public');
             $extractPath = "biddings_attach/{$record->id}";
-            Storage::disk($livewireDisk)->makeDirectory($extractPath);
+            Storage::disk($targetDisk)->makeDirectory($extractPath);
 
             $zip = new ZipArchive();
             if ($zip->open($tempZipPath) === true) {
@@ -94,7 +95,7 @@ class CreateBidding extends CreateRecord
                 $zip->extractTo($tempExtractPath);
                 $zip->close();
 
-                // Carica tutti i file estratti su Storage
+                // Carica tutti i file estratti su Storage (disco target, non livewire)
                 $files = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($tempExtractPath, \RecursiveDirectoryIterator::SKIP_DOTS),
                     \RecursiveIteratorIterator::SELF_FIRST
@@ -107,7 +108,8 @@ class CreateBidding extends CreateRecord
                         $relativePath = str_replace('\\', '/', $relativePath);
                         $destinationPath = $extractPath . '/' . $relativePath;
 
-                        Storage::disk($livewireDisk)->put(
+                        // IMPORTANTE: salva sul disco target (public/S3), non su livewire
+                        Storage::disk($targetDisk)->put(
                             $destinationPath,
                             file_get_contents($file->getPathname())
                         );
