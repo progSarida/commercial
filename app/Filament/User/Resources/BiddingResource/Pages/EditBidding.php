@@ -210,7 +210,7 @@ class EditBidding extends EditRecord
         try {
             // CARTELLA FINALE CON L'ID
             $extractPath = "biddings_attach/{$record->id}";
-            Storage::disk('public')->makeDirectory($extractPath);
+            Storage::disk($livewireDisk)->makeDirectory($extractPath);
 
             $zip = new ZipArchive();
             if ($zip->open($tempZipPath) === true) {
@@ -235,7 +235,7 @@ class EditBidding extends EditRecord
                         $relativePath = str_replace('\\', '/', $relativePath);
                         $destinationPath = $extractPath . '/' . $relativePath;
 
-                        Storage::disk('public')->put(
+                        Storage::disk($livewireDisk)->put(
                             $destinationPath,
                             file_get_contents($file->getPathname())
                         );
