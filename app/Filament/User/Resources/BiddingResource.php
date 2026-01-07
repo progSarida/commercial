@@ -417,53 +417,53 @@ class BiddingResource extends Resource
                 //             ->columnSpanFull(),
                 //     ]),
 
-                Section::make('Allegati')
-                    ->collapsed()
-                    ->visible(fn($record) => $record && $record->attachment_path)
-                    ->schema([
-                        Placeholder::make('attachments')
-                            ->label('')
-                            ->content(function ($record) {
-                                if (!$record || !$record->attachment_path) {
-                                    return 'Nessun allegato.';
-                                }
+                // Section::make('Allegati')
+                //     ->collapsed()
+                //     ->visible(fn($record) => $record && $record->attachment_path)
+                //     ->schema([
+                //         Placeholder::make('attachments')
+                //             ->label('')
+                //             ->content(function ($record) {
+                //                 if (!$record || !$record->attachment_path) {
+                //                     return 'Nessun allegato.';
+                //                 }
 
-                                // dd([
-                                //     'path' => $record->attachment_path,
-                                //     'default_disk' => config('filesystems.default'),
-                                //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
-                                //     'files_on_default' => Storage::files($record->attachment_path),
-                                //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
-                                // ]);
+                //                 // dd([
+                //                 //     'path' => $record->attachment_path,
+                //                 //     'default_disk' => config('filesystems.default'),
+                //                 //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
+                //                 //     'files_on_default' => Storage::files($record->attachment_path),
+                //                 //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
+                //                 // ]);
 
-                                $files = Storage::files($record->attachment_path);
+                //                 $files = Storage::files($record->attachment_path);
 
-                                if (empty($files)) {
-                                    return 'Nessuna cartella allegati trovata.';
-                                }
+                //                 if (empty($files)) {
+                //                     return 'Nessuna cartella allegati trovata.';
+                //                 }
 
-                                $disk = Storage::getDefaultDriver();
+                //                 $disk = Storage::getDefaultDriver();
 
-                                return new \Illuminate\Support\HtmlString(
-                                    collect($files)->sort()->map(function ($file) use ($disk) {
-                                        $name = basename($file);
+                //                 return new \Illuminate\Support\HtmlString(
+                //                     collect($files)->sort()->map(function ($file) use ($disk) {
+                //                         $name = basename($file);
 
-                                        // Se è S3 usa temporaryUrl, altrimenti url normale
-                                        $url = Storage::temporaryUrl($file, now()->addMinutes(5));
+                //                         // Se è S3 usa temporaryUrl, altrimenti url normale
+                //                         $url = Storage::temporaryUrl($file, now()->addMinutes(5));
 
-                                        return <<<HTML
-                                        <div class="flex items-center gap-3 py-1">
-                                            <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
-                                                {$name}
-                                            </a>
-                                        </div>
-                                        HTML;
-                                    })->implode('')
-                                );
-                            })
-                            ->extraAttributes(['style' => 'line-height:1.8'])
-                            ->columnSpanFull(),
-                    ]),
+                //                         return <<<HTML
+                //                         <div class="flex items-center gap-3 py-1">
+                //                             <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
+                //                                 {$name}
+                //                             </a>
+                //                         </div>
+                //                         HTML;
+                //                     })->implode('')
+                //                 );
+                //             })
+                //             ->extraAttributes(['style' => 'line-height:1.8'])
+                //             ->columnSpanFull(),
+                //     ]),
 
                 Section::make('Allegati')
                     ->collapsed()
