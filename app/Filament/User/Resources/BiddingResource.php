@@ -464,6 +464,71 @@ class BiddingResource extends Resource
                             ->extraAttributes(['style' => 'line-height:1.8'])
                             ->columnSpanFull(),
                     ]),
+
+                Section::make('Allegati')
+                    ->collapsed()
+                    ->visible(fn($record) => $record && $record->attachment_path)
+                    ->schema([
+                        Placeholder::make('attachments')
+                            ->label('')
+                            ->content(function ($record) {
+                                if (!$record || !$record->attachment_path) {
+                                    return 'Nessun allegato.';
+                                }
+
+                                // dd([
+                                //     'path' => $record->attachment_path,
+                                //     'default_disk' => config('filesystems.default'),
+                                //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
+                                //     'files_on_default' => Storage::files($record->attachment_path),
+                                //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
+                                // ]);
+
+                                $disk = config('filesystems.default', 'public');
+
+                                // Usa allFiles per prendere anche file in sottocartelle
+                                $files = Storage::disk($disk)->allFiles($record->attachment_path);
+
+                                if (empty($files)) {
+                                    return 'Nessuna cartella allegati trovata.';
+                                }
+
+                                return new \Illuminate\Support\HtmlString(
+                                    collect($files)
+                                        ->sort()
+                                        ->map(function ($file) use ($disk) {
+                                            $name = basename($file);
+
+                                            // Genera URL in base al tipo di disco
+                                            // try {
+                                            //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
+                                            //         // Per S3 usa temporaryUrl
+                                            //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
+                                            //     } else {
+                                            //         // Per locale usa url normale
+                                            //         $url = Storage::disk($disk)->url($file);
+                                            //     }
+                                            // } catch (\Exception $e) {
+                                            //     // Fallback se temporaryUrl non è supportato
+                                            //     $url = Storage::disk($disk)->url($file);
+                                            // }
+
+                                            $url = Storage::temporaryUrl($file, now()->addMinutes(5));
+
+                                            return <<<HTML
+                                            <div class="flex items-center gap-3 py-1">
+                                                <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
+                                                    {$name}
+                                                </a>
+                                            </div>
+                                            HTML;
+                                        })
+                                        ->implode('')
+                                );
+                            })
+                            ->extraAttributes(['style' => 'line-height:1.8'])
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
