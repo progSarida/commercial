@@ -231,6 +231,7 @@ class BiddingResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 TimePicker::make('clarification_request_deadline_time')
                     ->label('Orario scadenza chiarimenti')
+                    ->extraInputAttributes(['class' => 'text-center'])
                     ->default('06:00')
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Checkbox::make('mandatory_inspection')
@@ -590,9 +591,10 @@ class BiddingResource extends Resource
                 TextColumn::make('client.name')
                     ->label('Ente')
                     ->searchable(),
-                TextColumn::make('province.name')
-                    ->label('Prov.')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('province.code')
+                    ->label('Prov.'),
+                TextColumn::make('region.name')
+                    ->label('Regione'),
                 TextColumn::make('deadline_date')
                     ->label('Gara')
                     ->sortable()
