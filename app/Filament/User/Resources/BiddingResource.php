@@ -471,7 +471,39 @@ class BiddingResource extends Resource
                     ->visible(fn($record) => $record && $record->attachment_path)
                     ->schema([
                         Placeholder::make('attachments')
+                            ->key('attachments_list')
                             ->label('')
+                            ->hintAction(
+                                \Filament\Forms\Components\Actions\Action::make('downloadAll')
+                                    ->label('Scarica tutti (ZIP)')
+                                    ->icon('heroicon-o-arrow-down-tray')
+                                    ->action(function ($record) {
+                                        $services = '';
+                                        for($i = 0; $i < count($record->serviceTypes); $i++) {
+                                            if($i != 0) $services .= ' ';
+                                            $services .= $record->serviceTypes[$i]->name;
+                                        }
+                                        return response()->streamDownload(function () use ($record) {
+                                            $zip = new \ZipArchive();
+                                            $path = tempnam(sys_get_temp_dir(), 'zip');
+
+                                            $zip->open($path, \ZipArchive::CREATE);
+
+                                            $disk = config('filesystems.default', 'public');
+                                            $files = Storage::disk($disk)->allFiles($record->attachment_path);
+
+                                            foreach ($files as $file) {
+                                                // Legge il file dal disco e lo aggiunge allo ZIP
+                                                $fileContent = Storage::disk($disk)->get($file);
+                                                $zip->addFromString(basename($file), $fileContent);
+                                            }
+
+                                            $zip->close();
+                                            readfile($path);
+                                            unlink($path);
+                                        }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
+                                    })
+                            )
                             ->content(function ($record) {
                                 if (!$record || !$record->attachment_path) {
                                     return 'Nessun allegato.';
