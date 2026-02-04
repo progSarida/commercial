@@ -12,6 +12,7 @@ use App\Filament\User\Resources\BiddingResource\Pages;
 use App\Filament\User\Resources\BiddingResource\RelationManagers;
 use App\Models\Bidding;
 use App\Models\BiddingDataSource;
+use App\Models\BiddingState;
 use App\Models\Client;
 use App\Models\Province;
 use App\Models\ServiceType;
@@ -31,6 +32,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -195,6 +197,7 @@ class BiddingResource extends Resource
                         titleAttribute: 'name',
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
+                    ->default(fn(Set $set) => BiddingState::where('name', 'Da valutare')->first()->id )
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 Select::make('bidding_processing_state')
                     ->label('Stato lavorazione')
@@ -806,8 +809,44 @@ class BiddingResource extends Resource
                     )
                     ->multiple()->preload(),
                 SelectFilter::make('bidding_processing_state')->label('Stato lavorazione')
-                    ->options(BiddingProcessingState::class)
-                    ->multiple()->preload(),
+                    // ->options(BiddingProcessingState::class)
+                    ->options(function () {
+                        // Creiamo l'array con il valore personalizzato
+                        $options = ['da_assegnare' => 'Da assegnare'];
+
+                        // Aggiungiamo i casi dell'Enum
+                        foreach (BiddingProcessingState::cases() as $state) {
+                            // Se l'enum è di tipo 'Backed' (es: string), usiamo ->value e ->name (o un'etichetta)
+                            $options[$state->value] = $state->getLabel();
+                        }
+
+                        return $options;
+                    })->query(function (Builder $query, array $data): Builder {
+                        $values = $data['values'];
+
+                        if (empty($values)) {
+                            return $query;
+                        }
+
+                        return $query->where(function (Builder $query) use ($values) {
+                            // Controlliamo se 'da_assegnare' è tra i valori selezionati
+                            if (in_array('da_assegnare', $values)) {
+                                // Rimuoviamo 'da_assegnare' per gestire i valori reali dell'Enum
+                                $realEnumValues = array_diff($values, ['da_assegnare']);
+
+                                $query->whereNull('bidding_processing_state');
+
+                                // Se c'erano anche altri stati selezionati, usiamo orWhereIn
+                                if (!empty($realEnumValues)) {
+                                    $query->orWhereIn('bidding_processing_state', $realEnumValues);
+                                }
+                            } else {
+                                // Se 'da_assegnare' non è selezionato, procedi normalmente
+                                $query->whereIn('bidding_processing_state', $values);
+                            }
+                        });
+                    })
+                    ->multiple(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
