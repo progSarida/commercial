@@ -729,7 +729,7 @@ class BiddingResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data) {
                         if (! empty($data['inspection_from_date'])) {
-                            $query->whereDate('inspection_deadline_', '>=', $data['inspection_from_date']);
+                            $query->whereDate('inspection_deadline_date', '>=', $data['inspection_from_date']);
                         }
                         if (! empty($data['inspection_to_date'])) {
                             $query->whereDate('inspection_deadline_date', '<=', $data['inspection_to_date']);
