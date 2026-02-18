@@ -16,12 +16,14 @@ class Contact extends Model
         'time',
         'note',
         'outcome_type',
+        'services',
         'user_id',
     ];
 
     protected $casts = [
         'contact_type' => ContactType::class,
-        'outcome_type' => OutcomeType::class
+        'outcome_type' => OutcomeType::class,
+        'services' => 'array',
     ];
 
     public function client()
@@ -84,7 +86,7 @@ class Contact extends Model
                 $estimate = Estimate::where('contact_id', $contact->id)->first();
                 if($estimate){
                     $estimate->delete();
-                }       
+                }
             }
         });
 

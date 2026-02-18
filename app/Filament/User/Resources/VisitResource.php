@@ -7,6 +7,7 @@ use App\Filament\User\Resources\VisitResource\RelationManagers;
 use App\Models\Contact;
 use App\Models\Province;
 use App\Models\Region;
+use App\Models\ServiceType;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -32,7 +33,7 @@ class VisitResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->columns(12)
+            ->columns(24)
             ->schema([
                 Select::make('contact_type')
                     ->label('Tipo contatto')
@@ -40,30 +41,42 @@ class VisitResource extends Resource
                     ->default(ContactType::VISIT)
                     ->disabled()
                     ->dehydrated()
-                    ->columnSpan(['sm' => 'full', 'md' => 2]),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 Select::make('client_id')
                     ->label('Cliente')
+                    ->required()
                     ->searchable()
                     ->relationship( name: 'client', titleAttribute: 'name')
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
+                    ->columnSpan(['sm' => 'full', 'md' => 20]),
+                Select::make('outcome_type')
+                    ->label('Esito')
+                    // ->options(OutcomeType::class)
+                    ->options(OutcomeType::getOptionsByContactType(ContactType::VISIT))
+                    ->afterStateUpdated( function(Set $set) {
+                        $set('date', now()->format('Y-m-d'));
+                        $set('time', now()->format('H:i'));
+                    })
+                    ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('date')
                     ->label('Data')
                     ->extraInputAttributes(['class' => 'text-center'])
                     ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 2]),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TimePicker::make('time')
                     ->label('Orario')
                     ->required()
                     ->seconds(false)
                     ->displayFormat('H:i')
-                    ->columnSpan(['sm' => 'full', 'md' => 2]),
-                Select::make('outcome_type')
-                    ->label('Esito')
-                    ->options(OutcomeType::class)
-                    ->columnSpan(['sm' => 'full', 'md' => 2]),
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                Select::make('services')
+                    ->label('Servizi')
+                    ->options(ServiceType::pluck('name', 'id'))
+                    ->multiple()
+                    ->searchable()
+                    ->columnSpan(['sm' => 'full', 'md' => 'full']),
                 Textarea::make('note')
                     ->label('Note')
-                    ->columnSpan(['sm' => 'full', 'md' => 9]),
+                    ->columnSpan(['sm' => 'full', 'md' => 20]),
                 Select::make('user_id')
                     ->label('Utente')
                     ->relationship('user', 'name')
@@ -71,7 +84,7 @@ class VisitResource extends Resource
                     // ->disabled(!Auth::user()->is_admin)
                     ->disabled(!Auth::user()->hasRole('super_admin'))
                     ->dehydrated()
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
             ]);
     }
     public static function table(Table $table): Table

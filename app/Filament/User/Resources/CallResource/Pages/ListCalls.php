@@ -3,10 +3,12 @@
 namespace App\Filament\User\Resources\CallResource\Pages;
 
 use App\Filament\Exports\ContactExporter;
+use App\Filament\Imports\ContactImporter;
 use App\Filament\User\Resources\CallResource;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Actions;
 use Filament\Actions\ExportAction;
+use Filament\Actions\ImportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Colors\Color;
@@ -63,7 +65,16 @@ class ListCalls extends ListRecords
                 ->label('Esporta')
                 ->tooltip('Esporta elenco chiamate')
                 ->color(Color::rgb('rgb(0, 153, 0)'))
-                ->exporter(ContactExporter::class)
+                ->exporter(ContactExporter::class),
+            ImportAction::make('importa')
+                ->icon('fas-file-import')
+                ->label('Importa')
+                ->tooltip('Importa chiamate da risultato spedizione')
+                // ->color(Color::rgb('rgb(0, 153, 0)'))
+                ->importer(ContactImporter::class)
+                ->options([
+                    'updateExisting' => true,
+                ])
         ];
     }
 }
