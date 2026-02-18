@@ -37,168 +37,143 @@ class ClientResource extends Resource
 
     public static function form(Form $form): Form
     {
+        // Recupero l'ID con una fallback sicura
         $italyId = State::where('name', 'Italy')->first()?->id;
+
         return $form
             ->columns(12)
             ->schema([
-                Select::make('client_type')->label('Tipo cliente')
-                    ->options(ClientType::class)
-                    ->required()
-                    ->live()
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                Forms\Components\Tabs::make('Schede')
+                    ->tabs([
+                        // TAB 1: CONTATTO
+                        Forms\Components\Tabs\Tab::make('Dati cliente')
+                            ->schema([
+                                Select::make('client_type')->label('Tipo cliente')
+                                    ->options(ClientType::class)
+                                    ->required()
+                                    ->live()
+                                    ->columnSpan(['sm' => 'full', 'md' => 3]),
 
-                Select::make('name')->label('Nome')
-                    ->options(function (callable $get, $record) {
-                        $type = $get('client_type');
-                        $usedNames = Client::where('client_type', $type)->pluck('name')->toArray();
-                        $currentName = $record ? $record->name : null;
+                                // Select dinamica per Nome (se Comune o Provincia)
+                                Select::make('name')->label('Nome')
+                                    ->options(function (callable $get, $record) {
+                                        $type = $get('client_type');
+                                        $usedNames = Client::where('client_type', $type)->pluck('name')->toArray();
+                                        $currentName = $record ? $record->name : null;
 
-                        if ($type === ClientType::CITY->value) {
-                            return City::whereNotIn('name', $usedNames)
-                                ->when($currentName, fn ($query) => $query->orWhere('name', $currentName))
-                                ->pluck('name', 'name')
-                                ->toArray();
-                        } elseif ($type === ClientType::PROVINCE->value) {
-                            return Province::whereNotIn('name', $usedNames)
-                                ->when($currentName, fn ($query) => $query->orWhere('name', $currentName))
-                                ->pluck('name', 'name')
-                                ->toArray();
-                        }
-                        return [];
-                    })
-                    ->visible(fn (callable $get) => in_array($get('client_type'), [ClientType::CITY->value, ClientType::PROVINCE->value]))
-                    ->searchable()
-                    ->required()
-                    ->live()
-                    ->columnSpan(['sm' => 'full', 'md' => 6])
-                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        $type = $get('client_type');
-                        $italyId = State::where('name', 'Italy')->first()?->id;
+                                        if ($type === ClientType::CITY->value) {
+                                            return City::whereNotIn('name', $usedNames)
+                                                ->when($currentName, fn ($query) => $query->orWhere('name', $currentName))
+                                                ->pluck('name', 'name')->toArray();
+                                        } elseif ($type === ClientType::PROVINCE->value) {
+                                            return Province::whereNotIn('name', $usedNames)
+                                                ->when($currentName, fn ($query) => $query->orWhere('name', $currentName))
+                                                ->pluck('name', 'name')->toArray();
+                                        }
+                                        return [];
+                                    })
+                                    ->visible(fn (callable $get) => in_array($get('client_type'), [ClientType::CITY->value, ClientType::PROVINCE->value]))
+                                    ->searchable()
+                                    ->required()
+                                    ->live()
+                                    ->columnSpan(['sm' => 'full', 'md' => 6])
+                                    ->afterStateUpdated(function ($state, callable $set) use ($italyId) {
+                                        // Logica di auto-compilazione
+                                        $city = City::with('province.region')->where('name', $state)->first();
+                                        if ($city) {
+                                            $set('city_id', $city->id);
+                                            $set('province_id', $city->province_id);
+                                            $set('region_id', $city->province?->region_id);
+                                            $set('zip_code', $city->zip_code);
+                                            $set('state_id', $italyId);
+                                        }
+                                    }),
 
-                        if ($type === ClientType::CITY->value) {
-                            $city = City::with('province.region')->where('name', $state)->first();
-                            if ($city) {
-                                $set('city_id', $city->id);
-                                $set('province_id', $city->province_id);
-                                $set('region_id', $city->province?->region_id);
-                                $set('zip_code', $city->zip_code);
-                                $set('state_id', $italyId);
-                            }
-                        } elseif ($type === ClientType::PROVINCE->value) {
-                            $province = Province::with('region')->where('name', $state)->first();
-                            if ($province) {
-                                $set('province_id', $province->id);
-                                $set('region_id', $province->region_id);
-                                $set('state_id', $italyId);
-                            }
-                        }
-                    }),
-                TextInput::make('name')->label('Nome')
-                    ->visible(fn (callable $get) => !in_array($get('client_type'), [ClientType::CITY->value, ClientType::PROVINCE->value]))
-                    ->required()
-                    ->rules(function ($record) {
-                        return ['unique:clients,name' . ($record ? ',' . $record->id : '')];
-                    })
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                Select::make('state_id')->label('Paese')
-                    ->required()
-                    ->searchable()
-                    ->live()
-                    ->preload()
-                    ->relationship(name: 'state', titleAttribute: 'name')
-                    ->default($italyId)
-                    ->afterStateUpdated(function (callable $set, callable $get) {
-                        $newStateId = $get('state_id');
-                        $italyId = State::where('name', 'Italy')->first()?->id;
-                        if ($newStateId !== $italyId) {
-                            $set('place', null);
-                            $set('region_id', null);
-                            $set('province_id', null);
-                            $set('city_id', null);
-                            $set('zip_code', null);
-                        } else {
-                            $set('place', null);
-                        }
-                    })
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
-                Select::make('region_id')->label('Regione')
-                    ->required()
-                    ->searchable()
-                    ->live()
-                    ->preload()
-                    ->relationship(name: 'region', titleAttribute: 'name')
-                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
-                Select::make('province_id')->label('Provincia')
-                    ->required()
-                    ->searchable()
-                    ->live()
-                    ->preload()
-                    ->relationship(
-                        name: 'province',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query, callable $get) => $get('region_id') ? $query->where('region_id', $get('region_id')) : $query->whereRaw('1 = 1')
-                    )
-                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
-                Select::make('city_id')->label('Comune')
-                    ->required()
-                    ->searchable()
-                    ->live()
-                    ->preload()
-                    ->relationship(
-                        name: 'city',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query, callable $get) => $get('province_id') ? $query->where('province_id', $get('province_id')) : $query->whereRaw('1 = 1')
-                    )
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        if ($state) {
-                            $city = City::with(['province.region'])->find($state);
-                            $set('zip_code', $city?->zip_code);
-                            $set('province_id', $city?->province_id);
-                            $set('region_id', $city?->province?->region_id);
-                        } else {
-                            $set('zip_code', null);
-                            $set('province_id', null);
-                            $set('region_id', null);
-                        }
-                    })
-                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TextInput::make('place')->label('Luogo')
-                    ->required()
-                    ->visible(fn (callable $get) => $get('state_id') !== $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 12]),
-                TextInput::make('zip_code')->label('CAP')
-                    ->required()
-                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 2]),
-                Placeholder::make('')
-                    ->label('')
-                    ->visible(fn (callable $get) => $get('state_id') === $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                Placeholder::make('')
-                    ->label('')
-                    ->visible(fn (callable $get) => $get('state_id') !== $italyId)
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TextInput::make('address')->label('Indirizzo')
-                    // ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                TextInput::make('civic')->label('Civico')
-                    // ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 2]),
-                TextInput::make('phone')->label('Telefono')
-                    ->tel()
-                    // ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
-                TextInput::make('email')->label('Email')
-                    ->email()
-                    // ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                TextInput::make('site')->label('Sito')
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                Textarea::make('note')->label('Note')
-                    ->columnSpan(['sm' => 'full', 'md' => 12]),
+                                // Input di testo per Nome (se altri tipi)
+                                TextInput::make('name')->label('Nome')
+                                    ->visible(fn (callable $get) => !in_array($get('client_type'), [ClientType::CITY->value, ClientType::PROVINCE->value]))
+                                    ->required()
+                                    ->rules(fn ($record) => ['unique:clients,name' . ($record ? ',' . $record->id : '')])
+                                    ->columnSpan(['sm' => 'full', 'md' => 6]),
+
+                                Select::make('state_id')->label('Paese')
+                                    ->required()
+                                    ->searchable()
+                                    ->live()
+                                    ->relationship(name: 'state', titleAttribute: 'name')
+                                    ->default($italyId)
+                                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+
+                                Select::make('region_id')->label('Regione')
+                                    ->required()
+                                    ->live()
+                                    ->relationship(name: 'region', titleAttribute: 'name')
+                                    ->visible(fn (callable $get) => $get('state_id') == $italyId)
+                                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+
+                                Select::make('province_id')->label('Provincia')
+                                    ->required()
+                                    ->live()
+                                    ->relationship(
+                                        name: 'province',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn ($query, callable $get) => $get('region_id') ? $query->where('region_id', $get('region_id')) : $query
+                                    )
+                                    ->visible(fn (callable $get) => $get('state_id') == $italyId)
+                                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+
+                                Select::make('city_id')->label('Comune')
+                                    ->required()
+                                    ->live()
+                                    ->relationship(
+                                        name: 'city',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn ($query, callable $get) => $get('province_id') ? $query->where('province_id', $get('province_id')) : $query
+                                    )
+                                    ->visible(fn (callable $get) => $get('state_id') == $italyId)
+                                    ->columnSpan(['sm' => 'full', 'md' => 3])
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        if ($state) {
+                                            $city = City::find($state);
+                                            $set('zip_code', $city?->zip_code);
+                                        }
+                                    }),
+
+                                TextInput::make('place')->label('Luogo')
+                                    ->visible(fn (callable $get) => $get('state_id') != $italyId)
+                                    ->columnSpanFull(),
+
+                                TextInput::make('zip_code')->label('CAP')
+                                    ->columnSpan(['sm' => 'full', 'md' => 2]),
+
+                                TextInput::make('address')->label('Indirizzo')->columnSpan(6),
+                                TextInput::make('civic')->label('Civico')->columnSpan(2),
+                                TextInput::make('phone')->tel()->label('Telefono')->columnSpan(3),
+                                TextInput::make('email')->email()->label('Email')->columnSpan(5),
+                                TextInput::make('site')->label('Sito')->columnSpan(4),
+                                Textarea::make('note')->label('Note')->columnSpanFull(),
+                            ])->columns(12),
+
+                        // TAB 2: REFERENTI
+                        Forms\Components\Tabs\Tab::make('Referenti')
+                            ->schema([
+                                Forms\Components\Repeater::make('referents')
+                                    ->label('')
+                                    ->relationship('referents')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('name')->label('Nome')->required()->columnSpan(4),
+                                        Forms\Components\TextInput::make('title')->label('Qualifica')->columnSpan(4),
+                                        Forms\Components\TextInput::make('phone')->label('Telefono')->columnSpan(2),
+                                        Forms\Components\TextInput::make('smart')->label('Cellulare')->columnSpan(2),
+                                        Forms\Components\TextInput::make('email')->email()->columnSpanFull(),
+                                        Forms\Components\Textarea::make('note')->rows(2)->columnSpanFull(),
+                                    ])
+                                    ->columns(12)
+                                    ->collapsible()
+                                    ->defaultItems(0)
+                                    ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'Nuovo Referente'),
+                            ]),
+                    ])->columnSpanFull(), // Fine Tabs
             ]);
     }
 

@@ -14,12 +14,10 @@
         }
 
         th, td {
-            border-top: 1px dashed black;
-            border-bottom: 1px dashed black;
-            border-left: none;
-            border-right: none;
             padding: 4px;
             text-align: left;
+            /* Rimuoviamo i bordi tratteggiati generici */
+            border: none;
         }
 
         thead th {
@@ -27,18 +25,25 @@
             border-bottom: 2px solid black;
         }
 
+        /* Bordo sinistro e destro della tabella su ogni cella esterna */
+        tr td:first-child, tr th:first-child { border-left: 2px solid black; }
+        tr td:last-child, tr th:last-child { border-right: 2px solid black; }
+
+        /* Riga delle Note: aggiungiamo il tratteggio SOPRA */
+        .note-row td {
+            /* border-top: 1px dashed black; */
+            font-style: italic; /* Opzionale: rende le note distinguibili */
+            padding-bottom: 8px;
+        }
+
+        /* Separatore tra i blocchi di contatti: bordo solido sotto la riga note */
+        .note-row td {
+            border-bottom: 1px dashed black; /* Un separatore leggero tra un cliente e l'altro */
+        }
+
+        /* Ultima riga della tabella */
         tbody tr:last-child td {
             border-bottom: 2px solid black;
-        }
-
-        tr td:first-child,
-        tr th:first-child {
-            border-left: 2px solid black;
-        }
-
-        tr td:last-child,
-        tr th:last-child {
-            border-right: 2px solid black;
         }
     </style>
 </head>
@@ -116,23 +121,32 @@
                 <th>Data</th>
                 <th>Orario</th>
                 <th>Esito</th>
-                <th>Note</th>
             </tr>
         </thead>
         <tbody>
             @foreach($items as $item)
+                {{-- Riga principale: senza bordo inferiore --}}
                 <tr>
-                    <td>{{ $item->client?->name }}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->date)->format('d/m/Y') }}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i') }}</td>
+                    <td><strong>{{ $item->client?->name }}</strong></td>
+                    <td>{{ $item->date ? \Carbon\Carbon::parse($item->date)->format('d/m/Y') : '' }}</td>
+                    <td>{{ $item->time ? \Carbon\Carbon::parse($item->time)->format('H:i') : '' }}</td>
                     <td>
                         @if($resourceType === 'calls' || $resourceType === 'visits')
-                            {{ \App\Enums\OutcomeType::tryFrom($item->outcome_type)?->getLabel() ?? $item->outcome_type }}
+                            {{ $item->outcome_type?->getLabel() ?? $item->outcome_type }}
                         @else
                             {{ $item->outcome_type ?? '-' }}
                         @endif
                     </td>
-                    <td>{{ $item->note }}</td>
+                </tr>
+                {{-- Riga Note: con bordo superiore tratteggiato --}}
+                <tr class="note-row">
+                    <td colspan="4">
+                        @if($item->note)
+                            <span style="color: #666;">Note:</span> {{ $item->note }}
+                        @else
+                            <span style="color: #ccc;">Nessuna nota</span>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

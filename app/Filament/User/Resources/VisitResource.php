@@ -14,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
@@ -71,6 +72,11 @@ class VisitResource extends Resource
                 Select::make('services')
                     ->label('Servizi')
                     ->options(ServiceType::pluck('name', 'id'))
+                    ->live()
+                    ->required(fn (Get $get) =>
+                        $get('outcome_type') !== null &&
+                        $get('outcome_type') !== OutcomeType::NEGATIVE->value
+                    )
                     ->multiple()
                     ->searchable()
                     ->columnSpan(['sm' => 'full', 'md' => 'full']),
@@ -103,8 +109,13 @@ class VisitResource extends Resource
                     ->time('H:i'),
                 Tables\Columns\TextColumn::make('outcome_type')
                     ->label('Esito'),
-                Tables\Columns\TextColumn::make('note')
-                    ->label('Note'),
+                Tables\Columns\IconColumn::make('note')
+                    ->label('Note')
+                    ->icon(fn ($state): string => filled($state) ? 'fas-note-sticky' : '')
+                    ->color(fn ($state): string => filled($state) ? 'grey' : '')
+                    ->tooltip(fn ($record) => $record->note ?? '')
+                    ->alignCenter()
+                    ->width('1%'),
             ])
             ->filters([
                 SelectFilter::make('region_id')
@@ -130,10 +141,49 @@ class VisitResource extends Resource
                     })
                     ->searchable()
                     ->preload(),
-                SelectFilter::make('user_id')->label('Utente')
-                    ->relationship(name: 'user', titleAttribute: 'name')
-                    ->searchable()
-                    ->preload()->optionsLimit(5),
+                SelectFilter::make('outcome_type')
+                    ->label('Esito')
+                    ->options(function () {
+                        // Creiamo l'array partendo da quello che vogliamo noi
+                        $options = [
+                            'void' => 'Nessun esito',
+                        ];
+
+                        // Aggiungiamo i casi dell'Enum
+                        foreach (OutcomeType::cases() as $case) {
+                            // Usa $case->getLabel() se hai implementato HasLabel,
+                            // altrimenti usa $case->name o $case->value
+                            $options[$case->value] = $case->getLabel();
+                        }
+
+                        return $options;
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        // Se l'utente sceglie la nostra opzione personalizzata
+                        if ($data['value'] === 'void') {
+                            return $query->whereNull('outcome_type');
+                        }
+
+                        // Se l'utente sceglie un'opzione dell'Enum
+                        if (!empty($data['value'])) {
+                            return $query->where('outcome_type', $data['value']);
+                        }
+
+                        return $query;
+                    }),
+                SelectFilter::make('date_status')
+                    ->label('Stato Data')
+                    ->options([
+                        'no_date' => 'Senza data',
+                        'date' => 'Con data programmata',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value']) {
+                            'no_date' => $query->whereNull('date'),
+                            'date' => $query->whereNotNull('date'),
+                            default => $query,
+                        };
+                    }),
                 Filter::make('date_range')
                     ->form([
                         DatePicker::make('from_date')
@@ -160,7 +210,11 @@ class VisitResource extends Resource
                             return "Fino a {$data['to_date']}";
                         }
                         return null;
-                    })
+                    }),
+                SelectFilter::make('user_id')->label('Utente')
+                    ->relationship(name: 'user', titleAttribute: 'name')
+                    ->searchable()
+                    ->preload()->optionsLimit(5),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

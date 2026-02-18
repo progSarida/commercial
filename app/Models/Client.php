@@ -57,6 +57,11 @@ class Client extends Model
         return $this->hasMany(ClientService::class);
     }
 
+    public function referents()
+    {
+        return $this->hasMany(Referent::class);
+    }
+
     protected static function booted()
     {
         static::creating(function ($client) {
