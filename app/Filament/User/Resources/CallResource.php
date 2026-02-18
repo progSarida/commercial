@@ -25,6 +25,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
 class CallResource extends Resource
 {
     protected static ?string $model = Contact::class;
@@ -66,19 +68,24 @@ class CallResource extends Resource
                     ->live()
                     // ->options(OutcomeType::class)
                     ->options(OutcomeType::getOptionsByContactType(ContactType::CALL))
-                    ->afterStateUpdated( function(Set $set) {
-                        $set('date', now()->format('Y-m-d'));
-                        $set('time', now()->format('H:i'));
+                    ->afterStateUpdated( function(Set $set, $state) {
+                        if($state){
+                            $set('date', now()->format('Y-m-d'));
+                            $set('time', now()->format('H:i'));
+                        } else {
+                            $set('date', null);
+                            $set('time', null);
+                        }
                     })
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('date')
                     ->label('Data')
                     ->extraInputAttributes(['class' => 'text-center'])
-                    ->required()
+                    ->required(fn(Get $get) => $get('outcome_type'))
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 TimePicker::make('time')
                     ->label('Orario')
-                    ->required()
+                    ->required(fn(Get $get) => $get('outcome_type'))
                     ->seconds(false)
                     ->displayFormat('H:i')
                     ->columnSpan(['sm' => 'full', 'md' => 3]),
@@ -101,7 +108,7 @@ class CallResource extends Resource
                     ->label('Servizi')
                     ->live()
                     ->required(fn (Get $get) =>
-                        $get('outcome_type') !== null &&
+                        $get('outcome_type') !== '' &&
                         $get('outcome_type') !== OutcomeType::NEGATIVE->value
                     )
                     ->options(ServiceType::pluck('name', 'id'))
