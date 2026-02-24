@@ -169,7 +169,7 @@ class ClientResource extends Resource
                                         Forms\Components\Textarea::make('note')->rows(2)->columnSpanFull(),
                                     ])
                                     ->columns(12)
-                                    ->collapsible()
+                                    ->collapsed(fn ($record) => $record)
                                     ->defaultItems(0)
                                     ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'Nuovo Referente'),
                             ]),

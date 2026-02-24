@@ -50,6 +50,7 @@ class CallResource extends Resource
                 Select::make('client_id')
                     ->label('Cliente')
                     ->required()
+                    ->live()
                     ->searchable()
                     // ->relationship( name: 'client', titleAttribute: 'name')
                     ->relationship(
@@ -62,6 +63,21 @@ class CallResource extends Resource
                         $phone = $record->phone ?? 'Nessun numero';
                         return "{$record->name} - {$phone}";
                     })
+                    ->hintAction(
+                        Forms\Components\Actions\Action::make('open_client')
+                            ->label('Modifica')
+                            ->icon('heroicon-m-arrow-top-right-on-square')
+                            ->color('gray')
+                            ->visible(fn ($get) => filled($get('client_id')))
+                            ->url(function ($get) {
+                                $clientId = $get('client_id');
+                                if (!$clientId) return null;
+
+                                // Genera l'URL per l'edit del cliente (cambia ClientResource con il nome reale della tua risorsa)
+                                return ClientResource::getUrl('view', ['record' => $clientId]);
+                            })
+                            ->openUrlInNewTab() // Fondamentale per non perdere il lavoro sulla chiamata
+                    )
                     ->columnSpan(['sm' => 'full', 'md' => 20]),
                 Select::make('outcome_type')
                     ->label('Esito')
@@ -70,8 +86,9 @@ class CallResource extends Resource
                     ->options(OutcomeType::getOptionsByContactType(ContactType::CALL))
                     ->afterStateUpdated( function(Set $set, $state) {
                         if($state){
-                            $set('date', now()->format('Y-m-d'));
-                            $set('time', now()->format('H:i'));
+                            $now = now()->timezone('Europe/Rome');
+                            $set('date', $now->format('Y-m-d'));
+                            $set('time', $now->format('H:i'));
                         } else {
                             $set('date', null);
                             $set('time', null);
@@ -126,6 +143,25 @@ class CallResource extends Resource
                     ->disabled(!Auth::user()->hasRole('super_admin'))
                     ->dehydrated()
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
+                Forms\Components\Placeholder::make('client_referents')
+                    ->label('Referenti del Cliente')
+                    ->visible(fn (Get $get) => filled($get('client_id')))
+                    ->content(function (Get $get) {
+                        $clientId = $get('client_id');
+                        if (!$clientId) return 'Seleziona un cliente';
+
+                        $referents = \App\Models\Referent::where('client_id', $clientId)->get();
+
+                        if ($referents->isEmpty()) return 'Nessun referente registrato.';
+
+                        // Crea una lista testuale o HTML
+                        return new \Illuminate\Support\HtmlString(
+                            '<ul class="list-disc ml-4">' .
+                            $referents->map(fn($r) => "<li><strong>{$r->name}</strong>" . ($r->phone ? " - {$r->phone}" : "") . "</li>")->implode('') .
+                            '</ul>'
+                        );
+                    })
+                    ->columnSpan(['sm' => 'full', 'md' => 'full']),
             ]);
     }
     public static function table(Table $table): Table
@@ -194,18 +230,44 @@ class CallResource extends Resource
 
                         return $options;
                     })
+                    ->multiple()
+                    // ->query(function (Builder $query, array $data): Builder {
+                    //     // Se l'utente sceglie la nostra opzione personalizzata
+                    //     if ($data['value'] === 'void') {
+                    //         return $query->whereNull('outcome_type');
+                    //     }
+
+                    //     // Se l'utente sceglie un'opzione dell'Enum
+                    //     if (!empty($data['value'])) {
+                    //         return $query->where('outcome_type', $data['value']);
+                    //     }
+
+                    //     return $query;
+                    // })
                     ->query(function (Builder $query, array $data): Builder {
-                        // Se l'utente sceglie la nostra opzione personalizzata
-                        if ($data['value'] === 'void') {
-                            return $query->whereNull('outcome_type');
+                        // Se non c'è nulla di selezionato, usciamo subito
+                        if (empty($data['values'])) {
+                            return $query;
                         }
 
-                        // Se l'utente sceglie un'opzione dell'Enum
-                        if (!empty($data['value'])) {
-                            return $query->where('outcome_type', $data['value']);
-                        }
+                        $selectedValues = $data['values'];
 
-                        return $query;
+                        return $query->where(function (Builder $q) use ($selectedValues) {
+                            // Controlliamo se 'void' è tra le opzioni selezionate
+                            if (in_array('void', $selectedValues)) {
+                                // Filtriamo per i valori NULL...
+                                $q->whereNull('outcome_type');
+
+                                // ...e aggiungiamo in OR gli altri valori Enum selezionati (se esistono)
+                                $enumValues = array_diff($selectedValues, ['void']);
+                                if (!empty($enumValues)) {
+                                    $q->orWhereIn('outcome_type', $enumValues);
+                                }
+                            } else {
+                                // Se 'void' non c'è, facciamo una semplice WhereIn
+                                $q->whereIn('outcome_type', $selectedValues);
+                            }
+                        });
                     }),
                 SelectFilter::make('date_status')
                     ->label('Stato Data')

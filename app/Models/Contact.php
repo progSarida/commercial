@@ -39,19 +39,34 @@ class Contact extends Model
     // Query per 'Chiamate'
     public function scopeCalls($query)
     {
-        return $query->where('contact_type', ContactType::CALL);
+        return $query->where('contact_type', ContactType::CALL)
+            ->join('clients', 'contacts.client_id', '=', 'clients.id')
+            ->select('contacts.*')
+            ->orderBy('date', 'asc')
+            ->orderBy('time', 'asc')
+            ->orderBy('clients.name', 'asc');
     }
 
     // Query per 'Visite'
     public function scopeVisits($query)
     {
-        return $query->where('contact_type', ContactType::VISIT);
+        return $query->where('contact_type', ContactType::VISIT)
+            ->join('clients', 'contacts.client_id', '=', 'clients.id')
+            ->select('contacts.*')
+            ->orderBy('date', 'asc')
+            ->orderBy('time', 'asc')
+            ->orderBy('clients.name', 'asc');
     }
 
     // Query per 'Scadenze clienti'
     public function scopeDeadlines($query)
     {
-        return $query->where('contact_type', ContactType::DEADLINE);
+        return $query->where('contact_type', ContactType::DEADLINE)
+            ->join('clients', 'contacts.client_id', '=', 'clients.id')
+            ->select('contacts.*')
+            ->orderBy('date', 'asc')
+            ->orderBy('time', 'asc')
+            ->orderBy('clients.name', 'asc');
     }
 
     protected static function booted()
