@@ -77,6 +77,11 @@ class Bidding extends Model
         'closure_date' => 'date',
     ];
 
+    public function tender()
+    {
+        return $this->hasOne(Tender::class);
+    }
+
     public function serviceTypes()
     {
         return $this->belongsToMany(ServiceType::class, 'bidding_service_type', 'bidding_id', 'service_type_id');
@@ -166,7 +171,13 @@ class Bidding extends Model
         });
 
         static::saved(function ($bidding) {
-            //
+            $notPending = $bidding->bidding_processing_state && $bidding->bidding_processing_state != BiddingProcessingState::PENDING;
+            if ($notPending) {
+                Tender::firstOrCreate(
+                    ['bidding_id' => $bidding->id],                         // controllo su bidding_id
+                    ['client_id' => $bidding->client_id]                    // se lo crea aggiunge anche client_id
+                );
+            }
         });
 
         static::deleting(function ($bidding) {
@@ -177,6 +188,7 @@ class Bidding extends Model
             if ($bidding->attachment_path) {
                 Storage::disk('public')->deleteDirectory($bidding->attachment_path);
             }
+            Tender::where('bidding_id', $bidding->id)->delete();
         });
     }
 }

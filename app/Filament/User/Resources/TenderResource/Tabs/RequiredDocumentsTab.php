@@ -37,7 +37,7 @@ class RequiredDocumentsTab
                 ->options(TenderItemProcessingState::class)
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('service_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>7]),
-            TextInput::make('service_refernce_1')
+            TextInput::make('service_reference_1')
                 ->label('Servizio 1')
                 ->visible(fn (callable $get) => $get('service_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
@@ -72,7 +72,7 @@ class RequiredDocumentsTab
                 ->options(TenderItemProcessingState::class)
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('bank_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>7]),
-            TextInput::make('bank_refernce_1')
+            TextInput::make('bank_reference_1')
                 ->label('Banca 1')
                 ->visible(fn (callable $get) => $get('bank_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
@@ -82,7 +82,7 @@ class RequiredDocumentsTab
                 ->visible(fn (callable $get) => $get('bank_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => $get('bank_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>3]),
-            TextInput::make('bank_refernce_2')
+            TextInput::make('bank_reference_2')
                 ->label('Banca 2')
                 ->visible(fn (callable $get) => $get('bank_reference_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
@@ -98,31 +98,31 @@ class RequiredDocumentsTab
                 ->default(false)
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('pass_oe_require_check'))->columnSpan(['sm' => 0, 'md' =>6]),
-            DatePicker::make('pass_oe_deadline_date')
+            DatePicker::make('pass_oe_require_deadline_date')
                 ->label('Da effettuarsi in data/entro il')
                 ->extraInputAttributes(['class' => 'text-center'])
                 ->visible(fn (callable $get) => $get('pass_oe_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
-            Select::make('bank_reference_processing_state')
+            Select::make('pass_oe_require_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('pass_oe_require_check'))
                 ->options(TenderItemProcessingState::class)
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
-            Checkbox::make('biddingMandatoryInspection')
+            Checkbox::make('bidding_inspection_virtual')
                 ->label('E\' previsto il sopralluogo')
                 ->disabled()
                 ->live()
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
-            Placeholder::make('')->visible(fn (callable $get) => !$get('biddingMandatoryInspection'))->columnSpan(['sm' => 0, 'md' =>6]),
-            DatePicker::make('biddingMandatoryInspectionDeadline')
+            Placeholder::make('')->visible(fn (callable $get) => !$get('bidding_inspection_virtual'))->columnSpan(['sm' => 0, 'md' =>6]),
+            DatePicker::make('bidding_inspection_deadline_virtual')
                 ->label('Da effettuarsi in data/entro il')
                 ->extraInputAttributes(['class' => 'text-center'])
                 ->disabled()
-                ->visible(fn (callable $get) => $get('biddingMandatoryInspection'))
+                ->visible(fn (callable $get) => $get('bidding_inspection_virtual'))
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Select::make('inspection_processing_state')
                 ->label('Stato lavorazione')
-                ->visible(fn (callable $get) => $get('biddingMandatoryInspection'))
+                ->visible(fn (callable $get) => $get('bidding_inspection_virtual'))
                 ->options(TenderItemProcessingState::class)
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Checkbox::make('deposit_require_check')
@@ -131,7 +131,7 @@ class RequiredDocumentsTab
                 ->default(false)
                 ->columnSpan(['sm' => 'full', 'md' => 6]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('deposit_require_check'))->columnSpan(['sm' => 0, 'md' =>6]),
-            TextInput::make('deposit_amount')
+            TextInput::make('deposit_require_amount')
                 ->label('Importo')
                 ->visible(fn (callable $get) => $get('deposit_require_check'))
                 ->columnSpan(['sm' => 'full', 'md' => 2]),

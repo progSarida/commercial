@@ -7,6 +7,7 @@ use App\Models\Bidding;
 use App\Models\Tender;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Support\Enums\MaxWidth;
 
 class ViewTender extends ViewRecord
 {
@@ -102,5 +103,10 @@ class ViewTender extends ViewRecord
                 ->action(fn() => $this->redirect(TenderResource::getUrl('edit', ['record' => $nextInspectionTender->id]))),
             Actions\EditAction::make(),
         ];
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null
+    {
+        return MaxWidth::Full;
     }
 }

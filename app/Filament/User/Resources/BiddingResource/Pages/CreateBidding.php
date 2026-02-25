@@ -5,6 +5,7 @@ namespace App\Filament\User\Resources\BiddingResource\Pages;
 use App\Filament\User\Resources\BiddingResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -148,5 +149,10 @@ class CreateBidding extends CreateRecord
             is_dir($path) ? self::deleteDirectory($path) : unlink($path);
         }
         rmdir($dir);
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null
+    {
+        return MaxWidth::Full;
     }
 }

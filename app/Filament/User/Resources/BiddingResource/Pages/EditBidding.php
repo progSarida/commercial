@@ -4,9 +4,11 @@ namespace App\Filament\User\Resources\BiddingResource\Pages;
 
 use App\Filament\User\Resources\BiddingResource;
 use App\Models\Bidding;
+use App\Models\Client;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -94,6 +96,11 @@ class EditBidding extends EditRecord
             // Cancellazione gara
             // Actions\DeleteAction::make(),
         ];
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null
+    {
+        return MaxWidth::Full;
     }
 
     protected function getFormActions(): array

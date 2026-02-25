@@ -4,9 +4,11 @@ namespace App\Filament\User\Resources\BiddingResource\Pages;
 
 use App\Filament\User\Resources\BiddingResource;
 use App\Models\Bidding;
+use App\Models\Client;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Support\Enums\MaxWidth;
 
 class ViewBidding extends ViewRecord
 {
@@ -94,5 +96,10 @@ class ViewBidding extends ViewRecord
                 ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextInspection->id]))),
             Actions\EditAction::make(),
         ];
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null
+    {
+        return MaxWidth::Full;
     }
 }

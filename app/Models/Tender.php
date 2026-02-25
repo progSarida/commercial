@@ -137,6 +137,116 @@ class Tender extends Model
         'authority_tax_require_amount' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'client_name_virtual',
+        'client_address_virtual',
+        'client_zipcode_virtual',
+        'client_province_virtual',
+        'client_region_virtual',
+        'client_phone_virtual',
+        'client_email_virtual',
+        'residents_virtual',
+        'bidding_cig_virtual',
+        'bidding_service_types_virtual',
+        'bidding_duration_virtual',
+        'bidding_send_date_virtual',
+        'bidding_send_time_virtual',
+        'bidding_opening_date_virtual',
+        'bidding_opening_time_virtual',
+        'bidding_inspection_virtual',
+        'bidding_inspection_deadline_virtual',
+    ];
+
+    public function getClientNameVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->name;
+    }
+
+    public function getClientAddressVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->address;
+    }
+
+    public function getClientZipcodeVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->zip_code;
+    }
+
+    public function getClientProvinceVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->province?->name;
+    }
+
+    public function getClientRegionVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->region?->name;
+    }
+
+    public function getClientPhoneVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->phone;
+    }
+
+    public function getClientEmailVirtualAttribute(): ?string
+    {
+        return $this->bidding?->client?->email;
+    }
+
+    public function getResidentsVirtualAttribute(): ?int
+    {
+        return $this->bidding?->residents;
+    }
+
+    public function getBiddingCigVirtualAttribute(): ?string
+    {
+        return $this->bidding?->cig;
+    }
+
+    public function getBiddingServiceTypesVirtualAttribute(): ?array
+    {
+        return $this->bidding?->serviceTypes?->pluck('id')->toArray();
+    }
+
+    public function getBiddingDurationVirtualAttribute(): string
+    {
+        $b = $this->bidding;
+        return implode(' ', array_filter([
+            $b?->year > 0 ? "{$b->year} anni" : null,
+            $b?->month > 0 ? "{$b->month} mesi" : null,
+            $b?->day > 0 ? "{$b->day} giorni" : null,
+        ]));
+    }
+
+    public function getBiddingSendDateVirtualAttribute()
+    {
+        return $this->bidding?->send_date?->format('Y-m-d');
+    }
+
+    public function getBiddingSendTimeVirtualAttribute()
+    {
+        return $this->bidding?->send_time;
+    }
+
+    public function getBiddingOpeningDateVirtualAttribute()
+    {
+        return $this->bidding?->opening_date?->format('Y-m-d');
+    }
+
+    public function getBiddingOpeningTimeVirtualAttribute()
+    {
+        return $this->bidding?->opening_time;
+    }
+
+    public function getBiddingInspectionVirtualAttribute(): ?bool
+    {
+        return $this->bidding?->mandatory_inspection;
+    }
+
+    public function getBiddingInspectionDeadlineVirtualAttribute()
+    {
+        return $this->bidding?->inspection_deadline_date?->format('Y-m-d');
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);

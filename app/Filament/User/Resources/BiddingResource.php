@@ -10,12 +10,16 @@ use App\Enums\ClientType;
 use App\Enums\YesNo;
 use App\Filament\User\Resources\BiddingResource\Pages;
 use App\Filament\User\Resources\BiddingResource\RelationManagers;
+use App\Filament\User\Resources\TenderResource\Tabs\GeneralDataTab;
+use App\Filament\User\Resources\TenderResource\Tabs\ProcedureTypeTab;
+use App\Filament\User\Resources\TenderResource\Tabs\RequiredDocumentsTab;
 use App\Models\Bidding;
 use App\Models\BiddingDataSource;
 use App\Models\BiddingState;
 use App\Models\Client;
 use App\Models\Province;
 use App\Models\ServiceType;
+use App\Models\Tender;
 use App\Models\User;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -25,13 +29,17 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -64,508 +72,448 @@ class BiddingResource extends Resource
         return $form
             ->columns(24)
             ->schema([
-                CheckboxList::make('serviceTypes')
-                    ->label('Gara relativa al servizio di')
-                    ->required()
-                    ->relationship('serviceTypes', 'name')
-                    ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columns(6)
-                    ->columnSpan(['sm' => 'full', 'md' => 24])
-                    ->gridDirection('row'),
-                Select::make('client_type')
-                    ->label('Tipo')
-                    ->required()
-                    ->live()
-                    ->options(ClientType::class)
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                Select::make('client_id')
-                    ->label('Ente')
-                    ->hintAction(
-                        Action::make('Nuovo')
-                            ->icon('heroicon-o-user')
-                            ->form(fn(Form $form) => ClientResource::modalForm($form))
-                            ->modalHeading('Nuovo Cliente')
-                            ->modalWidth('6xl')
-                            ->action(function (array $data, callable $set) {
-                                $client = new Client();
-                                BiddingResource::saveClient($data, $client);
-                                $set('client_type', $client->client_type);
-                                $set('client_id', $client->id);
-                                $set('province_id', $client->province_id);
-                                $set('region_id', $client->region_id);
-                            })
-                    )
-                    ->required()
-                    ->relationship(
-                        name: 'client',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query, callable $get) => $get('client_type') ? $query->where('client_type', $get('client_type')) : $query->whereRaw('1 = 0')
-                    )
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $client = Client::find($state);
-                        $set('province_id', $client->province_id);
-                        $set('region_id', $client->region_id);
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->reactive()
-                    ->columnSpan(['sm' => 'full', 'md' => 9]),
-                Select::make('province_id')
-                    ->label('Provincia')
-                    ->required()
-                    ->relationship( name: 'province', titleAttribute: 'name', )
-                    ->disabled()
-                    ->dehydrated()
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                Select::make('region_id')
-                    ->label('Regione')
-                    ->required()
-                    ->relationship( name: 'region', titleAttribute: 'name', )
-                    ->disabled()
-                    ->dehydrated()
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                Textarea::make('description')
-                    ->label('Descrizione')
-                    ->columnSpan(['sm' => 'full', 'md' => 24]),
-                // TextInput::make('amount')
-                //     ->label('Importo')
-                //     ->columnSpan(['sm' => 'full', 'md' => 4])
-                //     ->prefix('€')
-                //     ->live()
-                //     ->inputMode('decimal')
-                //     ->formatStateUsing(fn ($state) => $state ? number_format((float)$state, 2, ',', '.') : '')
-                //     ->dehydrateStateUsing(function ($state) {
-                //         if (!$state) return null;
-                //         if (str_contains($state, ',')) {
-                //             $value = str_replace('.', '', $state);
-                //             $value = str_replace(',', '.', $value);
-                //         } else {
-                //             $value = $state;
-                //         }
-                //         return (float)$value;
-                //     }),
-                TextInput::make('amount')
-                    ->label('Importo')
-                    ->prefix('€')
-                    ->columnSpan(['sm' => 'full', 'md' => 4])
-                    ->live(onBlur: true)
-                    ->inputMode('decimal')
-                    ->extraInputAttributes(['class' => 'text-right'])
-                    // 1. Quando il record viene caricato → formatta con . e ,
-                    ->formatStateUsing(fn ($state) =>
-                        $state !== null && $state !== ''
-                            ? number_format((float) $state, 2, ',', '.')
-                            : ''
-                    )
-                    // 2. Ogni volta che l'utente digita → riformatta ISTANTANEAMENTE
-                    ->afterStateUpdated(function ($state, $component) {
-                        if (blank($state)) {
-                            $component->state('');
-                            return;
-                        }
-
-                        // Pulizia: accetta solo numeri, punto, virgola e -
-                        $clean = preg_replace('/[^\d,\.-]/', '', $state);
-
-                        // Convertiamo in float per gestire correttamente la virgola come decimale
-                        $number = str_replace(',', '.', $clean);
-                        $float = floatval($number);
-
-                        // Riformatta come vuoi tu: 1.234.567,89
-                        $formatted = number_format($float, 2, ',', '.');
-
-                        // Ri-aggiorna il campo con il valore formattato
-                        $component->state($formatted);
-                    })
-                    // 3. Al salvataggio → converte "1.234.567,89" → 1234567.89 (float)
-                    ->dehydrateStateUsing(fn ($state): ?float =>
-                        blank($state)
-                            ? null
-                            : (float) str_replace(['.', ','], ['', '.'], $state)
-                ),
-                TextInput::make('residents')
-                    ->label('Abitanti')
-                    ->columnSpan(['sm' => 'full', 'md' => 4])
-                    ->inputMode('numeric')
-                    ->extraInputAttributes(['class' => 'text-right'])
-                    ->formatStateUsing(fn ($state) => $state ? number_format((int)$state, 0, ',', '.') : '')
-                    ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
-                Select::make('bidding_state_id')
-                    ->label('Stato gara')
-                    ->relationship(
-                        name: 'biddingState',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                    )
-                    ->default(fn(Set $set) => BiddingState::where('name', 'Da valutare')->first()->id )
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                Select::make('bidding_processing_state')
-                    ->label('Stato lavorazione')
-                    ->live()
-                    ->options(BiddingProcessingState::class)
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                Select::make('bidding_priority_type')
-                    ->label('Priorità')
-                    ->live()
-                    ->options(BiddingPriorityType::class)
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                Textarea::make('bidding_note')
-                    ->label('Note gara')
-                    ->columnSpan(['sm' => 'full', 'md' => 24]),
-                Select::make('bidding_type_id')
-                    ->label('Tipo gara')
-                    ->relationship(
-                        name: 'biddingType',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                    )
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                Select::make('bidding_adjudication_type_id')
-                    ->label('Tipo aggiudicazione')
-                    ->relationship(
-                        name: 'biddingAdjudicationType',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                    )
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                DatePicker::make('clarification_request_deadline_date')
-                    ->label('Data scadenza chiarimenti')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                TimePicker::make('clarification_request_deadline_time')
-                    ->label('Orario scadenza chiarimenti')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->default('06:00')
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                Checkbox::make('mandatory_inspection')
-                    ->label('Sopralluogo obbligatorio')
-                    ->live()
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        if($state)
-                            $set('inspection_deadline_time', '06:00');
-                        else
-                            $set('inspection_deadline_time', null);
-                    })
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                DatePicker::make('inspection_deadline_date')
-                    ->label('Data scadenza sopralluogo')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                TimePicker::make('inspection_deadline_time')
-                    ->label('Orario scadenza sopralluogo')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
-                    ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                DatePicker::make('deadline_date')
-                    ->label('Data scadenza gara')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TimePicker::make('deadline_time')
-                    ->label('Orario scadenza gara')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->default('06:00')
-                    ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
-                DatePicker::make('send_date')
-                    ->label('Data invio offerta')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TimePicker::make('send_time')
-                    ->label('Orario invio offerta')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->default('06:00')
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                DatePicker::make('opening_date')
-                    ->label('Data apertura offerte')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TimePicker::make('opening_time')
-                    ->label('Orario apertura offerte')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->default('06:00')
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                Select::make('awarded')
-                    ->label('Aggiudicata')
-                    ->options(YesNo::class)
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                DatePicker::make('closure_date')
-                    ->label('Data chiusura procedura')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TextInput::make('contact')
-                    ->label('Nome contatto')
-                    ->columnSpan(['sm' => 'full', 'md' => 10]),
-                TextInput::make('note')
-                    ->label('Note')
-                    ->columnSpan(['sm' => 'full', 'md' => 14]),
-                TextInput::make('contracting_station')
-                    ->label('Gestore appalto')
-                    ->columnSpan(['sm' => 'full', 'md' => 17]),
-                Select::make('bidding_procedure_type')
-                    ->label('Procedura')
-                    ->live()
-                    ->options(BiddingProcedureType::class)
-                    ->default(BiddingProcedureType::TELEMATIC)
-                    ->columnSpan(['sm' => 'full', 'md' => 7]),
-                TextInput::make('procedure_portal')
-                    ->label('Portale procedura')
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                TextInput::make('cig')
-                    ->label('CIG')
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                TextInput::make('procedure_id')
-                    ->label('ID Procedura')
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                TextInput::make('year')
-                    ->label('Durata anni')
-                    ->extraInputAttributes(['class' => 'text-right'])
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                TextInput::make('month')
-                    ->label('Durata mesi')
-                    ->extraInputAttributes(['class' => 'text-right'])
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                TextInput::make('day')
-                    ->label('Durata giorni')
-                    ->extraInputAttributes(['class' => 'text-right'])
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                DatePicker::make('renew')
-                    ->label('Rinnovo')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->columnSpan(['sm' => 'full', 'md' => 6]),
-                Select::make('assigned_user_id')
-                    ->label('Assegnato a')
-                    ->relationship('assignedUser', 'name')
-                    ->options(User::pluck('name', 'id')->toArray())
-                    ->columns(6)
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                Select::make('modified_user_id')
-                    ->label('Modificato da')
-                    ->relationship('modifiedUser', 'name')
-                    ->options(User::pluck('name', 'id')->toArray())
-                    // ->columns(6)
-                    ->disabled()
-                    ->dehydrated()
-                    ->visible(fn ($state) => $state !== null)
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                Placeholder::make('')
-                    ->label('Ultima modifica: ')
-                    ->content(fn ($record) => $record?->updated_at?->format('d/m/Y') ?? '')
-                    ->visible(fn (callable $get) => $get('modified_user_id') !== null)
-                    ->columnSpan(['sm' => 0, 'md' =>8]),
-                Placeholder::make('')
-                    ->visible(fn (callable $get) => $get('modified_user_id') === null)
-                    ->columnSpan(['sm' => 0, 'md' =>16]),
-                Select::make('source1_id')
-                    ->label('Fonte dati 1')
-                    ->relationship('source1', 'name')
-                    ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                Select::make('source2_id')
-                    ->label('Fonte dati 2')
-                    ->relationship('source2', 'name')
-                    ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                Select::make('source3_id')
-                    ->label('Fonte dati 3')
-                    ->relationship('source3', 'name')
-                    ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                    ->columnSpan(['sm' => 'full', 'md' => 8]),
-                FileUpload::make('temp_zip')
-                    ->label('Carica ZIP con allegati')
-                    ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                    ->maxSize(102400)
-                    // ->disk('public')
-                    ->directory('biddings-temp')
-                    // ->visibility('public')
-                    ->multiple(false)
-                    ->preserveFilenames()
+                Tabs::make('Dettagli Operativi Appalto')
+                    // ->relationship('tender') // <--- IL SEGRETO È QUI
                     ->columnSpanFull()
-                    ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
+                    ->tabs([
+                        Tab::make('Dati Gara')
+                        ->columns(24)
+                        ->schema([
+                            CheckboxList::make('serviceTypes')
+                                ->label('Gara relativa al servizio di')
+                                ->required()
+                                ->relationship('serviceTypes', 'name')
+                                ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
+                                ->columns(6)
+                                ->columnSpan(['sm' => 'full', 'md' => 24])
+                                ->gridDirection('row'),
+                            Select::make('client_type')
+                                ->label('Tipo')
+                                ->required()
+                                ->live()
+                                ->options(ClientType::class)
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            Select::make('client_id')
+                                ->label('Ente')
+                                ->hintAction(
+                                    Action::make('Nuovo')
+                                        ->icon('heroicon-o-user')
+                                        ->form(fn(Form $form) => ClientResource::modalForm($form))
+                                        ->modalHeading('Nuovo Cliente')
+                                        ->modalWidth('6xl')
+                                        ->action(function (array $data, callable $set) {
+                                            $client = new Client();
+                                            BiddingResource::saveClient($data, $client);
+                                            $set('client_type', $client->client_type);
+                                            $set('client_id', $client->id);
+                                            $set('province_id', $client->province_id);
+                                            $set('region_id', $client->region_id);
+                                        })
+                                )
+                                ->required()
+                                ->relationship(
+                                    name: 'client',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn ($query, callable $get) => $get('client_type') ? $query->where('client_type', $get('client_type')) : $query->whereRaw('1 = 0')
+                                )
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    $client = Client::find($state);
+                                    $set('province_id', $client->province_id);
+                                    $set('region_id', $client->region_id);
+                                })
+                                ->searchable()
+                                ->preload()
+                                ->reactive()
+                                ->columnSpan(['sm' => 'full', 'md' => 9]),
+                            Select::make('province_id')
+                                ->label('Provincia')
+                                ->required()
+                                ->relationship( name: 'province', titleAttribute: 'name', )
+                                ->disabled()
+                                ->dehydrated()
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            Select::make('region_id')
+                                ->label('Regione')
+                                ->required()
+                                ->relationship( name: 'region', titleAttribute: 'name', )
+                                ->disabled()
+                                ->dehydrated()
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            Textarea::make('description')
+                                ->label('Descrizione')
+                                ->columnSpan(['sm' => 'full', 'md' => 24]),
+                            TextInput::make('amount')
+                                ->label('Importo')
+                                ->prefix('€')
+                                ->columnSpan(['sm' => 'full', 'md' => 4])
+                                ->live(onBlur: true)
+                                ->inputMode('decimal')
+                                ->extraInputAttributes(['class' => 'text-right'])
+                                // 1. Quando il record viene caricato → formatta con . e ,
+                                ->formatStateUsing(fn ($state) =>
+                                    $state !== null && $state !== ''
+                                        ? number_format((float) $state, 2, ',', '.')
+                                        : ''
+                                )
+                                // 2. Ogni volta che l'utente digita → riformatta ISTANTANEAMENTE
+                                ->afterStateUpdated(function ($state, $component) {
+                                    if (blank($state)) {
+                                        $component->state('');
+                                        return;
+                                    }
 
-                // Section::make('Allegati')
-                //     ->collapsed()
-                //     ->visible(fn($record) => $record && $record->attachment_path)
-                //     ->schema([
-                //         Placeholder::make('attachments')
-                //             ->label('')
-                //             ->content(function ($record) {
-                //                 if (!$record || !$record->attachment_path) {
-                //                     return 'Nessun allegato.';
-                //                 }
+                                    // Pulizia: accetta solo numeri, punto, virgola e -
+                                    $clean = preg_replace('/[^\d,\.-]/', '', $state);
 
-                //                 $files = Storage::disk('public')->files($record->attachment_path);
+                                    // Convertiamo in float per gestire correttamente la virgola come decimale
+                                    $number = str_replace(',', '.', $clean);
+                                    $float = floatval($number);
 
-                //                 if (empty($files)) {
-                //                     return 'Nessuna cartella allegati trovata.';
-                //                 }
+                                    // Riformatta come vuoi tu: 1.234.567,89
+                                    $formatted = number_format($float, 2, ',', '.');
 
-                //                 return new \Illuminate\Support\HtmlString(
-                //                     collect($files)->sort()->map(function ($file) {
-                //                         $name = basename($file);
-                //                         $url = Storage::url($file);
+                                    // Ri-aggiorna il campo con il valore formattato
+                                    $component->state($formatted);
+                                })
+                                // 3. Al salvataggio → converte "1.234.567,89" → 1234567.89 (float)
+                                ->dehydrateStateUsing(fn ($state): ?float =>
+                                    blank($state)
+                                        ? null
+                                        : (float) str_replace(['.', ','], ['', '.'], $state)
+                            ),
+                            TextInput::make('residents')
+                                ->label('Abitanti')
+                                ->columnSpan(['sm' => 'full', 'md' => 4])
+                                ->inputMode('numeric')
+                                ->extraInputAttributes(['class' => 'text-right'])
+                                ->formatStateUsing(fn ($state) => $state ? number_format((int)$state, 0, ',', '.') : '')
+                                ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
+                            Select::make('bidding_state_id')
+                                ->label('Stato gara')
+                                ->relationship(
+                                    name: 'biddingState',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                                )
+                                ->default(fn(Set $set) => BiddingState::where('name', 'Da valutare')->first()->id )
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            Select::make('bidding_processing_state')
+                                ->label('Stato lavorazione')
+                                ->live()
+                                ->options(BiddingProcessingState::class)
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
+                            Select::make('bidding_priority_type')
+                                ->label('Priorità')
+                                ->live()
+                                ->options(BiddingPriorityType::class)
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            Textarea::make('bidding_note')
+                                ->label('Note gara')
+                                ->columnSpan(['sm' => 'full', 'md' => 24]),
+                            Select::make('bidding_type_id')
+                                ->label('Tipo gara')
+                                ->relationship(
+                                    name: 'biddingType',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                                )
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
+                            Select::make('bidding_adjudication_type_id')
+                                ->label('Tipo aggiudicazione')
+                                ->relationship(
+                                    name: 'biddingAdjudicationType',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                                )
+                                ->columnSpan(['sm' => 'full', 'md' => 8]),
+                            DatePicker::make('clarification_request_deadline_date')
+                                ->label('Data scadenza chiarimenti')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            TimePicker::make('clarification_request_deadline_time')
+                                ->label('Orario scadenza chiarimenti')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->default('06:00')
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            Checkbox::make('mandatory_inspection')
+                                ->label('Sopralluogo obbligatorio')
+                                ->live()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    if($state)
+                                        $set('inspection_deadline_time', '06:00');
+                                    else
+                                        $set('inspection_deadline_time', null);
+                                })
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            DatePicker::make('inspection_deadline_date')
+                                ->label('Data scadenza sopralluogo')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            TimePicker::make('inspection_deadline_time')
+                                ->label('Orario scadenza sopralluogo')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
+                                ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            DatePicker::make('deadline_date')
+                                ->label('Data scadenza gara')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->required()
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            TimePicker::make('deadline_time')
+                                ->label('Orario scadenza gara')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->default('06:00')
+                                ->required()
+                                ->columnSpan(['sm' => 'full', 'md' => 5]),
+                            DatePicker::make('send_date')
+                                ->label('Data invio offerta')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            TimePicker::make('send_time')
+                                ->label('Orario invio offerta')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->default('06:00')
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            DatePicker::make('opening_date')
+                                ->label('Data apertura offerte')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            TimePicker::make('opening_time')
+                                ->label('Orario apertura offerte')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->default('06:00')
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            Select::make('awarded')
+                                ->label('Aggiudicata')
+                                ->options(YesNo::class)
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            DatePicker::make('closure_date')
+                                ->label('Data chiusura procedura')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            TextInput::make('contact')
+                                ->label('Nome contatto')
+                                ->columnSpan(['sm' => 'full', 'md' => 10]),
+                            TextInput::make('note')
+                                ->label('Note')
+                                ->columnSpan(['sm' => 'full', 'md' => 14]),
+                            TextInput::make('contracting_station')
+                                ->label('Gestore appalto')
+                                ->columnSpan(['sm' => 'full', 'md' => 17]),
+                            Select::make('bidding_procedure_type')
+                                ->label('Procedura')
+                                ->live()
+                                ->options(BiddingProcedureType::class)
+                                ->default(BiddingProcedureType::TELEMATIC)
+                                ->columnSpan(['sm' => 'full', 'md' => 7]),
+                            TextInput::make('procedure_portal')
+                                ->label('Portale procedura')
+                                ->columnSpan(['sm' => 'full', 'md' => 10]),
+                            TextInput::make('cig')
+                                ->label('CIG')
+                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                            TextInput::make('procedure_id')
+                                ->label('ID Procedura')
+                                ->columnSpan(['sm' => 'full', 'md' => 10]),
+                            TextInput::make('year')
+                                ->label('Durata anni')
+                                ->extraInputAttributes(['class' => 'text-right'])
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
+                            TextInput::make('month')
+                                ->label('Durata mesi')
+                                ->extraInputAttributes(['class' => 'text-right'])
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
+                            TextInput::make('day')
+                                ->label('Durata giorni')
+                                ->extraInputAttributes(['class' => 'text-right'])
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
+                            DatePicker::make('renew')
+                                ->label('Rinnovo')
+                                ->extraInputAttributes(['class' => 'text-center'])
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
+                            Select::make('assigned_user_id')
+                                ->label('Assegnato a')
+                                ->relationship('assignedUser', 'name')
+                                ->options(User::pluck('name', 'id')->toArray())
+                                ->columns(6)
+                                ->columnSpan(['sm' => 'full', 'md' => 8]),
+                            Select::make('modified_user_id')
+                                ->label('Modificato da')
+                                ->relationship('modifiedUser', 'name')
+                                ->options(User::pluck('name', 'id')->toArray())
+                                // ->columns(6)
+                                ->disabled()
+                                ->dehydrated()
+                                ->visible(fn ($state) => $state !== null)
+                                ->columnSpan(['sm' => 'full', 'md' => 8]),
+                            Placeholder::make('')
+                                ->label('Ultima modifica: ')
+                                ->content(fn ($record) => $record?->updated_at?->format('d/m/Y') ?? '')
+                                ->visible(fn (callable $get) => $get('modified_user_id') !== null)
+                                ->columnSpan(['sm' => 0, 'md' =>8]),
+                            Placeholder::make('')
+                                ->visible(fn (callable $get) => $get('modified_user_id') === null)
+                                ->columnSpan(['sm' => 0, 'md' =>16]),
+                            Select::make('source1_id')
+                                ->label('Fonte dati 1')
+                                ->relationship('source1', 'name')
+                                ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
+                                ->columnSpan(['sm' => 'full', 'md' => 8]),
+                            Select::make('source2_id')
+                                ->label('Fonte dati 2')
+                                ->relationship('source2', 'name')
+                                ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
+                                ->columnSpan(['sm' => 'full', 'md' => 8]),
+                            Select::make('source3_id')
+                                ->label('Fonte dati 3')
+                                ->relationship('source3', 'name')
+                                ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
+                                ->columnSpan(['sm' => 'full', 'md' => 8]),
+                            FileUpload::make('temp_zip')
+                                ->label('Carica ZIP con allegati')
+                                ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                ->maxSize(102400)
+                                // ->disk('public')
+                                ->directory('biddings-temp')
+                                // ->visibility('public')
+                                ->multiple(false)
+                                ->preserveFilenames()
+                                ->columnSpanFull()
+                                ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
 
-                //                         return <<<HTML
-                //                         <div class="flex items-center gap-3 py-1">
-                //                             <a href="{$url}" target="_blank" class="text-primary-600 hover:underline font-medium">
-                //                                 {$name}
-                //                             </a>
-                //                         </div>
-                //                         HTML;
-                //                     })->implode('')
-                //                 );
-                //             })
-                //             ->extraAttributes(['style' => 'line-height:1.8'])
-                //             ->columnSpanFull(),
-                //     ]),
 
-                // Section::make('Allegati')
-                //     ->collapsed()
-                //     ->visible(fn($record) => $record && $record->attachment_path)
-                //     ->schema([
-                //         Placeholder::make('attachments')
-                //             ->label('')
-                //             ->content(function ($record) {
-                //                 if (!$record || !$record->attachment_path) {
-                //                     return 'Nessun allegato.';
-                //                 }
+                            Section::make('Allegati')
+                                ->collapsed()
+                                ->visible(fn($record) => $record && $record->attachment_path)
+                                ->schema([
+                                    Placeholder::make('attachments')
+                                        ->key('attachments_list')
+                                        ->label('')
+                                        ->hintAction(
+                                            \Filament\Forms\Components\Actions\Action::make('downloadAll')
+                                                ->label('Scarica tutti (ZIP)')
+                                                ->icon('heroicon-o-arrow-down-tray')
+                                                ->action(function ($record) {
+                                                    $services = '';
+                                                    for($i = 0; $i < count($record->serviceTypes); $i++) {
+                                                        if($i != 0) $services .= ' ';
+                                                        $services .= $record->serviceTypes[$i]->name;
+                                                    }
+                                                    return response()->streamDownload(function () use ($record) {
+                                                        $zip = new \ZipArchive();
+                                                        $path = tempnam(sys_get_temp_dir(), 'zip');
 
-                //                 // dd([
-                //                 //     'path' => $record->attachment_path,
-                //                 //     'default_disk' => config('filesystems.default'),
-                //                 //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
-                //                 //     'files_on_default' => Storage::files($record->attachment_path),
-                //                 //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
-                //                 // ]);
+                                                        $zip->open($path, \ZipArchive::CREATE);
 
-                //                 $files = Storage::files($record->attachment_path);
+                                                        $disk = config('filesystems.default', 'public');
+                                                        $files = Storage::disk($disk)->allFiles($record->attachment_path);
 
-                //                 if (empty($files)) {
-                //                     return 'Nessuna cartella allegati trovata.';
-                //                 }
+                                                        foreach ($files as $file) {
+                                                            // Legge il file dal disco e lo aggiunge allo ZIP
+                                                            $fileContent = Storage::disk($disk)->get($file);
+                                                            $zip->addFromString(basename($file), $fileContent);
+                                                        }
 
-                //                 $disk = Storage::getDefaultDriver();
-
-                //                 return new \Illuminate\Support\HtmlString(
-                //                     collect($files)->sort()->map(function ($file) use ($disk) {
-                //                         $name = basename($file);
-
-                //                         // Se è S3 usa temporaryUrl, altrimenti url normale
-                //                         $url = Storage::temporaryUrl($file, now()->addMinutes(5));
-
-                //                         return <<<HTML
-                //                         <div class="flex items-center gap-3 py-1">
-                //                             <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
-                //                                 {$name}
-                //                             </a>
-                //                         </div>
-                //                         HTML;
-                //                     })->implode('')
-                //                 );
-                //             })
-                //             ->extraAttributes(['style' => 'line-height:1.8'])
-                //             ->columnSpanFull(),
-                //     ]),
-
-                Section::make('Allegati')
-                    ->collapsed()
-                    ->visible(fn($record) => $record && $record->attachment_path)
-                    ->schema([
-                        Placeholder::make('attachments')
-                            ->key('attachments_list')
-                            ->label('')
-                            ->hintAction(
-                                \Filament\Forms\Components\Actions\Action::make('downloadAll')
-                                    ->label('Scarica tutti (ZIP)')
-                                    ->icon('heroicon-o-arrow-down-tray')
-                                    ->action(function ($record) {
-                                        $services = '';
-                                        for($i = 0; $i < count($record->serviceTypes); $i++) {
-                                            if($i != 0) $services .= ' ';
-                                            $services .= $record->serviceTypes[$i]->name;
-                                        }
-                                        return response()->streamDownload(function () use ($record) {
-                                            $zip = new \ZipArchive();
-                                            $path = tempnam(sys_get_temp_dir(), 'zip');
-
-                                            $zip->open($path, \ZipArchive::CREATE);
-
-                                            $disk = config('filesystems.default', 'public');
-                                            $files = Storage::disk($disk)->allFiles($record->attachment_path);
-
-                                            foreach ($files as $file) {
-                                                // Legge il file dal disco e lo aggiunge allo ZIP
-                                                $fileContent = Storage::disk($disk)->get($file);
-                                                $zip->addFromString(basename($file), $fileContent);
+                                                        $zip->close();
+                                                        readfile($path);
+                                                        unlink($path);
+                                                    }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
+                                                })
+                                        )
+                                        ->content(function ($record) {
+                                            if (!$record || !$record->attachment_path) {
+                                                return 'Nessun allegato.';
                                             }
 
-                                            $zip->close();
-                                            readfile($path);
-                                            unlink($path);
-                                        }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
-                                    })
-                            )
-                            ->content(function ($record) {
-                                if (!$record || !$record->attachment_path) {
-                                    return 'Nessun allegato.';
-                                }
+                                            // dd([
+                                            //     'path' => $record->attachment_path,
+                                            //     'default_disk' => config('filesystems.default'),
+                                            //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
+                                            //     'files_on_default' => Storage::files($record->attachment_path),
+                                            //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
+                                            // ]);
 
-                                // dd([
-                                //     'path' => $record->attachment_path,
-                                //     'default_disk' => config('filesystems.default'),
-                                //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
-                                //     'files_on_default' => Storage::files($record->attachment_path),
-                                //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
-                                // ]);
+                                            $disk = config('filesystems.default', 'public');
 
-                                $disk = config('filesystems.default', 'public');
+                                            // Usa allFiles per prendere anche file in sottocartelle
+                                            $files = Storage::disk($disk)->allFiles($record->attachment_path);
 
-                                // Usa allFiles per prendere anche file in sottocartelle
-                                $files = Storage::disk($disk)->allFiles($record->attachment_path);
+                                            if (empty($files)) {
+                                                return 'Nessuna cartella allegati trovata.';
+                                            }
 
-                                if (empty($files)) {
-                                    return 'Nessuna cartella allegati trovata.';
-                                }
+                                            return new \Illuminate\Support\HtmlString(
+                                                collect($files)
+                                                    ->sort()
+                                                    ->map(function ($file) use ($disk) {
+                                                        $name = basename($file);
 
-                                return new \Illuminate\Support\HtmlString(
-                                    collect($files)
-                                        ->sort()
-                                        ->map(function ($file) use ($disk) {
-                                            $name = basename($file);
+                                                        // Genera URL in base al tipo di disco
+                                                        // try {
+                                                        //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
+                                                        //         // Per S3 usa temporaryUrl
+                                                        //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
+                                                        //     } else {
+                                                        //         // Per locale usa url normale
+                                                        //         $url = Storage::disk($disk)->url($file);
+                                                        //     }
+                                                        // } catch (\Exception $e) {
+                                                        //     // Fallback se temporaryUrl non è supportato
+                                                        //     $url = Storage::disk($disk)->url($file);
+                                                        // }
 
-                                            // Genera URL in base al tipo di disco
-                                            // try {
-                                            //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
-                                            //         // Per S3 usa temporaryUrl
-                                            //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
-                                            //     } else {
-                                            //         // Per locale usa url normale
-                                            //         $url = Storage::disk($disk)->url($file);
-                                            //     }
-                                            // } catch (\Exception $e) {
-                                            //     // Fallback se temporaryUrl non è supportato
-                                            //     $url = Storage::disk($disk)->url($file);
-                                            // }
+                                                        $url = Storage::temporaryUrl($file, now()->addMinutes(5));
 
-                                            $url = Storage::temporaryUrl($file, now()->addMinutes(5));
-
-                                            return <<<HTML
-                                            <div class="flex items-center gap-3 py-1">
-                                                <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
-                                                    {$name}
-                                                </a>
-                                            </div>
-                                            HTML;
+                                                        return <<<HTML
+                                                        <div class="flex items-center gap-3 py-1">
+                                                            <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
+                                                                {$name}
+                                                            </a>
+                                                        </div>
+                                                        HTML;
+                                                    })
+                                                    ->implode('')
+                                            );
                                         })
-                                        ->implode('')
-                                );
-                            })
-                            ->extraAttributes(['style' => 'line-height:1.8'])
-                            ->columnSpanFull(),
-                    ]),
-            ]);
+                                        ->extraAttributes(['style' => 'line-height:1.8'])
+                                        ->columnSpanFull(),
+                                ])
+                                ->columnSpan(['sm' => 'full', 'md' => 24]),
+                        ]),
+
+                        Tab::make('Dati Appalto')
+                            // ->hidden(fn ($get) => static::hideTenderTabs($get))
+                            ->hidden(fn ($record) => static::hideTenderTabs($record))
+                            ->schema([
+                                Group::make()
+                                    ->relationship('tender')
+                                    ->columns(12)
+                                    ->schema(GeneralDataTab::make()),
+                            ]),
+
+                        Tab::make('Dati Procedura')
+                            // ->hidden(fn ($get) => static::hideTenderTabs($get))
+                            ->hidden(fn ($record) => static::hideTenderTabs($record))
+                            ->schema([
+                                Group::make()
+                                    ->relationship('tender')
+                                    ->columns(12)
+                                    ->schema(ProcedureTypeTab::make()),
+                            ]),
+
+                        Tab::make('Documenti')
+                            // ->hidden(fn ($get) => static::hideTenderTabs($get))
+                            ->hidden(fn ($record) => static::hideTenderTabs($record))
+                            ->schema([
+                                Group::make()
+                                    ->relationship('tender')
+                                    ->columns(12)
+                                    ->schema(RequiredDocumentsTab::make()),
+                            ]),
+                    ])
+                ]);
     }
 
     public static function table(Table $table): Table
@@ -904,9 +852,18 @@ class BiddingResource extends Resource
         $client->site = $data['site'];
         $client->note = $data['note'];
         $client->save();
+
         Notification::make()
             ->title('Cliente salvato con successo')
             ->success()
             ->send();
+    }
+
+    protected static function hideTenderTabs($bidding): bool
+    {
+        // return $get('bidding_processing_state') === null
+        //         || $get('bidding_processing_state') === BiddingProcessingState::PENDING->value;
+        // dd($bidding->tender);
+        return !Tender::where('bidding_id', $bidding?->id)->exists();
     }
 }
