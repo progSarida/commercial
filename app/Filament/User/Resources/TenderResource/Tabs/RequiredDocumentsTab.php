@@ -6,16 +6,13 @@ use App\Enums\TenderItemProcessingState;
 use App\Enums\TenderMandatoryContentMethod;
 use App\Enums\TenderMandatoryContentUtility;
 use App\Enums\TenderProjectFormat;
-use App\Models\Bidding;
 use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\TimePicker;
 
 class RequiredDocumentsTab
 {
@@ -34,7 +31,13 @@ class RequiredDocumentsTab
             Select::make('service_reference_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('service_reference_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class))
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowReference())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('service_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>7]),
             TextInput::make('service_reference_1')
@@ -69,7 +72,13 @@ class RequiredDocumentsTab
             Select::make('bank_reference_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('bank_reference_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowReference())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('bank_reference_require_check'))->columnSpan(['sm' => 0, 'md' =>7]),
             TextInput::make('bank_reference_1')
@@ -106,7 +115,13 @@ class RequiredDocumentsTab
             Select::make('pass_oe_require_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('pass_oe_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Checkbox::make('bidding_inspection_virtual')
                 ->label('E\' previsto il sopralluogo')
@@ -123,7 +138,13 @@ class RequiredDocumentsTab
             Select::make('inspection_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('bidding_inspection_virtual'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Checkbox::make('deposit_require_check')
                 ->label('E\' richiesta la cauzione provvisoria')
@@ -143,7 +164,13 @@ class RequiredDocumentsTab
             Select::make('deposit_require_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('deposit_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             Checkbox::make('authority_tax_require_check')
                 ->label('E\' previsto il versamento del contributo all\'autorità di vigilanza (OBBLIGATORIO per gli appalti di valore superiore a €150.000)')
@@ -164,12 +191,27 @@ class RequiredDocumentsTab
             Select::make('authority_tax_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('authority_tax_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             Checkbox::make('project_require_check')
                 ->label('E\' prevista la realizzazione di un progetto di gestione')
                 ->live()
-                ->default(false)
+                ->afterStateHydrated(function (Checkbox $component, $record, $state) {
+                    $isVantaggiosa = $record?->bidding?->biddingAdjudicationType?->name === "Offerta Economicamente più vantaggiosa";
+
+                    if ($isVantaggiosa) {
+                        $component->state(true);
+                    }
+                })
+                ->disabled(fn ($record) =>
+                    $record?->bidding?->biddingAdjudicationType?->name === "Offerta Economicamente più vantaggiosa"
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             Placeholder::make('')->columnSpan(['sm' => 0, 'md' =>2]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('project_require_check'))->columnSpan(['sm' => 0, 'md' =>6]),
@@ -181,7 +223,13 @@ class RequiredDocumentsTab
             Select::make('project_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 3]),
             Textarea::make('project_points')
                 ->label('Punti principali del  progetto di gestione')
@@ -190,27 +238,27 @@ class RequiredDocumentsTab
             TextInput::make('project_max_page')
                 ->label('N.ro max pagine')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                ->columnSpan(['sm' => 'full', 'md' => 2]),
             TextInput::make('project_format')
                 ->label('Formato')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                ->columnSpan(['sm' => 'full', 'md' => 2]),
             TextInput::make('project_character')
                 ->label('Carattere')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                ->columnSpan(['sm' => 'full', 'md' => 2]),
             TextInput::make('project_dimension')
                 ->label('Dimensione')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                ->columnSpan(['sm' => 'full', 'md' => 2]),
             TextInput::make('project_spacing')
                 ->label('Interlinea')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                ->columnSpan(['sm' => 'full', 'md' => 2]),
             TextInput::make('project_printed')
                 ->label('Stampato')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                ->columnSpan(['sm' => 'full', 'md' => 2]),
             Placeholder::make('')
                 ->label('')
                 ->visible(fn (callable $get) => $get('project_require_check'))
@@ -239,7 +287,13 @@ class RequiredDocumentsTab
             Select::make('security_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             Placeholder::make('')
                 ->label('Contenuto 2')
@@ -260,7 +314,13 @@ class RequiredDocumentsTab
             Select::make('staff_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             TextInput::make('other')
                 ->label('Contenuto 3')
@@ -280,7 +340,13 @@ class RequiredDocumentsTab
             Select::make('other_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('project_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 2]),
             Textarea::make('note')
                 ->label('Note')
@@ -307,7 +373,13 @@ class RequiredDocumentsTab
                         ->columnSpan(['sm' => 'full', 'md' => 8]),
                     Select::make('doc_processing_state')
                         ->label('Stato lavorazione')
-                        ->options(TenderItemProcessingState::class)
+                        // ->options(TenderItemProcessingState::class)
+                        ->options(
+                            collect(TenderItemProcessingState::cases())
+                                ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                                ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                                ->toArray()
+                        )
                         ->columnSpan(['sm' => 'full', 'md' => 4]),
                 ])
                 ->columns(12)

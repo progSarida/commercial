@@ -48,6 +48,7 @@ class Bidding extends Model
         'deadline_time',
         'send_date',
         'send_time',
+        'send_mode',
         'clarification_request_deadline_date',
         'clarification_request_deadline_time',
         'inspection_deadline_date',

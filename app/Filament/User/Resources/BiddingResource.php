@@ -9,15 +9,12 @@ use App\Enums\BiddingProcessingState;
 use App\Enums\ClientType;
 use App\Enums\YesNo;
 use App\Filament\User\Resources\BiddingResource\Pages;
-use App\Filament\User\Resources\BiddingResource\RelationManagers;
-use App\Filament\User\Resources\TenderResource\Tabs\GeneralDataTab;
 use App\Filament\User\Resources\TenderResource\Tabs\ProcedureTypeTab;
 use App\Filament\User\Resources\TenderResource\Tabs\RequiredDocumentsTab;
 use App\Models\Bidding;
 use App\Models\BiddingDataSource;
 use App\Models\BiddingState;
 use App\Models\Client;
-use App\Models\Province;
 use App\Models\ServiceType;
 use App\Models\Tender;
 use App\Models\User;
@@ -27,7 +24,6 @@ use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Placeholder;
@@ -39,7 +35,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -49,7 +44,6 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -270,29 +264,32 @@ class BiddingResource extends Resource
                             DatePicker::make('send_date')
                                 ->label('Data invio offerta')
                                 ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ->columnSpan(['sm' => 'full', 'md' => 3]),
                             TimePicker::make('send_time')
                                 ->label('Orario invio offerta')
                                 ->extraInputAttributes(['class' => 'text-center'])
                                 ->default('06:00')
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ->columnSpan(['sm' => 'full', 'md' => 3]),
+                            TextInput::make('send_mode')
+                                ->label('Modalità invio')
+                                ->columnSpan(['sm' => 'full', 'md' => 6]),
                             DatePicker::make('opening_date')
                                 ->label('Data apertura offerte')
                                 ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ->columnSpan(['sm' => 'full', 'md' => 3]),
                             TimePicker::make('opening_time')
                                 ->label('Orario apertura offerte')
                                 ->extraInputAttributes(['class' => 'text-center'])
                                 ->default('06:00')
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ->columnSpan(['sm' => 'full', 'md' => 3]),
                             Select::make('awarded')
                                 ->label('Aggiudicata')
                                 ->options(YesNo::class)
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ->columnSpan(['sm' => 'full', 'md' => 3]),
                             DatePicker::make('closure_date')
                                 ->label('Data chiusura procedura')
                                 ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ->columnSpan(['sm' => 'full', 'md' => 3]),
                             TextInput::make('contact')
                                 ->label('Nome contatto')
                                 ->columnSpan(['sm' => 'full', 'md' => 10]),
@@ -483,15 +480,15 @@ class BiddingResource extends Resource
                                 ->columnSpan(['sm' => 'full', 'md' => 24]),
                         ]),
 
-                        Tab::make('Dati Appalto')
-                            // ->hidden(fn ($get) => static::hideTenderTabs($get))
-                            ->hidden(fn ($record) => static::hideTenderTabs($record))
-                            ->schema([
-                                Group::make()
-                                    ->relationship('tender')
-                                    ->columns(12)
-                                    ->schema(GeneralDataTab::make()),
-                            ]),
+                        // Tab::make('Dati Appalto')
+                        //     // ->hidden(fn ($get) => static::hideTenderTabs($get))
+                        //     ->hidden(fn ($record) => static::hideTenderTabs($record))
+                        //     ->schema([
+                        //         Group::make()
+                        //             ->relationship('tender')
+                        //             ->columns(12)
+                        //             ->schema(GeneralDataTab::make()),
+                        //     ]),
 
                         Tab::make('Dati Procedura')
                             // ->hidden(fn ($get) => static::hideTenderTabs($get))

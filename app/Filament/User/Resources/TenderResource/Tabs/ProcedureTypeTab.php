@@ -4,18 +4,28 @@ namespace App\Filament\User\Resources\TenderResource\Tabs;
 
 use App\Enums\TenderItemProcessingState;
 use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\TimePicker;
 
 class ProcedureTypeTab
 {
     public static function make(): array
     {
         return [
+            TextInput::make('manage_current')
+                ->label('Gestione attuale')
+                ->columnSpan(['sm' => 'full', 'md' => 4]),
+            TextInput::make('manage_offer')
+                ->label('Gestione offerta')
+                ->columnSpan(['sm' => 'full', 'md' => 4]),
+            TextInput::make('revenue')
+                ->label('Gettito')
+                ->columnSpan(['sm' => 'full', 'md' => 4]),
+            TextInput::make('conditions')
+                ->label('Condizioni')
+                ->columnSpan(['sm' => 'full', 'md' => 'full']),
             Placeholder::make('')->label('')->columnSpan(['sm' => 0, 'md' =>5]),
             Checkbox::make('open_procedure_check')
                 ->label('Procedura aperta')
@@ -36,7 +46,13 @@ class ProcedureTypeTab
             Select::make('invitation_request_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('open_procedure_check') && $get('invitation_request_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             Placeholder::make('')->visible(fn (callable $get) => !$get('invitation_request_check'))->columnSpan(['sm' => 0, 'md' =>8]),
             Checkbox::make('reliance_require_check')
@@ -64,7 +80,13 @@ class ProcedureTypeTab
             Select::make('reliance_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('open_procedure_check') && ($get('reliance_require_check') || $get('reliance_admit_check')))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             TextInput::make('reliance_qualification')
                 ->label('Per i seguenti requisiti')
@@ -84,7 +106,13 @@ class ProcedureTypeTab
              Select::make('partnership_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('open_procedure_check') && $get('partnership_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
             TextInput::make('partnership_activities')
                 ->label('Per le seguenti attività')
@@ -106,7 +134,13 @@ class ProcedureTypeTab
             Select::make('collection_request_processing_state')
                 ->label('Stato lavorazione')
                 ->visible(fn (callable $get) => $get('open_procedure_check') && $get('collection_require_check'))
-                ->options(TenderItemProcessingState::class)
+                // ->options(TenderItemProcessingState::class)
+                ->options(
+                    collect(TenderItemProcessingState::cases())
+                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowOther())
+                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+                        ->toArray()
+                )
                 ->columnSpan(['sm' => 'full', 'md' => 4]),
         ];
     }
