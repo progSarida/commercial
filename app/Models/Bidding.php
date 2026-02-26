@@ -178,6 +178,8 @@ class Bidding extends Model
                     ['bidding_id' => $bidding->id],                         // controllo su bidding_id
                     ['client_id' => $bidding->client_id]                    // se lo crea aggiunge anche client_id
                 );
+            } else {
+                Tender::where('bidding_id', $bidding->id)->delete();        // se cambio lo stato lavorazione a vuoto o 'Non iniziata' elimino il dettagli della gara
             }
         });
 

@@ -19,7 +19,7 @@ enum TenderItemProcessingState: string implements HasLabel
         };
     }
 
-    public function getShowReference(): string
+    public function getShowAll(): string
     {
         return match($this) {
             self::REQUESTED => true,
@@ -28,7 +28,7 @@ enum TenderItemProcessingState: string implements HasLabel
         };
     }
 
-    public function getShowOther(): string
+    public function getShowSome(): string
     {
         return match($this) {
             self::REQUESTED => false,

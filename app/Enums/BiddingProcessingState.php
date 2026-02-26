@@ -2,9 +2,10 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum BiddingProcessingState: string implements HasLabel
+enum BiddingProcessingState: string implements HasLabel, HasIcon
 {
     case PENDING = "pending";
     case TODO = "todo";
@@ -18,6 +19,16 @@ enum BiddingProcessingState: string implements HasLabel
             self::TODO => 'Da fare',
             self::WORKING => 'In lavorazione',
             self::COMPLETE => 'Completato',
+        };
+    }
+
+    public function getIcon(): string
+    {
+        return match($this) {
+            self::PENDING => 'heroicon-m-no-symbol',
+            self::TODO => 'heroicon-o-arrow-right-circle',
+            self::WORKING => 'heroicon-o-arrow-right-circle',
+            self::COMPLETE => 'heroicon-o-arrow-right-circle',
         };
     }
 }

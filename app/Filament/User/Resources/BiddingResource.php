@@ -195,6 +195,7 @@ class BiddingResource extends Resource
                                 ->label('Stato lavorazione')
                                 ->live()
                                 ->options(BiddingProcessingState::class)
+                                ->suffixIcon(fn ($state) => $state ? BiddingProcessingState::from($state)->getIcon() : null)
                                 ->columnSpan(['sm' => 'full', 'md' => 6]),
                             Select::make('bidding_priority_type')
                                 ->label('Priorità')
@@ -310,6 +311,7 @@ class BiddingResource extends Resource
                                 ->columnSpan(['sm' => 'full', 'md' => 10]),
                             TextInput::make('cig')
                                 ->label('CIG')
+                ->extraInputAttributes(['class' => 'text-right'])
                                 ->columnSpan(['sm' => 'full', 'md' => 4]),
                             TextInput::make('procedure_id')
                                 ->label('ID Procedura')
@@ -506,7 +508,7 @@ class BiddingResource extends Resource
                             ->schema([
                                 Group::make()
                                     ->relationship('tender')
-                                    ->columns(12)
+                                    ->columns(24)
                                     ->schema(RequiredDocumentsTab::make()),
                             ]),
                     ])
