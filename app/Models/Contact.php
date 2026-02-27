@@ -93,7 +93,7 @@ class Contact extends Model
         });
 
         static::updating(function ($contact) {
-            //
+            $contact->user_id = Auth::user()->id;
         });
 
         static::updated(function ($contact) {
