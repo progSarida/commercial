@@ -86,16 +86,6 @@ class DeadlineResource extends Resource
                     ->label('Esito')
                     // ->options(OutcomeType::class)
                     ->options(OutcomeType::getOptionsByContactType(ContactType::DEADLINE))
-                    ->afterStateUpdated( function(Set $set, $state) {
-                        if($state){
-                            $now = now()->timezone('Europe/Rome');
-                            $set('date', $now->format('Y-m-d'));
-                            $set('time', $now->format('H:i'));
-                        } else {
-                            $set('date', null);
-                            $set('time', null);
-                        }
-                    })
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
                 DatePicker::make('date')
                     ->label('Data')
