@@ -44,12 +44,14 @@ class DeadlineResource extends Resource
                     ->disabled()
                     ->dehydrated()
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
+
                 // Select::make('client_id')
                 //     ->label('Cliente')
                 //     ->required()
                 //     ->searchable()
                 //     ->relationship( name: 'client', titleAttribute: 'name')
                 //     ->columnSpan(['sm' => 'full', 'md' => 20]),
+
                 Select::make('client_id')
                     ->label('Cliente')
                     ->required()
@@ -81,23 +83,27 @@ class DeadlineResource extends Resource
                             })
                             ->openUrlInNewTab() // Fondamentale per non perdere il lavoro sulla chiamata
                     )
-                    ->columnSpan(['sm' => 'full', 'md' => 20]),
-                Select::make('outcome_type')
-                    ->label('Esito')
-                    // ->options(OutcomeType::class)
-                    ->options(OutcomeType::getOptionsByContactType(ContactType::DEADLINE))
-                    ->columnSpan(['sm' => 'full', 'md' => 5]),
+                    ->columnSpan(['sm' => 'full', 'md' => 16]),
+
+                // Select::make('outcome_type')
+                //     ->label('Esito')
+                //     // ->options(OutcomeType::class)
+                //     ->options(OutcomeType::getOptionsByContactType(ContactType::DEADLINE))
+                //     ->columnSpan(['sm' => 'full', 'md' => 5]),
+
                 DatePicker::make('date')
                     ->label('Data')
                     ->extraInputAttributes(['class' => 'text-center'])
                     ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TimePicker::make('time')
-                    ->label('Orario')
-                    ->required()
-                    ->seconds(false)
-                    ->displayFormat('H:i')
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+
+                // TimePicker::make('time')
+                //     ->label('Orario')
+                //     ->required()
+                //     ->seconds(false)
+                //     ->displayFormat('H:i')
+                //     ->columnSpan(['sm' => 'full', 'md' => 3]),
+
                 Select::make('services')
                     ->label('Servizi')
                     ->options(ServiceType::pluck('name', 'id'))
@@ -152,18 +158,25 @@ class DeadlineResource extends Resource
                 Tables\Columns\TextColumn::make('date')
                     ->label('Data')
                     ->date('d/m/Y'),
-                Tables\Columns\TextColumn::make('time')
-                    ->label('Orario')
-                    ->time('H:i'),
-                Tables\Columns\TextColumn::make('outcome_type')
-                    ->label('Esito'),
-                Tables\Columns\IconColumn::make('note')
+
+                // Tables\Columns\TextColumn::make('time')
+                //     ->label('Orario')
+                //     ->time('H:i'),
+                // Tables\Columns\TextColumn::make('outcome_type')
+                //     ->label('Esito'),
+
+                // Tables\Columns\IconColumn::make('note')
+                //     ->label('Note')
+                //     ->icon(fn ($state): string => filled($state) ? 'fas-note-sticky' : '')
+                //     ->color(fn ($state): string => filled($state) ? 'grey' : '')
+                //     ->tooltip(fn ($record) => $record->note ?? '')
+                //     ->alignCenter()
+                //     ->width('1%'),
+                Tables\Columns\TextColumn::make('note')
                     ->label('Note')
-                    ->icon(fn ($state): string => filled($state) ? 'fas-note-sticky' : '')
-                    ->color(fn ($state): string => filled($state) ? 'grey' : '')
+                    ->limit(50)
                     ->tooltip(fn ($record) => $record->note ?? '')
-                    ->alignCenter()
-                    ->width('1%'),
+                    ->searchable(),
             ])
             ->filters([
                 SelectFilter::make('region_id')
