@@ -62,7 +62,7 @@ class DeadlineResource extends Resource
                         name: 'client',
                         titleAttribute: 'name',
                         // Carichiamo anche il campo phone nella query per averlo disponibile
-                        modifyQueryUsing: fn (Builder $query) => $query->select(['id', 'name', 'phone'])
+                        modifyQueryUsing: fn(Builder $query) => $query->select(['id', 'name', 'phone'])
                     )
                     ->getOptionLabelFromRecordUsing(function ($record) {
                         $phone = $record->phone ?? 'Nessun numero';
@@ -73,10 +73,11 @@ class DeadlineResource extends Resource
                             ->label('Modifica')
                             ->icon('heroicon-m-arrow-top-right-on-square')
                             ->color('gray')
-                            ->visible(fn ($get) => filled($get('client_id')))
+                            ->visible(fn($get) => filled($get('client_id')))
                             ->url(function ($get) {
                                 $clientId = $get('client_id');
-                                if (!$clientId) return null;
+                                if (!$clientId)
+                                    return null;
 
                                 // Genera l'URL per l'edit del cliente (cambia ClientResource con il nome reale della tua risorsa)
                                 return ClientResource::getUrl('view', ['record' => $clientId]);
@@ -109,7 +110,8 @@ class DeadlineResource extends Resource
                     ->options(ServiceType::pluck('name', 'id'))
                     ->multiple()
                     ->live()
-                    ->required(fn (Get $get) =>
+                    ->required(
+                        fn(Get $get) =>
                         $get('outcome_type') !== null &&
                         $get('outcome_type') !== OutcomeType::NEGATIVE->value
                     )
@@ -128,14 +130,16 @@ class DeadlineResource extends Resource
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
                 Forms\Components\Placeholder::make('client_referents')
                     ->label('Referenti del Cliente')
-                    ->visible(fn (Get $get) => filled($get('client_id')))
+                    ->visible(fn(Get $get) => filled($get('client_id')))
                     ->content(function (Get $get) {
                         $clientId = $get('client_id');
-                        if (!$clientId) return 'Seleziona un cliente';
+                        if (!$clientId)
+                            return 'Seleziona un cliente';
 
                         $referents = \App\Models\Referent::where('client_id', $clientId)->get();
 
-                        if ($referents->isEmpty()) return 'Nessun referente registrato.';
+                        if ($referents->isEmpty())
+                            return 'Nessun referente registrato.';
 
                         // Crea una lista testuale o HTML
                         return new \Illuminate\Support\HtmlString(
@@ -156,7 +160,7 @@ class DeadlineResource extends Resource
                     ->searchable()
                     ->label('Cliente'),
                 Tables\Columns\TextColumn::make('date')
-                    ->label('Data')
+                    ->label('Data scadenza')
                     ->date('d/m/Y'),
 
                 // Tables\Columns\TextColumn::make('time')
@@ -175,17 +179,17 @@ class DeadlineResource extends Resource
                 Tables\Columns\TextColumn::make('note')
                     ->label('Note')
                     ->limit(50)
-                    ->tooltip(fn ($record) => $record->note ?? '')
+                    ->tooltip(fn($record) => $record->note ?? '')
                     ->searchable(),
             ])
             ->filters([
                 SelectFilter::make('region_id')
                     ->label('Regione')
-                    ->options(fn () => Region::pluck('name', 'id')->toArray())
+                    ->options(fn() => Region::pluck('name', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
                         $value = $data['value'] ?? null;
                         if ($value) {
-                            $query->whereHas('client', fn (Builder $q) => $q->where('region_id', $value));
+                            $query->whereHas('client', fn(Builder $q) => $q->where('region_id', $value));
                         }
                     })
                     ->searchable()
@@ -193,11 +197,11 @@ class DeadlineResource extends Resource
 
                 SelectFilter::make('province_id')
                     ->label('Provincia')
-                    ->options(fn () => Province::pluck('name', 'id')->toArray())
+                    ->options(fn() => Province::pluck('name', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
                         $value = $data['value'] ?? null;
                         if ($value) {
-                            $query->whereHas('client', fn (Builder $q) => $q->where('province_id', $value));
+                            $query->whereHas('client', fn(Builder $q) => $q->where('province_id', $value));
                         }
                     })
                     ->searchable()
@@ -279,10 +283,10 @@ class DeadlineResource extends Resource
                             ->label('A data'),
                     ])
                     ->query(function (Builder $query, array $data) {
-                        if (! empty($data['from_date'])) {
+                        if (!empty($data['from_date'])) {
                             $query->whereDate('date', '>=', $data['from_date']);
                         }
-                        if (! empty($data['to_date'])) {
+                        if (!empty($data['to_date'])) {
                             $query->whereDate('date', '<=', $data['to_date']);
                         }
                     })
