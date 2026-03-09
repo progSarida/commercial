@@ -93,7 +93,7 @@ class DeadlineResource extends Resource
                 //     ->columnSpan(['sm' => 'full', 'md' => 5]),
 
                 DatePicker::make('date')
-                    ->label('Data')
+                    ->label('Data scadenza')
                     ->extraInputAttributes(['class' => 'text-center'])
                     ->required()
                     ->columnSpan(['sm' => 'full', 'md' => 4]),
