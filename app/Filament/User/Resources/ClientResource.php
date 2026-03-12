@@ -325,7 +325,8 @@ class ClientResource extends Resource
                                         }
                                         return [];
                                     })
-                                    ->visible(fn (callable $get) => in_array($get('client_type'), [ClientType::CITY, ClientType::PROVINCE]))
+                                    ->visible(fn (callable $get) => in_array($get('client_type'), [ClientType::CITY, ClientType::PROVINCE]) ||
+                                                                    in_array($get('client_type'), [ClientType::CITY->value, ClientType::PROVINCE->value]))
                                     // ->visible(function (callable $get) { dd($get('client_type')); })
                                     ->searchable()
                                     ->required()
@@ -345,7 +346,8 @@ class ClientResource extends Resource
 
                                 // Input di testo per Nome (se altri tipi)
                                 TextInput::make('name')->label('Nome')
-                                    ->visible(fn (callable $get) => !in_array($get('client_type'), [ClientType::CITY, ClientType::PROVINCE]))
+                                    ->visible(fn (callable $get) => !(in_array($get('client_type'), [ClientType::CITY, ClientType::PROVINCE]) ||
+                                                                    in_array($get('client_type'), [ClientType::CITY->value, ClientType::PROVINCE->value])))
                                     ->required()
                                     ->rules(function (Get $get) {
                                         $clientId = $get('id'); // Prende l'ID dal campo nascosto
