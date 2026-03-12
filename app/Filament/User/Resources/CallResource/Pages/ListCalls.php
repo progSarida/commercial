@@ -12,6 +12,7 @@ use Filament\Actions\ImportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Blade;
 
 
@@ -76,5 +77,10 @@ class ListCalls extends ListRecords
                     'updateExisting' => true,
                 ])
         ];
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null                                  // allarga la tabella a tutta pagina
+    {
+        return MaxWidth::Full;
     }
 }

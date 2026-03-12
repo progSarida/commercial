@@ -36,6 +36,11 @@ class Contact extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function getServiceTypes()
+    {
+        return ServiceType::whereIn('id', $this->services)->get();
+    }
+
     // Query per 'Chiamate'
     public function scopeCalls($query)
     {

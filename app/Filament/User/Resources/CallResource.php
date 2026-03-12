@@ -173,6 +173,11 @@ class CallResource extends Resource
                 Tables\Columns\TextColumn::make('client.name')
                     ->searchable()
                     ->label('Cliente'),
+                Tables\Columns\TextColumn::make('services')
+                    ->label('Servizi')
+                    ->formatStateUsing(function ($record) {
+                        return $record->getServiceTypes()->pluck('name')->join(' - ');
+                    }),
                 Tables\Columns\TextColumn::make('date')
                     ->label('Data')
                     ->date('d/m/Y'),

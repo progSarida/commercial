@@ -10,6 +10,7 @@ use Filament\Actions\ExportAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Blade;
 
 class ListVisits extends ListRecords
@@ -64,5 +65,10 @@ class ListVisits extends ListRecords
                 ->color(Color::rgb('rgb(0, 153, 0)'))
                 ->exporter(ContactExporter::class)
         ];
+    }
+
+    public function getMaxContentWidth(): MaxWidth|string|null                                  // allarga la tabella a tutta pagina
+    {
+        return MaxWidth::Full;
     }
 }

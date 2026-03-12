@@ -176,9 +176,16 @@ class DeadlineResource extends Resource
                 //     ->tooltip(fn ($record) => $record->note ?? '')
                 //     ->alignCenter()
                 //     ->width('1%'),
+
+                Tables\Columns\TextColumn::make('services')
+                    ->label('Servizi')
+                    ->formatStateUsing(function ($record) {
+                        return $record->getServiceTypes()->pluck('name')->join(' - ');
+                    }),
+
                 Tables\Columns\TextColumn::make('note')
                     ->label('Note')
-                    ->limit(50)
+                    ->limit(70)
                     ->tooltip(fn($record) => $record->note ?? '')
                     ->searchable(),
             ])
