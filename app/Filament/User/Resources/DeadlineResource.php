@@ -4,8 +4,10 @@ use App\Enums\ContactType;
 use App\Enums\OutcomeType;
 use App\Filament\User\Resources\DeadlineResource\Pages;
 use App\Filament\User\Resources\DeadlineResource\RelationManagers;
+use App\Models\Client;
 use App\Models\Contact;
 use App\Models\Province;
+use App\Models\Referent;
 use App\Models\Region;
 use App\Models\ServiceType;
 use Filament\Forms;
@@ -68,21 +70,58 @@ class DeadlineResource extends Resource
                         $phone = $record->phone ?? 'Nessun numero';
                         return "{$record->name} - {$phone}";
                     })
+                    // ->hintAction(
+                    //     Forms\Components\Actions\Action::make('open_client')
+                    //         ->label('Modifica')
+                    //         ->icon('heroicon-m-arrow-top-right-on-square')
+                    //         ->color('gray')
+                    //         ->visible(fn($get) => filled($get('client_id')))
+                    //         ->url(function ($get) {
+                    //             $clientId = $get('client_id');
+                    //             if (!$clientId)
+                    //                 return null;
+
+                    //             // Genera l'URL per l'edit del cliente (cambia ClientResource con il nome reale della tua risorsa)
+                    //             return ClientResource::getUrl('view', ['record' => $clientId]);
+                    //         })
+                    //         ->openUrlInNewTab() // Fondamentale per non perdere il lavoro sulla chiamata
+                    // )
                     ->hintAction(
                         Forms\Components\Actions\Action::make('open_client')
                             ->label('Modifica')
                             ->icon('heroicon-m-arrow-top-right-on-square')
                             ->color('gray')
-                            ->visible(fn($get) => filled($get('client_id')))
-                            ->url(function ($get) {
-                                $clientId = $get('client_id');
-                                if (!$clientId)
-                                    return null;
-
-                                // Genera l'URL per l'edit del cliente (cambia ClientResource con il nome reale della tua risorsa)
-                                return ClientResource::getUrl('view', ['record' => $clientId]);
+                            ->visible(fn ($get) => filled($get('client_id')))
+                            ->modalSubmitActionLabel('Salva')
+                            ->form(fn(Form $form) => ClientResource::modalForm($form))
+                            ->fillForm(function ($record) {
+                                $client = $record->client;
+                                if (!$client) {
+                                    Log::warning("Client with ID {$record->client_id} not found for Call ID {$record->id}");
+                                    return [];
+                                }
+                                return [
+                                    'id' => $client->id,
+                                    'name' => $client->name,
+                                    'client_type' => $client->client_type,
+                                    'phone' => $client->phone,
+                                    'email' => $client->email,
+                                    'site' => $client->site,
+                                    'state_id' => $client->state_id,
+                                    'region_id' => $client->region_id,
+                                    'province_id' => $client->province_id,
+                                    'city_id' => $client->city_id,
+                                    'place' => $client->place,
+                                    'zip_code' => $client->zip_code,
+                                    'address' => $client->address,
+                                    'civic' => $client->civic,
+                                    'note' => $client->note,
+                                    'referents' => $client->referents->toArray(),
+                                ];
                             })
-                            ->openUrlInNewTab() // Fondamentale per non perdere il lavoro sulla chiamata
+                            ->modalWidth('7xl')
+                            ->modalHeading('')
+                            ->action(fn (array $data, $record) => CallResource::saveClient($data, $record->client))
                     )
                     ->columnSpan(['sm' => 'full', 'md' => 16]),
 
@@ -339,5 +378,45 @@ class DeadlineResource extends Resource
             'edit' => Pages\EditDeadline::route('/{record}/edit'),
             'view' => Pages\ViewDeadline::route('/{record}'),
         ];
+    }
+
+    public static function saveClient(array $data, Client $client): void
+    {
+        // 1. Estraiamo i dati del repeater
+        $referentsData = $data['referents'] ?? [];
+        unset($data['referents']);
+
+        // 2. Aggiorno il client
+        $client->update($data);
+
+        // 3. Gestisco i referenti
+        $processedIds = [];
+        
+        foreach ($referentsData as $referentData) {
+            // Se ha un ID, lo aggiorniamo
+            if (!empty($referentData['id'])) {
+                $referent = Referent::find($referentData['id']);
+                if ($referent && $referent->client_id === $client->id) {
+                    $referent->update($referentData);
+                    $processedIds[] = $referent->id;
+                }
+            } else {
+                // Creiamo un nuovo referente
+                $referentData['client_id'] = $client->id;
+                $newReferent = Referent::create($referentData);
+                $processedIds[] = $newReferent->id;
+            }
+        }
+
+        // 4. Opzionale: elimina referenti rimossi dal form
+        Referent::where('client_id', $client->id)
+            ->whereNotIn('id', $processedIds)
+            ->delete();
+
+        // 5. Notifica di successo
+        Notification::make()
+            ->title('Cliente aggiornato con successo')
+            ->success()
+            ->send();
     }
 }
