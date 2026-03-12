@@ -311,7 +311,7 @@ class BiddingResource extends Resource
                                 ->columnSpan(['sm' => 'full', 'md' => 10]),
                             TextInput::make('cig')
                                 ->label('CIG')
-                ->extraInputAttributes(['class' => 'text-right'])
+                                ->extraInputAttributes(['class' => 'text-right'])
                                 ->columnSpan(['sm' => 'full', 'md' => 4]),
                             TextInput::make('procedure_id')
                                 ->label('ID Procedura')
@@ -370,28 +370,79 @@ class BiddingResource extends Resource
                                 ->relationship('source3', 'name')
                                 ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
                                 ->columnSpan(['sm' => 'full', 'md' => 8]),
+
+                            // FileUpload::make('temp_zip')
+                            //     ->label('Carica ZIP con allegati')
+                            //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                            //     ->maxSize(102400)
+                            //     // ->disk('public')
+                            //     ->directory('biddings-temp')
+                            //     // ->visibility('public')
+                            //     ->multiple(false)
+                            //     ->preserveFilenames()
+                            //     ->columnSpanFull()
+                            //     ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
+
+                            // 1. SOLO IN CREAZIONE
                             FileUpload::make('temp_zip')
                                 ->label('Carica ZIP con allegati')
                                 ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                                ->maxSize(102400)
-                                // ->disk('public')
+                                // ->maxSize(102400)
                                 ->directory('biddings-temp')
-                                // ->visibility('public')
-                                ->multiple(false)
-                                ->preserveFilenames()
-                                ->columnSpanFull()
-                                ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
+                                ->dehydrated(false)
+                                ->visible(fn ($livewire, $record) => $livewire instanceof \Filament\Resources\Pages\CreateRecord )
+                                ->columnSpanFull(),
 
 
                             Section::make('Allegati')
                                 ->collapsed()
                                 ->visible(fn($record) => $record && $record->attachment_path)
+                                ->visible(fn ($record) =>
+                                    $record &&
+                                    $record->attachment_path &&
+                                    !collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                )
+                                ->headerActions([
+                                    Action::make('delete')
+                                        ->label('Svuota allegati')
+                                        ->icon('heroicon-o-trash')
+                                        ->color('danger')
+                                        ->requiresConfirmation()
+                                        ->action(function ($record) {
+                                            $directory = $record->attachment_path;
+                                            $disk = config('filesystems.default', 'public');
+
+                                            if (!$directory || !Storage::disk($disk)->exists($directory)) {
+                                                return;
+                                            }
+
+                                            // 1. Recupera tutti i file all'interno della cartella
+                                            $files = Storage::disk($disk)->allFiles($directory);
+
+                                            // 2. Elimina i file
+                                            Storage::disk($disk)->delete($files);
+
+                                            // 3. Se ci sono sottocartelle, allFiles non le elimina.
+                                            // Per eliminare anche le sottocartelle ma mantenere la "root":
+                                            $directories = Storage::disk($disk)->allDirectories($directory);
+                                            foreach ($directories as $subDir) {
+                                                Storage::disk($disk)->deleteDirectory($subDir);
+                                            }
+
+                                            Notification::make()
+                                                ->title('Cartella svuotata con successo')
+                                                ->success()
+                                                ->send();
+
+                                            return redirect(request()->header('Referer'));
+                                        }),
+                                ])
                                 ->schema([
                                     Placeholder::make('attachments')
                                         ->key('attachments_list')
                                         ->label('')
                                         ->hintAction(
-                                            \Filament\Forms\Components\Actions\Action::make('downloadAll')
+                                            Action::make('downloadAll')
                                                 ->label('Scarica tutti (ZIP)')
                                                 ->icon('heroicon-o-arrow-down-tray')
                                                 ->action(function ($record) {
@@ -401,10 +452,10 @@ class BiddingResource extends Resource
                                                         $services .= $record->serviceTypes[$i]->name;
                                                     }
                                                     return response()->streamDownload(function () use ($record) {
-                                                        $zip = new \ZipArchive();
+                                                        $zip = new ZipArchive();
                                                         $path = tempnam(sys_get_temp_dir(), 'zip');
 
-                                                        $zip->open($path, \ZipArchive::CREATE);
+                                                        $zip->open($path, ZipArchive::CREATE);
 
                                                         $disk = config('filesystems.default', 'public');
                                                         $files = Storage::disk($disk)->allFiles($record->attachment_path);
@@ -480,6 +531,18 @@ class BiddingResource extends Resource
                                         ->columnSpanFull(),
                                 ])
                                 ->columnSpan(['sm' => 'full', 'md' => 24]),
+
+                            FileUpload::make('restore_zip')
+                                ->label('Carica ZIP con allegati')
+                                ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                ->directory('biddings-temp')
+                                ->dehydrated(false)
+                                ->visible(fn ($record) =>
+                                    $record &&
+                                    $record->attachment_path &&
+                                    collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                )
+                                ->columnSpanFull(),
                         ]),
 
                         // Tab::make('Dati Appalto')

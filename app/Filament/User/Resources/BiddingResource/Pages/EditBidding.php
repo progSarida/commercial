@@ -190,14 +190,14 @@ class EditBidding extends EditRecord
 
     protected static function handleZipUpload($record, array $data): void
     {
-        // Se non c'è ZIP caricato o già processato → esci
-        if (empty($data['temp_zip']) || $record->attachment_path) {
+        // Se non c'è ZIP caricato → esci
+        if (empty($data['restore_zip'])) {
             return;
         }
 
-        $zipPath = is_array($data['temp_zip'])
-            ? array_values($data['temp_zip'])[0]
-            : $data['temp_zip'];
+        $zipPath = is_array($data['restore_zip'])
+            ? array_values($data['restore_zip'])[0]
+            : $data['restore_zip'];
 
         // Livewire salva i file temporanei nel disco 'local' nella cartella 'livewire-tmp'
         $livewireDisk = config('livewire.temporary_file_upload.disk', 'local');
