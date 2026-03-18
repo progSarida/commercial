@@ -195,7 +195,7 @@ class ClientResource extends Resource
                     // ->badge()
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('name')->label('Nome cliente')
+                TextColumn::make('name')->label('Denominazione')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('phone')->label('Telefono')
