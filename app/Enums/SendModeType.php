@@ -14,6 +14,8 @@ enum SendModeType: string implements HasLabel, HasColor
     case ORDINARY = "ordinary";
     case HAND = 'hand';
 
+    case PORTAL = 'portal';
+
     public function getLabel(): string
     {
         return match($this) {
@@ -22,6 +24,7 @@ enum SendModeType: string implements HasLabel, HasColor
             self::MAIL => 'Mail',
             self::ORDINARY => 'Posta ordinaria',
             self::HAND => 'Raccomandata a mano',
+            self::PORTAL => 'Portale appalti',
         };
     }
 
@@ -33,6 +36,7 @@ enum SendModeType: string implements HasLabel, HasColor
             self::MAIL => Color::Orange,
             self::ORDINARY => Color::Amber,
             self::HAND => Color::Zinc,
+            self::PORTAL => Color::Zinc,
         };
     }
 }

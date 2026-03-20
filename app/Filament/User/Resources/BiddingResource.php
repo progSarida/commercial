@@ -235,12 +235,12 @@ class BiddingResource extends Resource
                                         ->options(InterestExpressionType::class)
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     DatePicker::make('interest_deadline_date')
-                                        ->label('Data scadenza manifestazione')
+                                        ->label('Data scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->disabled(fn (callable $get) => !$get('interest_expression_type'))
                                         ->columnSpan(['sm' => 'full', 'md' => 4]),
                                     TimePicker::make('interest_deadline_time')
-                                        ->label('Orario scadenza manifestazione')
+                                        ->label('Orario scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->default(fn (callable $get) => $get('interest_expression_type') ? '06:00' : null)
                                         ->disabled(fn (callable $get) => !$get('interest_expression_type'))
@@ -275,23 +275,23 @@ class BiddingResource extends Resource
                                         })
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     DatePicker::make('inspection_deadline_date')
-                                        ->label('Data scadenza sopralluogo')
+                                        ->label('Data scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     TimePicker::make('inspection_deadline_time')
-                                        ->label('Orario scadenza sopralluogo')
+                                        ->label('Orario scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
                                         ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     DatePicker::make('inspection_date')
-                                        ->label('Data sopralluogo')
+                                        ->label('Data')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     TimePicker::make('inspection_time')
-                                        ->label('Orario sopralluogo')
+                                        ->label('Orario')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
                                         ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
@@ -327,12 +327,12 @@ class BiddingResource extends Resource
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
 
                                     DatePicker::make('deadline_date')
-                                        ->label('Data scadenza gara')
+                                        ->label('Data scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->required(fn (Get $get) => $get('bidding_type_id'))
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     TimePicker::make('deadline_time')
-                                        ->label('Orario scadenza gara')
+                                        ->label('Orario scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->required(fn (Get $get) => $get('bidding_type_id'))
                                         ->default('06:00')
@@ -363,13 +363,13 @@ class BiddingResource extends Resource
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->default('06:00')
                                         ->columnSpan(['sm' => 'full', 'md' => 4]),
-                                    Select::make('awarded')
-                                        ->label('Aggiudicata')
-                                        ->options(YesNo::class)
-                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
                                     DatePicker::make('closure_date')
                                         ->label('Data chiusura procedura')
                                         ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Select::make('awarded')
+                                        ->label('Aggiudicata')
+                                        ->options(YesNo::class)
                                         ->columnSpan(['sm' => 'full', 'md' => 4]),
                                     TextInput::make('contact')
                                         ->label('Nome contatto')
