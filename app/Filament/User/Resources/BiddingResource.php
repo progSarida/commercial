@@ -670,6 +670,10 @@ class BiddingResource extends Resource
     {
         return $table
             ->defaultSort('date', 'asc')
+            ->persistFiltersInSession()                                 // Persistenza filtri
+            ->persistSortInSession()                                    // Persistenza ordinamento
+            ->persistSearchInSession()                                  // Persistenza barra di ricerca globale
+            ->persistColumnSearchesInSession()                          // Persistenza ricerche nelle singole colonne
             ->columns([
                 TextColumn::make('deadline_status')
                     ->label('Scadenza')
