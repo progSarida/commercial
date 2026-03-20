@@ -7,6 +7,9 @@ use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\BiddingProcessingState;
 use App\Enums\ClientType;
+use App\Enums\FeasibilityType;
+use App\Enums\InterestExpressionType;
+use App\Enums\SendModeType;
 use App\Enums\YesNo;
 use App\Filament\User\Resources\BiddingResource\Pages;
 use App\Filament\User\Resources\TenderResource\Tabs\ProcedureTypeTab;
@@ -24,6 +27,7 @@ use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Placeholder;
@@ -35,6 +39,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -73,476 +78,559 @@ class BiddingResource extends Resource
                         Tab::make('Dati Gara')
                         ->columns(24)
                         ->schema([
-                            CheckboxList::make('serviceTypes')
-                                ->label('Gara relativa al servizio di')
-                                ->required()
-                                ->relationship('serviceTypes', 'name')
-                                ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
-                                ->columns(6)
-                                ->columnSpan(['sm' => 'full', 'md' => 24])
-                                ->gridDirection('row'),
-                            Select::make('client_type')
-                                ->label('Tipo')
-                                ->required()
-                                ->live()
-                                ->options(ClientType::class)
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            Select::make('client_id')
-                                ->label('Ente')
-                                ->hintAction(
-                                    Action::make('Nuovo')
-                                        ->icon('heroicon-o-user')
-                                        ->form(fn(Form $form) => ClientResource::modalForm($form))
-                                        ->modalHeading('Nuovo Cliente')
-                                        ->modalWidth('6xl')
-                                        ->action(function (array $data, callable $set) {
-                                            $client = new Client();
-                                            BiddingResource::saveClient($data, $client);
-                                            $set('client_type', $client->client_type);
-                                            $set('client_id', $client->id);
-                                            $set('province_id', $client->province_id);
-                                            $set('region_id', $client->region_id);
-                                        })
-                                )
-                                ->required()
-                                ->relationship(
-                                    name: 'client',
-                                    titleAttribute: 'name',
-                                    modifyQueryUsing: fn ($query, callable $get) => $get('client_type') ? $query->where('client_type', $get('client_type')) : $query->whereRaw('1 = 0')
-                                )
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    $client = Client::find($state);
-                                    $set('province_id', $client->province_id);
-                                    $set('region_id', $client->region_id);
-                                })
-                                ->searchable()
-                                ->preload()
-                                ->reactive()
-                                ->columnSpan(['sm' => 'full', 'md' => 9]),
-                            Select::make('province_id')
-                                ->label('Provincia')
-                                ->required()
-                                ->relationship( name: 'province', titleAttribute: 'name', )
-                                ->disabled()
-                                ->dehydrated()
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            Select::make('region_id')
-                                ->label('Regione')
-                                ->required()
-                                ->relationship( name: 'region', titleAttribute: 'name', )
-                                ->disabled()
-                                ->dehydrated()
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            Textarea::make('description')
-                                ->label('Descrizione')
-                                ->columnSpan(['sm' => 'full', 'md' => 24]),
-                            TextInput::make('amount')
-                                ->label('Importo')
-                                ->prefix('€')
-                                ->columnSpan(['sm' => 'full', 'md' => 4])
-                                ->live(onBlur: true)
-                                ->inputMode('decimal')
-                                ->extraInputAttributes(['class' => 'text-right'])
-                                // 1. Quando il record viene caricato → formatta con . e ,
-                                ->formatStateUsing(fn ($state) =>
-                                    $state !== null && $state !== ''
-                                        ? number_format((float) $state, 2, ',', '.')
-                                        : ''
-                                )
-                                // 2. Ogni volta che l'utente digita → riformatta ISTANTANEAMENTE
-                                ->afterStateUpdated(function ($state, $component) {
-                                    if (blank($state)) {
-                                        $component->state('');
-                                        return;
-                                    }
-
-                                    // Pulizia: accetta solo numeri, punto, virgola e -
-                                    $clean = preg_replace('/[^\d,\.-]/', '', $state);
-
-                                    // Convertiamo in float per gestire correttamente la virgola come decimale
-                                    $number = str_replace(',', '.', $clean);
-                                    $float = floatval($number);
-
-                                    // Riformatta come vuoi tu: 1.234.567,89
-                                    $formatted = number_format($float, 2, ',', '.');
-
-                                    // Ri-aggiorna il campo con il valore formattato
-                                    $component->state($formatted);
-                                })
-                                // 3. Al salvataggio → converte "1.234.567,89" → 1234567.89 (float)
-                                ->dehydrateStateUsing(fn ($state): ?float =>
-                                    blank($state)
-                                        ? null
-                                        : (float) str_replace(['.', ','], ['', '.'], $state)
-                            ),
-                            TextInput::make('residents')
-                                ->label('Abitanti')
-                                ->columnSpan(['sm' => 'full', 'md' => 4])
-                                ->inputMode('numeric')
-                                ->extraInputAttributes(['class' => 'text-right'])
-                                ->formatStateUsing(fn ($state) => $state ? number_format((int)$state, 0, ',', '.') : '')
-                                ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
-                            Select::make('bidding_state_id')
-                                ->label('Stato gara')
-                                ->relationship(
-                                    name: 'biddingState',
-                                    titleAttribute: 'name',
-                                    modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                                )
-                                ->default(fn(Set $set) => BiddingState::where('name', 'Da valutare')->first()->id )
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            Select::make('bidding_processing_state')
-                                ->label('Stato lavorazione')
-                                ->live()
-                                ->options(BiddingProcessingState::class)
-                                ->suffixIcon(fn ($state) => $state ? BiddingProcessingState::from($state)->getIcon() : null)
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            Select::make('bidding_priority_type')
-                                ->label('Priorità')
-                                ->live()
-                                ->options(BiddingPriorityType::class)
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            Textarea::make('bidding_note')
-                                ->label('Note gara')
-                                ->columnSpan(['sm' => 'full', 'md' => 24]),
-                            Select::make('bidding_type_id')
-                                ->label('Tipo gara')
-                                ->relationship(
-                                    name: 'biddingType',
-                                    titleAttribute: 'name',
-                                    modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                                )
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            Select::make('bidding_adjudication_type_id')
-                                ->label('Tipo aggiudicazione')
-                                ->relationship(
-                                    name: 'biddingAdjudicationType',
-                                    titleAttribute: 'name',
-                                    modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                                )
-                                ->columnSpan(['sm' => 'full', 'md' => 8]),
-                            DatePicker::make('clarification_request_deadline_date')
-                                ->label('Data scadenza chiarimenti')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            TimePicker::make('clarification_request_deadline_time')
-                                ->label('Orario scadenza chiarimenti')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->default('06:00')
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            Checkbox::make('mandatory_inspection')
-                                ->label('Sopralluogo obbligatorio')
-                                ->live()
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    if($state)
-                                        $set('inspection_deadline_time', '06:00');
-                                    else
-                                        $set('inspection_deadline_time', null);
-                                })
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            DatePicker::make('inspection_deadline_date')
-                                ->label('Data scadenza sopralluogo')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            TimePicker::make('inspection_deadline_time')
-                                ->label('Orario scadenza sopralluogo')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
-                                ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            DatePicker::make('deadline_date')
-                                ->label('Data scadenza gara')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->required()
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
-                            TimePicker::make('deadline_time')
-                                ->label('Orario scadenza gara')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->default('06:00')
-                                ->required()
-                                ->columnSpan(['sm' => 'full', 'md' => 5]),
-                            DatePicker::make('send_date')
-                                ->label('Data invio offerta')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 3]),
-                            TimePicker::make('send_time')
-                                ->label('Orario invio offerta')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->default('06:00')
-                                ->columnSpan(['sm' => 'full', 'md' => 3]),
-                            TextInput::make('send_mode')
-                                ->label('Modalità invio')
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            DatePicker::make('opening_date')
-                                ->label('Data apertura offerte')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 3]),
-                            TimePicker::make('opening_time')
-                                ->label('Orario apertura offerte')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->default('06:00')
-                                ->columnSpan(['sm' => 'full', 'md' => 3]),
-                            Select::make('awarded')
-                                ->label('Aggiudicata')
-                                ->options(YesNo::class)
-                                ->columnSpan(['sm' => 'full', 'md' => 3]),
-                            DatePicker::make('closure_date')
-                                ->label('Data chiusura procedura')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 3]),
-                            TextInput::make('contact')
-                                ->label('Nome contatto')
-                                ->columnSpan(['sm' => 'full', 'md' => 10]),
-                            TextInput::make('note')
-                                ->label('Note')
-                                ->columnSpan(['sm' => 'full', 'md' => 14]),
-                            TextInput::make('contracting_station')
-                                ->label('Gestore appalto')
-                                ->columnSpan(['sm' => 'full', 'md' => 17]),
-                            Select::make('bidding_procedure_type')
-                                ->label('Procedura')
-                                ->live()
-                                ->options(BiddingProcedureType::class)
-                                ->default(BiddingProcedureType::TELEMATIC)
-                                ->columnSpan(['sm' => 'full', 'md' => 7]),
-                            TextInput::make('procedure_portal')
-                                ->label('Portale procedura')
-                                ->columnSpan(['sm' => 'full', 'md' => 10]),
-                            TextInput::make('cig')
-                                ->label('CIG')
-                                ->extraInputAttributes(['class' => 'text-right'])
-                                ->columnSpan(['sm' => 'full', 'md' => 4]),
-                            TextInput::make('procedure_id')
-                                ->label('ID Procedura')
-                                ->columnSpan(['sm' => 'full', 'md' => 10]),
-                            TextInput::make('year')
-                                ->label('Durata anni')
-                                ->extraInputAttributes(['class' => 'text-right'])
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            TextInput::make('month')
-                                ->label('Durata mesi')
-                                ->extraInputAttributes(['class' => 'text-right'])
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            TextInput::make('day')
-                                ->label('Durata giorni')
-                                ->extraInputAttributes(['class' => 'text-right'])
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            DatePicker::make('renew')
-                                ->label('Rinnovo')
-                                ->extraInputAttributes(['class' => 'text-center'])
-                                ->columnSpan(['sm' => 'full', 'md' => 6]),
-                            Select::make('assigned_user_id')
-                                ->label('Assegnato a')
-                                ->relationship('assignedUser', 'name')
-                                ->options(User::pluck('name', 'id')->toArray())
-                                ->columns(6)
-                                ->columnSpan(['sm' => 'full', 'md' => 8]),
-                            Select::make('modified_user_id')
-                                ->label('Modificato da')
-                                ->relationship('modifiedUser', 'name')
-                                ->options(User::pluck('name', 'id')->toArray())
-                                // ->columns(6)
-                                ->disabled()
-                                ->dehydrated()
-                                ->visible(fn ($state) => $state !== null)
-                                ->columnSpan(['sm' => 'full', 'md' => 8]),
-                            Placeholder::make('')
-                                ->label('Ultima modifica: ')
-                                ->content(fn ($record) => $record?->updated_at?->format('d/m/Y') ?? '')
-                                ->visible(fn (callable $get) => $get('modified_user_id') !== null)
-                                ->columnSpan(['sm' => 0, 'md' =>8]),
-                            Placeholder::make('')
-                                ->visible(fn (callable $get) => $get('modified_user_id') === null)
-                                ->columnSpan(['sm' => 0, 'md' =>16]),
-                            Select::make('source1_id')
-                                ->label('Fonte dati 1')
-                                ->relationship('source1', 'name')
-                                ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                                ->columnSpan(['sm' => 'full', 'md' => 8]),
-                            Select::make('source2_id')
-                                ->label('Fonte dati 2')
-                                ->relationship('source2', 'name')
-                                ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                                ->columnSpan(['sm' => 'full', 'md' => 8]),
-                            Select::make('source3_id')
-                                ->label('Fonte dati 3')
-                                ->relationship('source3', 'name')
-                                ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
-                                ->columnSpan(['sm' => 'full', 'md' => 8]),
-
-                            // FileUpload::make('temp_zip')
-                            //     ->label('Carica ZIP con allegati')
-                            //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                            //     ->maxSize(102400)
-                            //     // ->disk('public')
-                            //     ->directory('biddings-temp')
-                            //     // ->visibility('public')
-                            //     ->multiple(false)
-                            //     ->preserveFilenames()
-                            //     ->columnSpanFull()
-                            //     ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
-
-                            // 1. SOLO IN CREAZIONE
-                            FileUpload::make('temp_zip')
-                                ->label('Carica ZIP con allegati')
-                                ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                                // ->maxSize(102400)
-                                ->directory('biddings-temp')
-                                ->dehydrated(false)
-                                ->visible(fn ($livewire, $record) => $livewire instanceof \Filament\Resources\Pages\CreateRecord )
-                                ->columnSpanFull(),
-
-
-                            Section::make('Allegati')
-                                ->collapsed()
-                                ->visible(fn($record) => $record && $record->attachment_path)
-                                ->visible(fn ($record) =>
-                                    $record &&
-                                    $record->attachment_path &&
-                                    !collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
-                                )
-                                ->headerActions([
-                                    Action::make('delete')
-                                        ->label('Svuota allegati')
-                                        ->icon('heroicon-o-trash')
-                                        ->color('danger')
-                                        ->requiresConfirmation()
-                                        ->action(function ($record) {
-                                            $directory = $record->attachment_path;
-                                            $disk = config('filesystems.default', 'public');
-
-                                            if (!$directory || !Storage::disk($disk)->exists($directory)) {
-                                                return;
-                                            }
-
-                                            // 1. Recupera tutti i file all'interno della cartella
-                                            $files = Storage::disk($disk)->allFiles($directory);
-
-                                            // 2. Elimina i file
-                                            Storage::disk($disk)->delete($files);
-
-                                            // 3. Se ci sono sottocartelle, allFiles non le elimina.
-                                            // Per eliminare anche le sottocartelle ma mantenere la "root":
-                                            $directories = Storage::disk($disk)->allDirectories($directory);
-                                            foreach ($directories as $subDir) {
-                                                Storage::disk($disk)->deleteDirectory($subDir);
-                                            }
-
-                                            Notification::make()
-                                                ->title('Cartella svuotata con successo')
-                                                ->success()
-                                                ->send();
-
-                                            return redirect(request()->header('Referer'));
-                                        }),
-                                ])
+                            Fieldset::make('Informazioni generali')
+                                ->columns(24)
                                 ->schema([
-                                    Placeholder::make('attachments')
-                                        ->key('attachments_list')
-                                        ->label('')
-                                        ->hintAction(
-                                            Action::make('downloadAll')
-                                                ->label('Scarica tutti (ZIP)')
-                                                ->icon('heroicon-o-arrow-down-tray')
-                                                ->action(function ($record) {
-                                                    $services = '';
-                                                    for($i = 0; $i < count($record->serviceTypes); $i++) {
-                                                        if($i != 0) $services .= ' ';
-                                                        $services .= $record->serviceTypes[$i]->name;
-                                                    }
-                                                    return response()->streamDownload(function () use ($record) {
-                                                        $zip = new ZipArchive();
-                                                        $path = tempnam(sys_get_temp_dir(), 'zip');
+                                CheckboxList::make('serviceTypes')
+                                    ->label('Gara relativa al servizio di')
+                                    ->required()
+                                    ->relationship('serviceTypes', 'name')
+                                    ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
+                                    ->columns(6)
+                                    ->columnSpan(['sm' => 'full', 'md' => 24])
+                                    ->gridDirection('row'),
+                                Select::make('client_type')
+                                    ->label('Tipo')
+                                    ->required()
+                                    ->live()
+                                    ->options(ClientType::class)
+                                    ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                Select::make('client_id')
+                                    ->label('Ente')
+                                    ->hintAction(
+                                        Action::make('Nuovo')
+                                            ->icon('heroicon-o-user')
+                                            ->form(fn(Form $form) => ClientResource::modalForm($form))
+                                            ->modalHeading('Nuovo Cliente')
+                                            ->modalWidth('6xl')
+                                            ->action(function (array $data, callable $set) {
+                                                $client = new Client();
+                                                BiddingResource::saveClient($data, $client);
+                                                $set('client_type', $client->client_type);
+                                                $set('client_id', $client->id);
+                                                $set('province_id', $client->province_id);
+                                                $set('region_id', $client->region_id);
+                                            })
+                                    )
+                                    ->required()
+                                    ->relationship(
+                                        name: 'client',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn ($query, callable $get) => $get('client_type') ? $query->where('client_type', $get('client_type')) : $query->whereRaw('1 = 0')
+                                    )
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        $client = Client::find($state);
+                                        $set('province_id', $client->province_id);
+                                        $set('region_id', $client->region_id);
+                                    })
+                                    ->searchable()
+                                    ->preload()
+                                    ->reactive()
+                                    ->columnSpan(['sm' => 'full', 'md' => 9]),
+                                Select::make('province_id')
+                                    ->label('Provincia')
+                                    ->required()
+                                    ->relationship( name: 'province', titleAttribute: 'name', )
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                Select::make('region_id')
+                                    ->label('Regione')
+                                    ->required()
+                                    ->relationship( name: 'region', titleAttribute: 'name', )
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                Textarea::make('description')
+                                    ->label('Descrizione')
+                                    ->columnSpan(['sm' => 'full', 'md' => 24]),
+                                TextInput::make('amount')
+                                    ->label('Importo')
+                                    ->prefix('€')
+                                    ->columnSpan(['sm' => 'full', 'md' => 4])
+                                    ->live(onBlur: true)
+                                    ->inputMode('decimal')
+                                    ->extraInputAttributes(['class' => 'text-right'])
+                                    // 1. Quando il record viene caricato → formatta con . e ,
+                                    ->formatStateUsing(fn ($state) =>
+                                        $state !== null && $state !== ''
+                                            ? number_format((float) $state, 2, ',', '.')
+                                            : ''
+                                    )
+                                    // 2. Ogni volta che l'utente digita → riformatta ISTANTANEAMENTE
+                                    ->afterStateUpdated(function ($state, $component) {
+                                        if (blank($state)) {
+                                            $component->state('');
+                                            return;
+                                        }
 
-                                                        $zip->open($path, ZipArchive::CREATE);
+                                        // Pulizia: accetta solo numeri, punto, virgola e -
+                                        $clean = preg_replace('/[^\d,\.-]/', '', $state);
 
-                                                        $disk = config('filesystems.default', 'public');
-                                                        $files = Storage::disk($disk)->allFiles($record->attachment_path);
+                                        // Convertiamo in float per gestire correttamente la virgola come decimale
+                                        $number = str_replace(',', '.', $clean);
+                                        $float = floatval($number);
 
-                                                        foreach ($files as $file) {
-                                                            // Legge il file dal disco e lo aggiunge allo ZIP
-                                                            $fileContent = Storage::disk($disk)->get($file);
-                                                            $zip->addFromString(basename($file), $fileContent);
-                                                        }
+                                        // Riformatta come vuoi tu: 1.234.567,89
+                                        $formatted = number_format($float, 2, ',', '.');
 
-                                                        $zip->close();
-                                                        readfile($path);
-                                                        unlink($path);
-                                                    }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
-                                                })
-                                        )
-                                        ->content(function ($record) {
-                                            if (!$record || !$record->attachment_path) {
-                                                return 'Nessun allegato.';
-                                            }
-
-                                            // dd([
-                                            //     'path' => $record->attachment_path,
-                                            //     'default_disk' => config('filesystems.default'),
-                                            //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
-                                            //     'files_on_default' => Storage::files($record->attachment_path),
-                                            //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
-                                            // ]);
-
-                                            $disk = config('filesystems.default', 'public');
-
-                                            // Usa allFiles per prendere anche file in sottocartelle
-                                            $files = Storage::disk($disk)->allFiles($record->attachment_path);
-
-                                            if (empty($files)) {
-                                                return 'Nessuna cartella allegati trovata.';
-                                            }
-
-                                            return new \Illuminate\Support\HtmlString(
-                                                collect($files)
-                                                    ->sort()
-                                                    ->map(function ($file) use ($disk) {
-                                                        $name = basename($file);
-
-                                                        // Genera URL in base al tipo di disco
-                                                        // try {
-                                                        //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
-                                                        //         // Per S3 usa temporaryUrl
-                                                        //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
-                                                        //     } else {
-                                                        //         // Per locale usa url normale
-                                                        //         $url = Storage::disk($disk)->url($file);
-                                                        //     }
-                                                        // } catch (\Exception $e) {
-                                                        //     // Fallback se temporaryUrl non è supportato
-                                                        //     $url = Storage::disk($disk)->url($file);
-                                                        // }
-
-                                                        $url = Storage::temporaryUrl($file, now()->addMinutes(5));
-
-                                                        return <<<HTML
-                                                        <div class="flex items-center gap-3 py-1">
-                                                            <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
-                                                                {$name}
-                                                            </a>
-                                                        </div>
-                                                        HTML;
-                                                    })
-                                                    ->implode('')
-                                            );
+                                        // Ri-aggiorna il campo con il valore formattato
+                                        $component->state($formatted);
+                                    })
+                                    // 3. Al salvataggio → converte "1.234.567,89" → 1234567.89 (float)
+                                    ->dehydrateStateUsing(fn ($state): ?float =>
+                                        blank($state)
+                                            ? null
+                                            : (float) str_replace(['.', ','], ['', '.'], $state)
+                                ),
+                                TextInput::make('residents')
+                                    ->label('Abitanti')
+                                    ->columnSpan(['sm' => 'full', 'md' => 3])
+                                    ->inputMode('numeric')
+                                    ->extraInputAttributes(['class' => 'text-right'])
+                                    ->formatStateUsing(fn ($state) => $state ? number_format((int)$state, 0, ',', '.') : '')
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)str_replace(['.', ','], '', $state) : null),
+                                Select::make('feasibility_type')
+                                    ->label('Fattibilità')
+                                    ->required()
+                                    ->live()
+                                    ->options(FeasibilityType::class)
+                                    ->default('evaluate')
+                                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                                Select::make('bidding_state_id')
+                                    ->label('Dettaglio fattibilità')
+                                    ->relationship(
+                                        name: 'biddingState',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn ($query, Get $get) => $query->where('feasibility_type', $get('feasibility_type'))->orderBy('position')
+                                    )
+                                    ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                Select::make('bidding_processing_state')
+                                    ->label('Stato lavorazione')
+                                    ->live()
+                                    ->options(BiddingProcessingState::class)
+                                    ->suffixIcon(fn ($state) => $state ? BiddingProcessingState::from($state)->getIcon() : null)
+                                    ->columnSpan(['sm' => 'full', 'md' => 6]),
+                                Select::make('bidding_priority_type')
+                                    ->label('Priorità')
+                                    ->live()
+                                    ->options(BiddingPriorityType::class)
+                                    ->columnSpan(['sm' => 'full', 'md' => 3]),
+                                Textarea::make('bidding_note')
+                                    ->label('Note gara')
+                                    ->columnSpan(['sm' => 'full', 'md' => 24]),
+                            ]),
+                            Fieldset::make('Manifestazione d\'interesse')
+                                ->columns(25)
+                                ->schema([
+                                    Select::make('interest_expression_type')
+                                        ->label('Manifestazione d\'interesse')
+                                        ->live()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            if($state)
+                                                $set('interest_deadline_time', '06:00');
+                                            else
+                                                $set('interest_deadline_time', null);
                                         })
-                                        ->extraAttributes(['style' => 'line-height:1.8'])
-                                        ->columnSpanFull(),
-                                ])
-                                ->columnSpan(['sm' => 'full', 'md' => 24]),
+                                        ->options(InterestExpressionType::class)
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    DatePicker::make('interest_deadline_date')
+                                        ->label('Data scadenza manifestazione')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->disabled(fn (callable $get) => !$get('interest_expression_type'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    TimePicker::make('interest_deadline_time')
+                                        ->label('Orario scadenza manifestazione')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default(fn (callable $get) => $get('interest_expression_type') ? '06:00' : null)
+                                        ->disabled(fn (callable $get) => !$get('interest_expression_type'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    DatePicker::make('interest_send_date')
+                                        ->label('Data invio')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->disabled(fn (callable $get) => !$get('interest_expression_type'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    TimePicker::make('interest_send_time')
+                                        ->label('Orario invio')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default(fn (callable $get) => $get('interest_expression_type') ? '06:00' : null)
+                                        ->disabled(fn (callable $get) => !$get('interest_expression_type'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Select::make('interest_send_mode_type')
+                                        ->label('Modalità d\'invio')
+                                        ->options(SendModeType::class)
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                ]),
+                            Fieldset::make('Sopralluogo')
+                                ->columns(25)
+                                ->schema([
+                                    Checkbox::make('mandatory_inspection')
+                                        ->label('Sopralluogo obbligatorio')
+                                        ->live()
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            if($state)
+                                                $set('inspection_deadline_time', '06:00');
+                                            else
+                                                $set('inspection_deadline_time', null);
+                                        })
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    DatePicker::make('inspection_deadline_date')
+                                        ->label('Data scadenza sopralluogo')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('inspection_deadline_time')
+                                        ->label('Orario scadenza sopralluogo')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
+                                        ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    DatePicker::make('inspection_date')
+                                        ->label('Data sopralluogo')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('inspection_time')
+                                        ->label('Orario sopralluogo')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
+                                        ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                ]),
+                            Fieldset::make('Gara')
+                                ->columns(25)
+                                ->schema([
+                                    Select::make('bidding_type_id')
+                                        ->label('Tipo gara')
+                                        ->relationship(
+                                            name: 'biddingType',
+                                            titleAttribute: 'name',
+                                            modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                                        )
+                                        ->columnSpan(['sm' => 'full', 'md' => 7]),
+                                    Select::make('bidding_adjudication_type_id')
+                                        ->label('Tipo aggiudicazione')
+                                        ->relationship(
+                                            name: 'biddingAdjudicationType',
+                                            titleAttribute: 'name',
+                                            modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                                        )
+                                        ->columnSpan(['sm' => 'full', 'md' => 8]),
+                                    DatePicker::make('clarification_request_deadline_date')
+                                        ->label('Data scadenza chiarimenti')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('clarification_request_deadline_time')
+                                        ->label('Orario scadenza chiarimenti')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default('06:00')
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
 
-                            FileUpload::make('restore_zip')
-                                ->label('Carica ZIP con allegati')
-                                ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                                ->directory('biddings-temp')
-                                ->dehydrated(false)
-                                ->visible(fn ($record) =>
-                                    $record &&
-                                    $record->attachment_path &&
-                                    collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
-                                )
-                                ->columnSpanFull(),
+                                    DatePicker::make('deadline_date')
+                                        ->label('Data scadenza gara')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->required(fn (Get $get) => $get('bidding_type_id'))
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('deadline_time')
+                                        ->label('Orario scadenza gara')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->required(fn (Get $get) => $get('bidding_type_id'))
+                                        ->default('06:00')
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    DatePicker::make('send_date')
+                                        ->label('Data invio offerta')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('send_time')
+                                        ->label('Orario invio offerta')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default('06:00')
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    // TextInput::make('send_mode')
+                                    //     ->label('Modalità invio')
+                                    //     ->columnSpan(['sm' => 'full', 'md' => 6]),
+                                    Select::make('send_mode_type')
+                                        ->label('Modalità d\'invio')
+                                        ->options(SendModeType::class)
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+
+                                    DatePicker::make('opening_date')
+                                        ->label('Data apertura offerte')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    TimePicker::make('opening_time')
+                                        ->label('Orario apertura offerte')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default('06:00')
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Select::make('awarded')
+                                        ->label('Aggiudicata')
+                                        ->options(YesNo::class)
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    DatePicker::make('closure_date')
+                                        ->label('Data chiusura procedura')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    TextInput::make('contact')
+                                        ->label('Nome contatto')
+                                        ->columnSpan(['sm' => 'full', 'md' => 9]),
+
+                                    TextInput::make('note')
+                                        ->label('Note')
+                                        ->columnSpan(['sm' => 'full', 'md' => 'full']),
+
+                                    TextInput::make('contracting_station')
+                                        ->label('Gestore appalto')
+                                        ->columnSpan(['sm' => 'full', 'md' => 18]),
+                                    Select::make('bidding_procedure_type')
+                                        ->label('Procedura')
+                                        ->live()
+                                        ->options(BiddingProcedureType::class)
+                                        ->default(BiddingProcedureType::TELEMATIC)
+                                        ->columnSpan(['sm' => 'full', 'md' => 7]),
+
+                                    TextInput::make('procedure_portal')
+                                        ->label('Portale procedura')
+                                        ->columnSpan(['sm' => 'full', 'md' => 10]),
+                                    TextInput::make('cig')
+                                        ->label('CIG')
+                                        ->extraInputAttributes(['class' => 'text-right'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TextInput::make('procedure_id')
+                                        ->label('ID Procedura')
+                                        ->columnSpan(['sm' => 'full', 'md' => 10]),
+
+                                    TextInput::make('year')
+                                        ->label('Durata anni')
+                                        ->extraInputAttributes(['class' => 'text-right'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 6]),
+                                    TextInput::make('month')
+                                        ->label('Durata mesi')
+                                        ->extraInputAttributes(['class' => 'text-right'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 6]),
+                                    TextInput::make('day')
+                                        ->label('Durata giorni')
+                                        ->extraInputAttributes(['class' => 'text-right'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 6]),
+                                    DatePicker::make('renew')
+                                        ->label('Rinnovo')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 7]),
+
+                                    Select::make('source1_id')
+                                        ->label('Fonte dati 1')
+                                        ->relationship('source1', 'name')
+                                        ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Select::make('source2_id')
+                                        ->label('Fonte dati 2')
+                                        ->relationship('source2', 'name')
+                                        ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Select::make('source3_id')
+                                        ->label('Fonte dati 3')
+                                        ->relationship('source3', 'name')
+                                        ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+
+                                    // Placeholder::make('')
+                                    //     ->visible(fn (callable $get) => $get('modified_user_id') === null)
+                                    //     ->columnSpan(['sm' => 0, 'md' =>16]),
+                                    Select::make('assigned_user_id')
+                                        ->label('Assegnato a')
+                                        ->relationship('assignedUser', 'name')
+                                        ->options(User::pluck('name', 'id')->toArray())
+                                        ->columns(6)
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Select::make('modified_user_id')
+                                        ->label('Modificato da')
+                                        ->relationship('modifiedUser', 'name')
+                                        ->options(User::pluck('name', 'id')->toArray())
+                                        // ->columns(6)
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->visible(fn ($state) => $state !== null)
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
+                                    Placeholder::make('')
+                                        ->label('Ultima modifica: ')
+                                        ->content(fn ($record) => $record?->updated_at?->format('d/m/Y') ?? '')
+                                        ->visible(fn (callable $get) => $get('modified_user_id') !== null)
+                                        ->columnSpan(['sm' => 0, 'md' => 5]),
+
+                                    // FileUpload::make('temp_zip')
+                                    //     ->label('Carica ZIP con allegati')
+                                    //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                    //     ->maxSize(102400)
+                                    //     // ->disk('public')
+                                    //     ->directory('biddings-temp')
+                                    //     // ->visibility('public')
+                                    //     ->multiple(false)
+                                    //     ->preserveFilenames()
+                                    //     ->columnSpanFull()
+                                    //     ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
+
+                                    // 1. SOLO IN CREAZIONE o se non c'è attachment_path
+                                    FileUpload::make('temp_zip')
+                                        ->label('Carica ZIP con allegati')
+                                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                        // ->maxSize(102400)
+                                        ->directory('biddings-temp')
+                                        ->dehydrated(false)
+                                        ->visible(fn ($livewire, $record) => $livewire instanceof \Filament\Resources\Pages\CreateRecord ||
+                                                                                !$record->attachment_path)
+                                        ->columnSpanFull(),
+
+
+                                    Section::make('Allegati')
+                                        ->collapsed()
+                                        ->visible(fn($record) => $record && $record->attachment_path)
+                                        ->visible(fn ($record) =>
+                                            $record &&
+                                            $record->attachment_path &&
+                                            !collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                        )
+                                        ->headerActions([
+                                            Action::make('delete')
+                                                ->label('Svuota allegati')
+                                                ->icon('heroicon-o-trash')
+                                                ->color('danger')
+                                                ->requiresConfirmation()
+                                                ->action(function ($record) {
+                                                    $directory = $record->attachment_path;
+                                                    $disk = config('filesystems.default', 'public');
+
+                                                    if (!$directory || !Storage::disk($disk)->exists($directory)) {
+                                                        return;
+                                                    }
+
+                                                    // 1. Recupera tutti i file all'interno della cartella
+                                                    $files = Storage::disk($disk)->allFiles($directory);
+
+                                                    // 2. Elimina i file
+                                                    Storage::disk($disk)->delete($files);
+
+                                                    // 3. Se ci sono sottocartelle, allFiles non le elimina.
+                                                    // Per eliminare anche le sottocartelle ma mantenere la "root":
+                                                    $directories = Storage::disk($disk)->allDirectories($directory);
+                                                    foreach ($directories as $subDir) {
+                                                        Storage::disk($disk)->deleteDirectory($subDir);
+                                                    }
+
+                                                    Notification::make()
+                                                        ->title('Cartella svuotata con successo')
+                                                        ->success()
+                                                        ->send();
+
+                                                    return redirect(request()->header('Referer'));
+                                                }),
+                                        ])
+                                        ->schema([
+                                            Placeholder::make('attachments')
+                                                ->key('attachments_list')
+                                                ->label('')
+                                                ->hintAction(
+                                                    Action::make('downloadAll')
+                                                        ->label('Scarica tutti (ZIP)')
+                                                        ->icon('heroicon-o-arrow-down-tray')
+                                                        ->action(function ($record) {
+                                                            $services = '';
+                                                            for($i = 0; $i < count($record->serviceTypes); $i++) {
+                                                                if($i != 0) $services .= ' ';
+                                                                $services .= $record->serviceTypes[$i]->name;
+                                                            }
+                                                            return response()->streamDownload(function () use ($record) {
+                                                                $zip = new ZipArchive();
+                                                                $path = tempnam(sys_get_temp_dir(), 'zip');
+
+                                                                $zip->open($path, ZipArchive::CREATE);
+
+                                                                $disk = config('filesystems.default', 'public');
+                                                                $files = Storage::disk($disk)->allFiles($record->attachment_path);
+
+                                                                foreach ($files as $file) {
+                                                                    // Legge il file dal disco e lo aggiunge allo ZIP
+                                                                    $fileContent = Storage::disk($disk)->get($file);
+                                                                    $zip->addFromString(basename($file), $fileContent);
+                                                                }
+
+                                                                $zip->close();
+                                                                readfile($path);
+                                                                unlink($path);
+                                                            }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
+                                                        })
+                                                )
+                                                ->content(function ($record) {
+                                                    if (!$record || !$record->attachment_path) {
+                                                        return 'Nessun allegato.';
+                                                    }
+
+                                                    // dd([
+                                                    //     'path' => $record->attachment_path,
+                                                    //     'default_disk' => config('filesystems.default'),
+                                                    //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
+                                                    //     'files_on_default' => Storage::files($record->attachment_path),
+                                                    //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
+                                                    // ]);
+
+                                                    $disk = config('filesystems.default', 'public');
+
+                                                    // Usa allFiles per prendere anche file in sottocartelle
+                                                    $files = Storage::disk($disk)->allFiles($record->attachment_path);
+
+                                                    if (empty($files)) {
+                                                        return 'Nessuna cartella allegati trovata.';
+                                                    }
+
+                                                    return new \Illuminate\Support\HtmlString(
+                                                        collect($files)
+                                                            ->sort()
+                                                            ->map(function ($file) use ($disk) {
+                                                                $name = basename($file);
+
+                                                                // Genera URL in base al tipo di disco
+                                                                // try {
+                                                                //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
+                                                                //         // Per S3 usa temporaryUrl
+                                                                //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
+                                                                //     } else {
+                                                                //         // Per locale usa url normale
+                                                                //         $url = Storage::disk($disk)->url($file);
+                                                                //     }
+                                                                // } catch (\Exception $e) {
+                                                                //     // Fallback se temporaryUrl non è supportato
+                                                                //     $url = Storage::disk($disk)->url($file);
+                                                                // }
+
+                                                                $url = Storage::temporaryUrl($file, now()->addMinutes(5));
+
+                                                                return <<<HTML
+                                                                <div class="flex items-center gap-3 py-1">
+                                                                    <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
+                                                                        {$name}
+                                                                    </a>
+                                                                </div>
+                                                                HTML;
+                                                            })
+                                                            ->implode('')
+                                                    );
+                                                })
+                                                ->extraAttributes(['style' => 'line-height:1.8'])
+                                                ->columnSpanFull(),
+                                        ])
+                                        ->columnSpan(['sm' => 'full', 'md' => 24]),
+
+                                    FileUpload::make('restore_zip')
+                                        ->label('Carica ZIP con allegati')
+                                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                        ->directory('biddings-temp')
+                                        ->dehydrated(false)
+                                        ->visible(fn ($record) =>
+                                            $record &&
+                                            $record->attachment_path &&
+                                            collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                        )
+                                        ->columnSpanFull(),
+                                ]),
                         ]),
 
                         // Tab::make('Dati Appalto')
@@ -581,7 +669,7 @@ class BiddingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('deadline_date', 'asc')
+            ->defaultSort('date', 'asc')
             ->columns([
                 TextColumn::make('deadline_status')
                     ->label('Scadenza')
@@ -625,6 +713,10 @@ class BiddingResource extends Resource
                     }),
                 TextColumn::make('serviceTypes')
                     ->label('Servizi')
+                    ->limit(20)
+                    ->tooltip(function ($record) {
+                        return $record->serviceTypes->pluck('name')->join(' - ');
+                    })
                     ->formatStateUsing(function ($record) {
                         return $record->serviceTypes->pluck('name')->join(' - ');
                     }),
@@ -640,27 +732,41 @@ class BiddingResource extends Resource
                     ->label('Prov.'),
                 TextColumn::make('region.name')
                     ->label('Regione'),
-                TextColumn::make('deadline_date')
-                    ->label('Gara')
-                    ->sortable()
+                TextColumn::make('date')
+                    ->label('Scadenza')
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->orderByRaw("COALESCE(deadline_date, interest_deadline_date) {$direction}");
+                    })
+                    ->state(function ($record) {
+                        return $record->deadline_date ?? $record->interest_deadline_date;
+                    })
                     ->date('d/m/Y'),
                 TextColumn::make('inspection_deadline_date')
                     ->label('Sopralluogo')
                     ->sortable()
                     ->date('d/m/Y')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('clarification_request_deadline_date')
                     ->label('Chiarimenti')
                     ->sortable()
                     ->date('d/m/Y')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('biddingType.name')
-                    ->label('Tipo gara'),
+                    ->label('Tipo')
+                    ->state(function ($record) {
+                        return $record->biddingType?->name ?? $record->interest_expression_type?->getLabel();
+                    }),
+                TextColumn::make('feasibility_type')
+                    ->label('Fattibilità')
+                    ->badge()
+                    ->tooltip(fn($record) => BiddingState::find($record?->bidding_state_id)?->name) ?? '',
                 TextColumn::make('biddingState.name')
-                    ->label('Stato gara'),
+                    ->label('Stato gara')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filtersFormWidth('md')
             ->filters([
+                // Filtri rapidi selezione multipla
                 SelectFilter::make('bidding_filter')
                     ->label('Filtri rapidi')
                     ->options(BiddingFilter::class)
@@ -668,52 +774,216 @@ class BiddingResource extends Resource
                     ->preload()
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['values'])) {
-                            foreach ($data['values'] as $value) {
-                                switch ($value) {
-                                    case BiddingFilter::TENDER30->value:
-                                        $query->whereNotNull('deadline_date')
-                                            ->whereDate('deadline_date', '>=', Carbon::today())
-                                            ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
-                                        break;
-                                    case BiddingFilter::INSPECTION30->value:
-                                        $query->whereNotNull('inspection_deadline_date')
-                                            ->whereDate('inspection_deadline_date', '>=', Carbon::today())
-                                            ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
-                                        break;
-                                    case BiddingFilter::TENDER15->value:
-                                        $query->whereNotNull('deadline_date')
-                                            ->whereDate('deadline_date', '>=', Carbon::today())
-                                            ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
-                                        break;
-                                    case BiddingFilter::INSPECTION15->value:
-                                        $query->whereNotNull('inspection_deadline_date')
-                                            ->whereDate('inspection_deadline_date', '>=', Carbon::today())
-                                            ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
-                                        break;
-                                    case BiddingFilter::SEND30->value:
-                                        $query->whereNotNull('send_date')
-                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
-                                            ->whereDate('send_date', '<', Carbon::today());
-                                        break;
-                                    case BiddingFilter::SEND60->value:
-                                        $query->whereNotNull('send_date')
-                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
-                                            ->whereDate('send_date', '<', Carbon::today());
-                                        break;
-                                    case BiddingFilter::SEND90->value:
-                                        $query->whereNotNull('send_date')
-                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
-                                            ->whereDate('send_date', '<', Carbon::today());
-                                        break;
-                                    case BiddingFilter::SEND180->value:
-                                        $query->whereNotNull('send_date')
-                                            ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
-                                            ->whereDate('send_date', '<', Carbon::today());
-                                        break;
+                            $query->where(function ($q) use ($data) {
+                                foreach ($data['values'] as $value) {
+                                    switch ($value) {
+                                        case BiddingFilter::TENDER30->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->where(function ($deepQ) {
+                                                    $deepQ->whereNotNull('deadline_date')
+                                                        ->whereDate('deadline_date', '>=', Carbon::today())
+                                                        ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
+                                                })->orWhere(function ($deepQ) {
+                                                    $deepQ->whereNull('deadline_date')
+                                                        ->whereNotNull('interest_deadline_date')
+                                                        ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                                                        ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(30));
+                                                });
+                                            });
+                                            break;
+                                        case BiddingFilter::INSPECTION30->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->whereNotNull('inspection_deadline_date')
+                                                    ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                                                    ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
+                                            });
+                                            break;
+                                        case BiddingFilter::TENDER15->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->where(function ($deepQ) {
+                                                    $deepQ->whereNotNull('deadline_date')
+                                                        ->whereDate('deadline_date', '>=', Carbon::today())
+                                                        ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
+                                                })->orWhere(function ($deepQ) {
+                                                    $deepQ->whereNull('deadline_date')
+                                                        ->whereNotNull('interest_deadline_date')
+                                                        ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                                                        ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(15));
+                                                });
+                                            });
+                                            break;
+                                        case BiddingFilter::INSPECTION15->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->whereNotNull('inspection_deadline_date')
+                                                    ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                                                    ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
+                                            });
+                                            break;
+                                        case BiddingFilter::SEND30->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->where(function ($deepQ) {
+                                                    $deepQ->whereNotNull('send_date')
+                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
+                                                        ->whereDate('send_date', '<', Carbon::today());
+                                                })->orWhere(function ($deepQ) {
+                                                    $deepQ->whereNull('send_date')
+                                                        ->whereNotNull('interest_send_date')
+                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(30))
+                                                        ->whereDate('interest_send_date', '<', Carbon::today());
+                                                });
+                                            });
+                                            break;
+                                        case BiddingFilter::SEND60->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->where(function ($deepQ) {
+                                                    $deepQ->whereNotNull('send_date')
+                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
+                                                        ->whereDate('send_date', '<', Carbon::today());
+                                                })->orWhere(function ($deepQ) {
+                                                    $deepQ->whereNull('send_date')
+                                                        ->whereNotNull('interest_send_date')
+                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(60))
+                                                        ->whereDate('interest_send_date', '<', Carbon::today());
+                                                });
+                                            });
+                                            break;
+                                        case BiddingFilter::SEND90->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->where(function ($deepQ) {
+                                                    $deepQ->whereNotNull('send_date')
+                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
+                                                        ->whereDate('send_date', '<', Carbon::today());
+                                                })->orWhere(function ($deepQ) {
+                                                    $deepQ->whereNull('send_date')
+                                                        ->whereNotNull('interest_send_date')
+                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(90))
+                                                        ->whereDate('interest_send_date', '<', Carbon::today());
+                                                });
+                                            });
+                                            break;
+                                        case BiddingFilter::SEND180->value:
+                                            $q->orWhere(function ($subQ) {
+                                                $subQ->where(function ($deepQ) {
+                                                    $deepQ->whereNotNull('send_date')
+                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
+                                                        ->whereDate('send_date', '<', Carbon::today());
+                                                })->orWhere(function ($deepQ) {
+                                                    $deepQ->whereNull('send_date')
+                                                        ->whereNotNull('interest_send_date')
+                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(180))
+                                                        ->whereDate('interest_send_date', '<', Carbon::today());
+                                                });
+                                            });
+                                            break;
+                                    }
                                 }
-                            }
+                            });
                         }
                     }),
+                    // Filtri rapidi singola selezione
+                    // SelectFilter::make('bidding_filter')
+                    //     ->label('Filtri rapidi')
+                    //     ->options(BiddingFilter::class)
+                    //     // ->multiple()
+                    //     ->preload()
+                    //     ->query(function (Builder $query, array $data) {
+                    //         switch ($data['value']) {
+                    //             case BiddingFilter::TENDER30->value:
+                    //                 $query->where(function ($q) {
+                    //                     $q->where(function ($subQ) {
+                    //                         $subQ->whereNotNull('deadline_date')
+                    //                             ->whereDate('deadline_date', '>=', Carbon::today())
+                    //                             ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
+                    //                     })->orWhere(function ($subQ) {
+                    //                         $subQ->whereNull('deadline_date')
+                    //                             ->whereNotNull('interest_deadline_date')
+                    //                             ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                    //                             ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(30));
+                    //                     });
+                    //                 });
+                    //                 break;
+                    //             case BiddingFilter::INSPECTION30->value:
+                    //                 $query->whereNotNull('inspection_deadline_date')
+                    //                     ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                    //                     ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
+                    //                 break;
+                    //             case BiddingFilter::TENDER15->value:
+                    //                 $query->where(function ($q) {
+                    //                     $q->where(function ($subQ) {
+                    //                         $subQ->whereNotNull('deadline_date')
+                    //                             ->whereDate('deadline_date', '>=', Carbon::today())
+                    //                             ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
+                    //                     })->orWhere(function ($subQ) {
+                    //                         $subQ->whereNull('deadline_date')
+                    //                             ->whereNotNull('interest_deadline_date')
+                    //                             ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                    //                             ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(15));
+                    //                     });
+                    //                 });
+                    //                 break;
+                    //             case BiddingFilter::INSPECTION15->value:
+                    //                 $query->whereNotNull('inspection_deadline_date')
+                    //                     ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                    //                     ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
+                    //                 break;
+                    //             case BiddingFilter::SEND30->value:
+                    //                 $query->where(function ($q) {
+                    //                     $q->where(function ($subQ) {
+                    //                         $subQ->whereNotNull('send_date')
+                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
+                    //                             ->whereDate('send_date', '<', Carbon::today());
+                    //                     })->orWhere(function ($subQ) {
+                    //                         $subQ->whereNull('send_date')
+                    //                             ->whereNotNull('interest_send_date')
+                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(30))
+                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
+                    //                     });
+                    //                 });
+                    //                 break;
+                    //             case BiddingFilter::SEND60->value:
+                    //                 $query->where(function ($q) {
+                    //                     $q->where(function ($subQ) {
+                    //                         $subQ->whereNotNull('send_date')
+                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
+                    //                             ->whereDate('send_date', '<', Carbon::today());
+                    //                     })->orWhere(function ($subQ) {
+                    //                         $subQ->whereNull('send_date')
+                    //                             ->whereNotNull('interest_send_date')
+                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(60))
+                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
+                    //                     });
+                    //                 });
+                    //                 break;
+                    //             case BiddingFilter::SEND90->value:
+                    //                 $query->where(function ($q) {
+                    //                     $q->where(function ($subQ) {
+                    //                         $subQ->whereNotNull('send_date')
+                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
+                    //                             ->whereDate('send_date', '<', Carbon::today());
+                    //                     })->orWhere(function ($subQ) {
+                    //                         $subQ->whereNull('send_date')
+                    //                             ->whereNotNull('interest_send_date')
+                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(90))
+                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
+                    //                     });
+                    //                 });
+                    //                 break;
+                    //             case BiddingFilter::SEND180->value:
+                    //                 $query->where(function ($q) {
+                    //                     $q->where(function ($subQ) {
+                    //                         $subQ->whereNotNull('send_date')
+                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
+                    //                             ->whereDate('send_date', '<', Carbon::today());
+                    //                     })->orWhere(function ($subQ) {
+                    //                         $subQ->whereNull('send_date')
+                    //                             ->whereNotNull('interest_send_date')
+                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(180))
+                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
+                    //                     });
+                    //                 });
+                    //                 break;
+                    //         }
+                    //     }),
                 Filter::make('past_deadline')
                     ->form([
                         Checkbox::make('show_past_deadline')
@@ -811,7 +1081,31 @@ class BiddingResource extends Resource
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->multiple()->preload(),
-                SelectFilter::make('bidding_state_id')->label('Stato gara')
+                SelectFilter::make('feasibility_type')
+                        ->label('Fattibilità')
+                        ->multiple()
+                        ->options(array_merge(
+                            ['none' => 'Nessuna'],
+                            collect(FeasibilityType::cases())
+                                ->mapWithKeys(fn($case) => [$case->value => $case->getLabel()])
+                                ->toArray()
+                        ))
+                        ->query(function (Builder $query, array $data) {
+                            if (empty($data['values'])) {
+                                return $query;
+                            }
+
+                            return $query->where(function ($q) use ($data) {
+                                foreach ($data['values'] as $value) {
+                                    if ($value === 'none') {
+                                        $q->orWhereNull('feasibility_type');
+                                    } else {
+                                        $q->orWhere('feasibility_type', $value);
+                                    }
+                                }
+                            });
+                        }),
+                SelectFilter::make('bidding_state_id')->label('Dettaglio fattibilità')
                     ->relationship(
                         name: 'biddingState',
                         titleAttribute: 'name',

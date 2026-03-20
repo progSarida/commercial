@@ -20,8 +20,11 @@
             text-align: left;
         }
 
-        thead th {
+        thead tr.top {
             border-top: 2px solid black;
+        }
+
+        thead tr.bottom {
             border-bottom: 2px solid black;
         }
 
@@ -113,6 +116,17 @@
                     {{ implode(', ', $biddingTypeValues) }}
                 </li>
             @endif
+            @if(!empty($filters['feasibility_type']['values']))
+                <li>
+                    Fattibilità:
+                    @php
+                        $feasibilityTypeValues = array_map(function ($value) {
+                            return \App\Enums\FeasibilityType::tryFrom($value)?->getLabel() ?? $value;
+                        }, $filters['feasibility_type']['values']);
+                    @endphp
+                    {{ implode(', ', $feasibilityTypeValues) }}
+                </li>
+            @endif
             @if(!empty($filters['bidding_state_id']['values']))
                 <li>
                     Stati gara:
@@ -139,16 +153,18 @@
     @endif
     <table>
         <thead>
-            <tr>
+            <tr class="top">
                 <th>Ente</th>
                 <th>Prov.</th>
-                <th>Gara</th>
+                <th>Scadenza</th>
                 <th>Sopralluogo</th>
                 <th>Chiarimenti</th>
                 <th>Tipo gara</th>
-                <th>Stato gara</th>
+            </tr>
+            <tr class="bottom">
+                <th>Fattibilità</th>
+                <th>Dettaglio fattibilità</th>
                 <th>Importo</th>
-                <th>Abitanti</th>
                 <th>Stato lavorazione</th>
                 <th>Priorità</th>
                 <th>Procedura</th>
@@ -157,27 +173,29 @@
         <tbody>
             @foreach($biddings as $bidding)
                 <tr class="bidding-first-row">
-                    <td colspan="12">
+                    <td colspan="6">
                         <strong>Descrizione:</strong> {{ Str::limit($bidding->description, 120, '...') ?: 'N/D' }}
                     </td>
                 </tr>
                 <tr class="bidding-second-row">
-                    <td>{{ $bidding->client?->name ?? 'N/D' }}</td>
-                    <td>{{ $bidding->province?->name ?? 'N/D' }}</td>
-                    <td>{{ $bidding->deadline_date ? \Carbon\Carbon::parse($bidding->deadline_date)->format('d/m/Y') : 'N/D' }}</td>
-                    <td>{{ $bidding->inspection_deadline_date ? \Carbon\Carbon::parse($bidding->inspection_deadline_date)->format('d/m/Y') : 'N/D' }}</td>
-                    <td>{{ $bidding->clarification_request_deadline_date ? \Carbon\Carbon::parse($bidding->clarification_request_deadline_date)->format('d/m/Y') : 'N/D' }}</td>
-                    <td>{{ $bidding->biddingType?->name ?? 'N/D' }}</td>
-                    <td>{{ $bidding->biddingState?->name ?? 'N/D' }}</td>
-                    <td>{{ $bidding->amount ? '€ ' . number_format($bidding->amount, 2, ',', '.') : 'N/D' }}</td>
-                    <td>{{ $bidding->residents ? number_format($bidding->residents, 0, ',', '.') : 'N/D' }}</td>
-                    <td>{{ $bidding->bidding_processing_state?->getLabel() ?? 'N/D' }}</td>
-                    <td>{{ $bidding->bidding_priority_type?->getLabel() ?? 'N/D' }}</td>
-                    <td>{{ $bidding->bidding_procedure_type?->getLabel() ?? 'N/D' }}</td>
+                    <td>{{ $bidding->client?->name ?? '...' }}</td>
+                    <td>{{ $bidding->province?->name ?? '...' }}</td>
+                    <td>{{ $bidding->deadline_date ? \Carbon\Carbon::parse($bidding->deadline_date)->format('d/m/Y') : \Carbon\Carbon::parse($bidding->interest_deadline_date)->format('d/m/Y') }}</td>
+                    <td>{{ $bidding->inspection_deadline_date ? \Carbon\Carbon::parse($bidding->inspection_deadline_date)->format('d/m/Y') : '...' }}</td>
+                    <td>{{ $bidding->clarification_request_deadline_date ? \Carbon\Carbon::parse($bidding->clarification_request_deadline_date)->format('d/m/Y') : '...' }}</td>
+                    <td>{{ $bidding->biddingType?->name ?? $bidding->interest_expression_type?->getLabel() }}</td>
+                </tr>
+                <tr>
+                    <td>{{ $bidding->feasibility_type?->getLabel() ?? '...' }}</td>
+                    <td>{{ $bidding->biddingState?->name ?? '...' }}</td>
+                    <td>{{ $bidding->amount ? '€ ' . number_format($bidding->amount, 2, ',', '.') : '...' }}</td>
+                    <td>{{ $bidding->bidding_processing_state?->getLabel() ?? '...' }}</td>
+                    <td>{{ $bidding->bidding_priority_type?->getLabel() ?? '...' }}</td>
+                    <td>{{ $bidding->bidding_procedure_type?->getLabel() ?? '...' }}</td>
                 </tr>
                 <tr class="bidding-third-row">
-                    <td colspan="12">
-                        <strong>Servizi:</strong> {{ $bidding->serviceTypes->pluck('name')->join(' - ') ?: 'N/D' }}
+                    <td colspan="6">
+                        <strong>Servizi:</strong> {{ $bidding->serviceTypes->pluck('name')->join(' - ') ?: '...' }}
                     </td>
                 </tr>
             @endforeach

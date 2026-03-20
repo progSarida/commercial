@@ -19,24 +19,48 @@ class EditBidding extends EditRecord
     protected function getHeaderActions(): array
     {
         $currentBidding = $this->record;
+        $currentDate = $currentBidding->deadline_date ?? $currentBidding->interest_deadline_date;
+        $currentTime = $currentBidding->deadline_time ?? $currentBidding->interest_deadline_time;
+        $dateField = "COALESCE(deadline_date, interest_deadline_date)";
+        $timeField = "COALESCE(deadline_time, interest_deadline_time)";
         // Precedente per deadline_date: data precedente O stessa data con ID minore
-        $previousDeadline = Bidding::where(function ($query) use ($currentBidding) {
-                $query->where('deadline_date', '<', $currentBidding->deadline_date)
-                    ->orWhere(function ($q) use ($currentBidding) {
-                        $q->where('deadline_date', '=', $currentBidding->deadline_date)
-                          ->where('id', '<', $currentBidding->id);
-                    });
+        $previousDeadline = Bidding::query()
+            ->where('id', '!=', $currentBidding->id)
+            ->where(function ($q) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                $q->whereRaw("$dateField < ?", [$currentDate])
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField < ?", [$currentTime]);
+                })
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField = ?", [$currentTime])
+                        ->where('id', '<', $currentBidding->id);
+                });
             })
-            ->orderBy('deadline_date', 'desc')->orderBy('id', 'desc')->first();
+            ->orderByRaw("$dateField DESC")
+            ->orderByRaw("$timeField DESC")
+            ->orderBy('id', 'desc')
+            ->first();
         // Successivo per deadline_date: data successiva O stessa data con ID maggiore
-        $nextDeadline = Bidding::where(function ($query) use ($currentBidding) {
-                $query->where('deadline_date', '>', $currentBidding->deadline_date)
-                    ->orWhere(function ($q) use ($currentBidding) {
-                        $q->where('deadline_date', '=', $currentBidding->deadline_date)
-                          ->where('id', '>', $currentBidding->id);
-                    });
+        $nextDeadline = Bidding::query()
+            ->where('id', '!=', $currentBidding->id)
+            ->where(function ($q) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                $q->whereRaw("$dateField > ?", [$currentDate])
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField > ?", [$currentTime]);
+                })
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField = ?", [$currentTime])
+                        ->where('id', '>', $currentBidding->id);
+                });
             })
-            ->orderBy('deadline_date', 'asc')->orderBy('id', 'asc')->first();
+            ->orderByRaw("$dateField ASC")
+            ->orderByRaw("$timeField ASC")
+            ->orderBy('id', 'asc')
+            ->first();
         // Precedente per inspection_deadline_date: data precedente O stessa data con ID minore
         $previousInspection = Bidding::whereNotNull('inspection_deadline_date')
             ->when($currentBidding->inspection_deadline_date, function ($query, $date) use ($currentBidding) {
@@ -63,7 +87,11 @@ class EditBidding extends EditRecord
             ->orderBy('inspection_deadline_date', 'asc')->orderBy('id', 'asc')->first();
 
         return [
-            // Scorrimento in base a data di scadenza gara
+            Actions\Action::make('back')
+                ->label('Indietro')
+                ->url($this->getResource()::getUrl('index'))
+                ->color('gray'),
+            // Scorrimento in base a data di scadenza
             Actions\Action::make('previous_deadline')
                 ->label('Scadenza Prec.')
                 ->color('success')

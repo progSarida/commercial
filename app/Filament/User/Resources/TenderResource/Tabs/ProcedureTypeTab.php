@@ -27,37 +27,41 @@ class ProcedureTypeTab
             TextInput::make('conditions')
                 ->label('Condizioni')
                 ->columnSpan(['sm' => 'full', 'md' => 'full']),
+
             // Placeholder::make('')->label('')->columnSpan(['sm' => 0, 'md' =>5]),
             // Checkbox::make('open_procedure_check')
             //     ->label('Procedura aperta')
             //     ->default(false)
             //     ->live()
             //     ->columnSpan(['sm' => 'full', 'md' => 7]),
-            Checkbox::make('invitation_request_check')
-                ->label('Richiesta di essere invitati')
-                ->default(false)
-                ->live()
-                // ->visible(fn (callable $get) => $get('open_procedure_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
-            DatePicker::make('invitation_request_date')
-                ->label('Effettuata in data')
-                ->extraInputAttributes(['class' => 'text-center'])
-                // ->visible(fn (callable $get) => $get('open_procedure_check') && $get('invitation_request_check'))
-                ->visible(fn (callable $get) => $get('invitation_request_check'))
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
-            Select::make('invitation_request_processing_state')
-                ->label('Stato lavorazione')
-                // ->visible(fn (callable $get) => $get('open_procedure_check') && $get('invitation_request_check'))
-                ->visible(fn (callable $get) => $get('invitation_request_check'))
-                // ->options(TenderItemProcessingState::class)
-                ->options(
-                    collect(TenderItemProcessingState::cases())
-                        ->filter(fn (TenderItemProcessingState $state) => $state->getShowSome())
-                        ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
-                        ->toArray()
-                )
-                ->columnSpan(['sm' => 'full', 'md' => 4]),
-            Placeholder::make('')->visible(fn (callable $get) => !$get('invitation_request_check'))->columnSpan(['sm' => 0, 'md' =>8]),
+
+            // Checkbox::make('invitation_request_check')
+            //     ->label('Richiesta di essere invitati')
+            //     ->default(false)
+            //     ->live()
+            //     // ->visible(fn (callable $get) => $get('open_procedure_check'))
+            //     ->columnSpan(['sm' => 'full', 'md' => 4]),
+            // DatePicker::make('invitation_request_date')
+            //     ->label('Effettuata in data')
+            //     ->extraInputAttributes(['class' => 'text-center'])
+            //     // ->visible(fn (callable $get) => $get('open_procedure_check') && $get('invitation_request_check'))
+            //     ->visible(fn (callable $get) => $get('invitation_request_check'))
+            //     ->columnSpan(['sm' => 'full', 'md' => 4]),
+            // Select::make('invitation_request_processing_state')
+            //     ->label('Stato lavorazione')
+            //     // ->visible(fn (callable $get) => $get('open_procedure_check') && $get('invitation_request_check'))
+            //     ->visible(fn (callable $get) => $get('invitation_request_check'))
+            //     // ->options(TenderItemProcessingState::class)
+            //     ->options(
+            //         collect(TenderItemProcessingState::cases())
+            //             ->filter(fn (TenderItemProcessingState $state) => $state->getShowSome())
+            //             ->mapWithKeys(fn ($state) => [$state->value => $state->getLabel()])
+            //             ->toArray()
+            //     )
+            //     ->columnSpan(['sm' => 'full', 'md' => 4]),
+
+            // Placeholder::make('')->visible(fn (callable $get) => !$get('invitation_request_check'))->columnSpan(['sm' => 0, 'md' =>8]),
+
             Checkbox::make('reliance_require_check')
                 ->label('E\' necessario l\'avvalimento')
                 ->default(false)

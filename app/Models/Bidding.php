@@ -6,6 +6,9 @@ use App\Enums\BiddingProcessingState;
 use App\Enums\BiddingPriorityType;
 use App\Enums\BiddingProcedureType;
 use App\Enums\ClientType;
+use App\Enums\FeasibilityType;
+use App\Enums\InterestExpressionType;
+use App\Enums\SendModeType;
 use App\Enums\YesNo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +21,7 @@ class Bidding extends Model
         'description',
         'amount',
         'residents',
+        'feasibility_type',
         'bidding_state_id',
         'bidding_processing_state',
         'bidding_priority_type',
@@ -61,9 +65,20 @@ class Bidding extends Model
         'attachment_path',
         'awarded',
         'closure_date',
+        'interest_expression_type',
+        'interest_deadline_date',
+        'interest_deadline_time',
+        'interest_send_date',
+        'interest_send_time',
+        'interest_send_mode_type',
+        'send_mode_type',
     ];
 
     protected $casts = [
+        'interest_expression_type' => InterestExpressionType::class,
+        'interest_send_mode_type' => SendModeType::class,
+        'send_mode_type' => SendModeType::class,
+        'feasibility_type' => FeasibilityType::class,
         'bidding_processing_state' => BiddingProcessingState::class,
         'bidding_priority_type' => BiddingPriorityType::class,
         'bidding_procedure_type' => BiddingProcedureType::class,
@@ -74,6 +89,8 @@ class Bidding extends Model
         'send_date' => 'date',
         'clarification_request_deadline_date' => 'date',
         'inspection_deadline_date' => 'date',
+        'interest_deadline_date' => 'date',
+        'interest_send_date' => 'date',
         'opening_date' => 'date',
         'closure_date' => 'date',
     ];
@@ -150,7 +167,8 @@ class Bidding extends Model
 
     public function scopeUpcoming(Builder $query): void
     {
-        $query->whereDate('deadline_date', '>=', today()->toDateString());
+        $query->whereDate('deadline_date', '>=', today()->toDateString())
+          ->orWhereNull('deadline_date');
     }
 
     protected static function booted()
@@ -160,7 +178,10 @@ class Bidding extends Model
         });
 
         static::created(function ($bidding) {
-            //
+            if(!$bidding->attachment_path){
+                $bidding->attachment_path = "biddings_attach/{$bidding->id}";
+                $bidding->save();
+            }
         });
 
         static::updating(function ($bidding) {

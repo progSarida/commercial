@@ -17,24 +17,64 @@ class ViewBidding extends ViewRecord
     protected function getHeaderActions(): array
     {
         $currentBidding = $this->record;
+        $currentDate = $currentBidding->deadline_date ?? $currentBidding->interest_deadline_date;
+        $currentTime = $currentBidding->deadline_time ?? $currentBidding->interest_deadline_time;
+        $dateField = "COALESCE(deadline_date, interest_deadline_date)";
+        $timeField = "COALESCE(deadline_time, interest_deadline_time)";
         // Precedente per deadline_date: data precedente O stessa data con ID minore
-        $previousDeadline = Bidding::where(function ($query) use ($currentBidding) {
-                $query->where('deadline_date', '<', $currentBidding->deadline_date)
-                    ->orWhere(function ($q) use ($currentBidding) {
-                        $q->where('deadline_date', '=', $currentBidding->deadline_date)
-                          ->where('id', '<', $currentBidding->id);
-                    });
+        // $previousDeadline = Bidding::where(function ($query) use ($currentBidding) {
+        //         $query->where('deadline_date', '<', $currentBidding->deadline_date)
+        //             ->orWhere(function ($q) use ($currentBidding) {
+        //                 $q->where('deadline_date', '=', $currentBidding->deadline_date)
+        //                   ->where('id', '<', $currentBidding->id);
+        //             });
+        //     })
+        //     ->orderBy('deadline_date', 'desc')->orderBy('id', 'desc')->first();
+        $previousDeadline = Bidding::query()
+            ->where('id', '!=', $currentBidding->id)
+            ->where(function ($q) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                $q->whereRaw("$dateField < ?", [$currentDate])
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField < ?", [$currentTime]);
+                })
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField = ?", [$currentTime])
+                        ->where('id', '<', $currentBidding->id);
+                });
             })
-            ->orderBy('deadline_date', 'desc')->orderBy('id', 'desc')->first();
+            ->orderByRaw("$dateField DESC")
+            ->orderByRaw("$timeField DESC")
+            ->orderBy('id', 'desc')
+            ->first();
         // Successivo per deadline_date: data successiva O stessa data con ID maggiore
-        $nextDeadline = Bidding::where(function ($query) use ($currentBidding) {
-                $query->where('deadline_date', '>', $currentBidding->deadline_date)
-                    ->orWhere(function ($q) use ($currentBidding) {
-                        $q->where('deadline_date', '=', $currentBidding->deadline_date)
-                          ->where('id', '>', $currentBidding->id);
-                    });
+        // $nextDeadline = Bidding::where(function ($query) use ($currentBidding) {
+        //         $query->where('deadline_date', '>', $currentBidding->deadline_date)
+        //             ->orWhere(function ($q) use ($currentBidding) {
+        //                 $q->where('deadline_date', '=', $currentBidding->deadline_date)
+        //                   ->where('id', '>', $currentBidding->id);
+        //             });
+        //     })
+        //     ->orderBy('deadline_date', 'asc')->orderBy('id', 'asc')->first();
+        $nextDeadline = Bidding::query()
+            ->where('id', '!=', $currentBidding->id)
+            ->where(function ($q) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                $q->whereRaw("$dateField > ?", [$currentDate])
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField > ?", [$currentTime]);
+                })
+                ->orWhere(function ($sub) use ($currentDate, $currentTime, $currentBidding, $dateField, $timeField) {
+                    $sub->whereRaw("$dateField = ?", [$currentDate])
+                        ->whereRaw("$timeField = ?", [$currentTime])
+                        ->where('id', '>', $currentBidding->id);
+                });
             })
-            ->orderBy('deadline_date', 'asc')->orderBy('id', 'asc')->first();
+            ->orderByRaw("$dateField ASC")
+            ->orderByRaw("$timeField ASC")
+            ->orderBy('id', 'asc')
+            ->first();
         // Precedente per inspection_deadline_date: data precedente O stessa data con ID minore
         $previousInspection = Bidding::whereNotNull('inspection_deadline_date')
             ->when($currentBidding->inspection_deadline_date, function ($query, $date) use ($currentBidding) {
@@ -65,20 +105,20 @@ class ViewBidding extends ViewRecord
                 ->label('Indietro')
                 ->url($this->getResource()::getUrl('index'))
                 ->color('gray'),
-            // Scorrimento in base a data di scadenza gara
+            // Scorrimento in base a data di scadenza
             Actions\Action::make('previous_deadline')
                 ->label('Scadenza Prec.')
                 ->color('success')
                 ->icon('heroicon-o-arrow-left-circle')
                 ->visible(fn() => $previousDeadline !== null)
-                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousDeadline->id]))),
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('view', ['record' => $previousDeadline->id]))),
 
             Actions\Action::make('next_deadline')
                 ->label('Scadenza Succ.')
                 ->color('success')
                 ->icon('heroicon-o-arrow-right-circle')
                 ->visible(fn() => $nextDeadline !== null)
-                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextDeadline->id]))),
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('view', ['record' => $nextDeadline->id]))),
 
             // Scorrimento in base a data di sopralluogo
             Actions\Action::make('previous_inspection')
@@ -86,14 +126,14 @@ class ViewBidding extends ViewRecord
                 ->color('info')
                 ->icon('heroicon-o-arrow-left-circle')
                 ->visible(fn() => $currentBidding->inspection_deadline_date !== null && $previousInspection !== null)
-                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $previousInspection->id]))),
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('view', ['record' => $previousInspection->id]))),
 
             Actions\Action::make('next_inspection')
                 ->label('Sopralluogo Succ.')
                 ->color('info')
                 ->icon('heroicon-o-arrow-right-circle')
                 ->visible(fn() => $currentBidding->inspection_deadline_date !== null && $nextInspection !== null)
-                ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextInspection->id]))),
+                ->action(fn() => $this->redirect(BiddingResource::getUrl('view', ['record' => $nextInspection->id]))),
             Actions\EditAction::make(),
         ];
     }

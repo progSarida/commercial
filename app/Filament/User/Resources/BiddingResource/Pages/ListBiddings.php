@@ -73,7 +73,9 @@ class ListBiddings extends ListRecords
                     ->tooltip('Stampa elenco gare')
                     ->color(Color::rgb('rgb(255, 0, 0)'))
                     ->action(function ($livewire) {
-                        $records = $livewire->getFilteredTableQuery()->get();
+                        $records = $livewire->getFilteredTableQuery()
+                                    ->orderByRaw("COALESCE(deadline_date, interest_deadline_date) ASC")
+                                    ->get();
                         $filters = $livewire->tableFilters ?? [];
                         $search = $livewire->tableSearch ?? null;
 
