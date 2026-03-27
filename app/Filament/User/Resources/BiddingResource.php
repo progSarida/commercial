@@ -679,15 +679,21 @@ class BiddingResource extends Resource
                     ->label('Scadenza')
                     ->badge()
                     ->getStateUsing(function ($record) {
-                        if (!$record->deadline_date) {
-                            return null;
-                        }
-
-                        $daysUntil = now()->startOfDay()->diffInDays(
+                        // if (!$record->deadline_date) {
+                        //     return null;
+                        // }
+// dd($record->id, 'STOP');
+                        $daysUntilDeadline = now()->startOfDay()->diffInDays(
                             Carbon::parse($record->deadline_date)->startOfDay(),
                             false
                         );
-
+                        $daysUntilInterest = now()->startOfDay()->diffInDays(
+                            Carbon::parse($record->interest_deadline_date)->startOfDay(),
+                            false
+                        );
+// dd($daysUntilDeadline, $daysUntilInterest, 'STOP');
+                        $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : $daysUntilInterest);
+// if ($record->id == 328) dd($daysUntil, 'STOP');
                         return match (true) {
                             $daysUntil < 0 => 'Scaduta',
                             $daysUntil === 0 => 'Oggi',
@@ -698,14 +704,20 @@ class BiddingResource extends Resource
                         };
                     })
                     ->color(function ($record) {
-                        if (!$record->deadline_date) {
-                            return 'gray';
-                        }
+                        // if (!$record->deadline_date) {
+                        //     return 'gray';
+                        // }
 
-                        $daysUntil = now()->startOfDay()->diffInDays(
+                        $daysUntilDeadline = now()->startOfDay()->diffInDays(
                             Carbon::parse($record->deadline_date)->startOfDay(),
                             false
                         );
+                        $daysUntilInterest = now()->startOfDay()->diffInDays(
+                            Carbon::parse($record->deadline_date)->startOfDay(),
+                            false
+                        );
+
+                        $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : $daysUntilInterest);
 
                         return match (true) {
                             $daysUntil <= 0 => 'danger',
@@ -749,6 +761,24 @@ class BiddingResource extends Resource
                     ->label('Sopralluogo')
                     ->sortable()
                     ->date('d/m/Y')
+                    ->color(function ($record) {
+                        // if (!$record->deadline_date) {
+                        //     return 'gray';
+                        // }
+
+                        $daysUntil = now()->startOfDay()->diffInDays(
+                            Carbon::parse($record->deadline_date)->startOfDay(),
+                            false
+                        );
+
+                        return match (true) {
+                            $daysUntil <= 0 => 'danger',
+                            $daysUntil <= 3 => 'warning',
+                            $daysUntil <= 7 => 'info',
+                            // $daysUntil <= 15 => 'success',
+                            default => 'black',
+                        };
+                    })
                     ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('clarification_request_deadline_date')
                     ->label('Chiarimenti')

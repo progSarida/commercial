@@ -165,10 +165,23 @@ class Bidding extends Model
         return $this->belongsTo(BiddingDataSource::class, 'source3_id');
     }
 
+    // public function scopeUpcoming(Builder $query): void
+    // {
+    //     $query->whereDate('deadline_date', '>=', today()->toDateString())
+    //       ->orWhereNull('deadline_date');
+    // }
+
     public function scopeUpcoming(Builder $query): void
     {
-        $query->whereDate('deadline_date', '>=', today()->toDateString())
-          ->orWhereNull('deadline_date');
+        $today = today()->toDateString();
+
+        $query->where(function (Builder $subQuery) use ($today) {
+            $subQuery->whereRaw('COALESCE(deadline_date, interest_deadline_date) >= ?', [$today]);
+                    // ->orWhere(function ($q) {
+                    //     $q->whereNull('deadline_date')
+                    //     ->whereNull('interest_deadline_date');
+                    // });
+        });
     }
 
     protected static function booted()
