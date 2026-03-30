@@ -173,18 +173,31 @@ class Bidding extends Model
     //       ->orWhereNull('deadline_date');
     // }
 
+    // public function scopeUpcoming(Builder $query): void
+    // {
+    //     $today = today()->toDateString();
+
+    //     $query->where(function (Builder $subQuery) use ($today) {
+    //         // $subQuery->whereRaw('COALESCE(deadline_date, interest_deadline_date) >= ?', [$today]);      // nasconde SOLO se deadline_date scaduta => filtri
+    //                 // ->orWhere(function ($q) {
+    //                 //     $q->whereNull('deadline_date')
+    //                 //     ->whereNull('interest_deadline_date');
+    //                 // });
+    //         $subQuery->whereDate('deadline_date', '>=', today())
+    //              ->orWhereNull('deadline_date');
+    //     });
+    // }
+
     public function scopeUpcoming(Builder $query): void
     {
-        $today = today()->toDateString();
-
-        $query->where(function (Builder $subQuery) use ($today) {
-            // $subQuery->whereRaw('COALESCE(deadline_date, interest_deadline_date) >= ?', [$today]);      // nasconde SOLO se deadline_date scaduta => filtri
-                    // ->orWhere(function ($q) {
-                    //     $q->whereNull('deadline_date')
-                    //     ->whereNull('interest_deadline_date');
-                    // });
+        $query->where(function (Builder $subQuery) {
+            // 1. Record con deadline futura o odierna
             $subQuery->whereDate('deadline_date', '>=', today())
-                 ->orWhereNull('deadline_date');
+                // 2. OPPURE record senza deadline, ma solo se fattibili
+                ->orWhere(function (Builder $q) {
+                    $q->whereNull('deadline_date')
+                    ->where('feasibility_type', '!=', FeasibilityType::NOT_FEASIBLE);
+                });
         });
     }
 
