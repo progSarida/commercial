@@ -57,6 +57,8 @@ class Bidding extends Model
         'clarification_request_deadline_time',
         'inspection_deadline_date',
         'inspection_deadline_time',
+        'inspection_date',
+        // 'inspection_time',
         'opening_date',
         'opening_time',
         'source1_id',
@@ -176,11 +178,13 @@ class Bidding extends Model
         $today = today()->toDateString();
 
         $query->where(function (Builder $subQuery) use ($today) {
-            $subQuery->whereRaw('COALESCE(deadline_date, interest_deadline_date) >= ?', [$today]);
+            // $subQuery->whereRaw('COALESCE(deadline_date, interest_deadline_date) >= ?', [$today]);      // nasconde SOLO se deadline_date scaduta => filtri
                     // ->orWhere(function ($q) {
                     //     $q->whereNull('deadline_date')
                     //     ->whereNull('interest_deadline_date');
                     // });
+            $subQuery->whereDate('deadline_date', '>=', today())
+                 ->orWhereNull('deadline_date');
         });
     }
 

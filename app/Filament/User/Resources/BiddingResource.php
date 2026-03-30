@@ -286,16 +286,16 @@ class BiddingResource extends Resource
                                         ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
                                     DatePicker::make('inspection_date')
-                                        ->label('Data')
+                                        ->label('Data sopralluogo')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
-                                    TimePicker::make('inspection_time')
-                                        ->label('Orario')
-                                        ->extraInputAttributes(['class' => 'text-center'])
-                                        ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
-                                        ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
-                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    // TimePicker::make('inspection_time')
+                                    //     ->label('Orario sopralluogo')
+                                    //     ->extraInputAttributes(['class' => 'text-center'])
+                                    //     ->default(fn (callable $get) => $get('mandatory_inspection') ? '06:00' : null)
+                                    //     ->disabled(fn (callable $get) => !$get('mandatory_inspection'))
+                                    //     ->columnSpan(['sm' => 'full', 'md' => 5]),
                                 ]),
                             Fieldset::make('Gara')
                                 ->columns(25)
@@ -675,49 +675,92 @@ class BiddingResource extends Resource
             ->persistSearchInSession()                                  // Persistenza barra di ricerca globale
             ->persistColumnSearchesInSession()                          // Persistenza ricerche nelle singole colonne
             ->columns([
+//                 TextColumn::make('deadline_status_old')
+//                     ->label('Scadenza')
+//                     ->badge()
+//                     ->getStateUsing(function ($record) {
+//                         // if (!$record->deadline_date) {
+//                         //     return null;
+//                         // }
+// // dd($record->id, 'STOP');
+//                         $daysUntilDeadline = now()->startOfDay()->diffInDays(
+//                             Carbon::parse($record->deadline_date)->startOfDay(),
+//                             false
+//                         );
+//                         $daysUntilInspection = now()->startOfDay()->diffInDays(
+//                             Carbon::parse($record->inspection_deadline_date)->startOfDay(),
+//                             false
+//                         );
+//                         $daysUntilInterest = now()->startOfDay()->diffInDays(
+//                             Carbon::parse($record->interest_deadline_date)->startOfDay(),
+//                             false
+//                         );
+// // dd($daysUntilDeadline, $daysUntilInterest, 'STOP');
+//                         $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : ($daysUntilInspection ? $daysUntilInspection : $daysUntilInterest));
+// // if ($record->id == 328) dd($daysUntil, 'STOP');
+//                         return match (true) {
+//                             $daysUntil < 0 => 'Scaduta',
+//                             $daysUntil === 0 => 'Oggi',
+//                             // $daysUntil <= 3 => '3 giorni',
+//                             // $daysUntil <= 7 => '7 giorni',
+//                             // $daysUntil <= 15 => '15 giorni',
+//                             default => $daysUntil . ' giorni',
+//                         };
+//                     })
+//                     ->color(function ($record) {
+//                         // if (!$record->deadline_date) {
+//                         //     return 'gray';
+//                         // }
+
+//                         $daysUntilDeadline = now()->startOfDay()->diffInDays(
+//                             Carbon::parse($record->deadline_date)->startOfDay(),
+//                             false
+//                         );
+//                         $daysUntilInterest = now()->startOfDay()->diffInDays(
+//                             Carbon::parse($record->deadline_date)->startOfDay(),
+//                             false
+//                         );
+
+//                         $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : $daysUntilInterest);
+
+//                         return match (true) {
+//                             $daysUntil <= 0 => 'danger',
+//                             $daysUntil <= 3 => 'warning',
+//                             $daysUntil <= 7 => 'info',
+//                             $daysUntil <= 15 => 'success',
+//                             default => 'gray',
+//                         };
+//                     }),
                 TextColumn::make('deadline_status')
-                    ->label('Scadenza')
+                    ->label('')
                     ->badge()
                     ->getStateUsing(function ($record) {
-                        // if (!$record->deadline_date) {
-                        //     return null;
-                        // }
-// dd($record->id, 'STOP');
-                        $daysUntilDeadline = now()->startOfDay()->diffInDays(
-                            Carbon::parse($record->deadline_date)->startOfDay(),
+                        // 1. Individuo la data di riferimento secondo la tua gerarchia
+                        $referenceDate = static::getReferenceDate($record);
+
+                        if (!$referenceDate) return 'N/D';
+
+                        $daysUntil = now()->startOfDay()->diffInDays(
+                            Carbon::parse($referenceDate)->startOfDay(),
                             false
                         );
-                        $daysUntilInterest = now()->startOfDay()->diffInDays(
-                            Carbon::parse($record->interest_deadline_date)->startOfDay(),
-                            false
-                        );
-// dd($daysUntilDeadline, $daysUntilInterest, 'STOP');
-                        $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : $daysUntilInterest);
-// if ($record->id == 328) dd($daysUntil, 'STOP');
+
                         return match (true) {
                             $daysUntil < 0 => 'Scaduta',
                             $daysUntil === 0 => 'Oggi',
-                            // $daysUntil <= 3 => '3 giorni',
-                            // $daysUntil <= 7 => '7 giorni',
-                            // $daysUntil <= 15 => '15 giorni',
                             default => $daysUntil . ' giorni',
                         };
                     })
                     ->color(function ($record) {
-                        // if (!$record->deadline_date) {
-                        //     return 'gray';
-                        // }
+                        // Ripeto la stessa logica per la data di riferimento
+                        $referenceDate = static::getReferenceDate($record);
 
-                        $daysUntilDeadline = now()->startOfDay()->diffInDays(
-                            Carbon::parse($record->deadline_date)->startOfDay(),
+                        if (!$referenceDate) return 'gray';
+
+                        $daysUntil = now()->startOfDay()->diffInDays(
+                            Carbon::parse($referenceDate)->startOfDay(),
                             false
                         );
-                        $daysUntilInterest = now()->startOfDay()->diffInDays(
-                            Carbon::parse($record->deadline_date)->startOfDay(),
-                            false
-                        );
-
-                        $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : $daysUntilInterest);
 
                         return match (true) {
                             $daysUntil <= 0 => 'danger',
@@ -761,24 +804,6 @@ class BiddingResource extends Resource
                     ->label('Sopralluogo')
                     ->sortable()
                     ->date('d/m/Y')
-                    ->color(function ($record) {
-                        // if (!$record->deadline_date) {
-                        //     return 'gray';
-                        // }
-
-                        $daysUntil = now()->startOfDay()->diffInDays(
-                            Carbon::parse($record->deadline_date)->startOfDay(),
-                            false
-                        );
-
-                        return match (true) {
-                            $daysUntil <= 0 => 'danger',
-                            $daysUntil <= 3 => 'warning',
-                            $daysUntil <= 7 => 'info',
-                            // $daysUntil <= 15 => 'success',
-                            default => 'black',
-                        };
-                    })
                     ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('clarification_request_deadline_date')
                     ->label('Chiarimenti')
@@ -798,7 +823,9 @@ class BiddingResource extends Resource
                     ->label('Stato gara')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filtersFormWidth('md')
+            ->filtersFormWidth('5xl')
+            ->filtersFormColumns(4)
+            ->persistFiltersInSession()
             ->filters([
                 // Filtri rapidi selezione multipla
                 SelectFilter::make('bidding_filter')
@@ -806,6 +833,7 @@ class BiddingResource extends Resource
                     ->options(BiddingFilter::class)
                     ->multiple()
                     ->preload()
+                    ->columnSpan(2)
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['values'])) {
                             $query->where(function ($q) use ($data) {
@@ -1018,6 +1046,30 @@ class BiddingResource extends Resource
                     //                 break;
                     //         }
                     //     }),
+                SelectFilter::make('feasibility_type')
+                        ->label('Fattibilità')
+                        ->multiple()
+                        ->options(array_merge(
+                            ['none' => 'Nessuna'],
+                            collect(FeasibilityType::cases())
+                                ->mapWithKeys(fn($case) => [$case->value => $case->getLabel()])
+                                ->toArray()
+                        ))
+                        ->query(function (Builder $query, array $data) {
+                            if (empty($data['values'])) {
+                                return $query;
+                            }
+
+                            return $query->where(function ($q) use ($data) {
+                                foreach ($data['values'] as $value) {
+                                    if ($value === 'none') {
+                                        $q->orWhereNull('feasibility_type');
+                                    } else {
+                                        $q->orWhere('feasibility_type', $value);
+                                    }
+                                }
+                            });
+                        }),
                 Filter::make('past_deadline')
                     ->form([
                         Checkbox::make('show_past_deadline')
@@ -1033,6 +1085,7 @@ class BiddingResource extends Resource
                     }),
                 Filter::make('inspection_date_range')
                     ->columns(2)
+                    ->columnSpan(2)
                     ->form([
                         DatePicker::make('inspection_from_date')
                             ->label('Sopralluogo da')
@@ -1063,6 +1116,7 @@ class BiddingResource extends Resource
                     }),
                 Filter::make('deadline_date_range')
                     ->columns(2)
+                    ->columnSpan(2)
                     ->form([
                         DatePicker::make('deadline_from_date')
                             ->label('Scadenza da')
@@ -1115,30 +1169,6 @@ class BiddingResource extends Resource
                         modifyQueryUsing: fn ($query) => $query->orderBy('position')
                     )
                     ->multiple()->preload(),
-                SelectFilter::make('feasibility_type')
-                        ->label('Fattibilità')
-                        ->multiple()
-                        ->options(array_merge(
-                            ['none' => 'Nessuna'],
-                            collect(FeasibilityType::cases())
-                                ->mapWithKeys(fn($case) => [$case->value => $case->getLabel()])
-                                ->toArray()
-                        ))
-                        ->query(function (Builder $query, array $data) {
-                            if (empty($data['values'])) {
-                                return $query;
-                            }
-
-                            return $query->where(function ($q) use ($data) {
-                                foreach ($data['values'] as $value) {
-                                    if ($value === 'none') {
-                                        $q->orWhereNull('feasibility_type');
-                                    } else {
-                                        $q->orWhere('feasibility_type', $value);
-                                    }
-                                }
-                            });
-                        }),
                 SelectFilter::make('bidding_state_id')->label('Dettaglio fattibilità')
                     ->relationship(
                         name: 'biddingState',
@@ -1213,6 +1243,22 @@ class BiddingResource extends Resource
             'edit' => Pages\EditBidding::route('/{record}/edit'),
             'view' => Pages\ViewBidding::route('/{record}'),
         ];
+    }
+
+    private static function getReferenceDate($record)
+    {
+        return match (true) {
+            // Se c'è solo la data di scadenza della gara usa quella
+            !$record->inspection_deadline_date && $record->deadline_date => $record->deadline_date,
+            // Se le scadenze principali non ci sono, uso l'interesse
+            !$record->inspection_deadline_date && !$record->deadline_date => $record->interest_deadline_date,
+            // Se c'è la scdenza del sopralluogo ed è nel futuro (o oggi), uso quello
+            $record->inspection_deadline_date && Carbon::parse($record->inspection_deadline_date)->isFuture() || Carbon::parse($record->inspection_deadline_date)->isToday() => $record->inspection_deadline_date,
+            // Se c'è la scadenza del sopralluogo ed è nel passato e non ho la data del sopralluogo
+            $record->inspection_deadline_date && Carbon::parse($record->inspection_deadline_date)->isPast() && !$record->inspection_date => $record->inspection_deadline_date,
+            // Altrimenti ripiego sulla deadline finale
+            default => $record->deadline_date,
+        };
     }
 
     public static function saveClient(array $data, Client $client): void
