@@ -672,70 +672,14 @@ class BiddingResource extends Resource
             ->defaultSort('date', 'asc')
             ->persistFiltersInSession()                                 // Persistenza filtri
             ->persistSortInSession()                                    // Persistenza ordinamento
-            ->persistSearchInSession()                                  // Persistenza barra di ricerca globale
+            // ->persistSearchInSession()                                  // Persistenza barra di ricerca globale
             ->persistColumnSearchesInSession()                          // Persistenza ricerche nelle singole colonne
             ->columns([
-//                 TextColumn::make('deadline_status_old')
-//                     ->label('Scadenza')
-//                     ->badge()
-//                     ->getStateUsing(function ($record) {
-//                         // if (!$record->deadline_date) {
-//                         //     return null;
-//                         // }
-// // dd($record->id, 'STOP');
-//                         $daysUntilDeadline = now()->startOfDay()->diffInDays(
-//                             Carbon::parse($record->deadline_date)->startOfDay(),
-//                             false
-//                         );
-//                         $daysUntilInspection = now()->startOfDay()->diffInDays(
-//                             Carbon::parse($record->inspection_deadline_date)->startOfDay(),
-//                             false
-//                         );
-//                         $daysUntilInterest = now()->startOfDay()->diffInDays(
-//                             Carbon::parse($record->interest_deadline_date)->startOfDay(),
-//                             false
-//                         );
-// // dd($daysUntilDeadline, $daysUntilInterest, 'STOP');
-//                         $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : ($daysUntilInspection ? $daysUntilInspection : $daysUntilInterest));
-// // if ($record->id == 328) dd($daysUntil, 'STOP');
-//                         return match (true) {
-//                             $daysUntil < 0 => 'Scaduta',
-//                             $daysUntil === 0 => 'Oggi',
-//                             // $daysUntil <= 3 => '3 giorni',
-//                             // $daysUntil <= 7 => '7 giorni',
-//                             // $daysUntil <= 15 => '15 giorni',
-//                             default => $daysUntil . ' giorni',
-//                         };
-//                     })
-//                     ->color(function ($record) {
-//                         // if (!$record->deadline_date) {
-//                         //     return 'gray';
-//                         // }
-
-//                         $daysUntilDeadline = now()->startOfDay()->diffInDays(
-//                             Carbon::parse($record->deadline_date)->startOfDay(),
-//                             false
-//                         );
-//                         $daysUntilInterest = now()->startOfDay()->diffInDays(
-//                             Carbon::parse($record->deadline_date)->startOfDay(),
-//                             false
-//                         );
-
-//                         $daysUntil = (int) ($record->deadline_date ? $daysUntilDeadline : $daysUntilInterest);
-
-//                         return match (true) {
-//                             $daysUntil <= 0 => 'danger',
-//                             $daysUntil <= 3 => 'warning',
-//                             $daysUntil <= 7 => 'info',
-//                             $daysUntil <= 15 => 'success',
-//                             default => 'gray',
-//                         };
-//                     }),
                 TextColumn::make('deadline_status')
                     ->label('')
                     ->badge()
                     ->getStateUsing(function ($record) {
-                        // 1. Individuo la data di riferimento secondo la tua gerarchia
+                        // Individuo la data di riferimento secondo la gerarchia indicata
                         $referenceDate = static::getReferenceDate($record);
 
                         if (!$referenceDate) return 'N/D';
@@ -746,7 +690,7 @@ class BiddingResource extends Resource
                         );
 
                         return match (true) {
-                            $daysUntil < 0 => 'Scaduta',
+                            $daysUntil < 0 => $record->interest_send_date ? 'In attesa gara' : 'Scaduta',
                             $daysUntil === 0 => 'Oggi',
                             default => $daysUntil . ' giorni',
                         };
@@ -763,7 +707,7 @@ class BiddingResource extends Resource
                         );
 
                         return match (true) {
-                            $daysUntil <= 0 => 'danger',
+                            $daysUntil <= 0 => $record->interest_send_date ? 'gray' : 'danger',
                             $daysUntil <= 3 => 'warning',
                             $daysUntil <= 7 => 'info',
                             $daysUntil <= 15 => 'success',
@@ -942,110 +886,6 @@ class BiddingResource extends Resource
                             });
                         }
                     }),
-                    // Filtri rapidi singola selezione
-                    // SelectFilter::make('bidding_filter')
-                    //     ->label('Filtri rapidi')
-                    //     ->options(BiddingFilter::class)
-                    //     // ->multiple()
-                    //     ->preload()
-                    //     ->query(function (Builder $query, array $data) {
-                    //         switch ($data['value']) {
-                    //             case BiddingFilter::TENDER30->value:
-                    //                 $query->where(function ($q) {
-                    //                     $q->where(function ($subQ) {
-                    //                         $subQ->whereNotNull('deadline_date')
-                    //                             ->whereDate('deadline_date', '>=', Carbon::today())
-                    //                             ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
-                    //                     })->orWhere(function ($subQ) {
-                    //                         $subQ->whereNull('deadline_date')
-                    //                             ->whereNotNull('interest_deadline_date')
-                    //                             ->whereDate('interest_deadline_date', '>=', Carbon::today())
-                    //                             ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(30));
-                    //                     });
-                    //                 });
-                    //                 break;
-                    //             case BiddingFilter::INSPECTION30->value:
-                    //                 $query->whereNotNull('inspection_deadline_date')
-                    //                     ->whereDate('inspection_deadline_date', '>=', Carbon::today())
-                    //                     ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
-                    //                 break;
-                    //             case BiddingFilter::TENDER15->value:
-                    //                 $query->where(function ($q) {
-                    //                     $q->where(function ($subQ) {
-                    //                         $subQ->whereNotNull('deadline_date')
-                    //                             ->whereDate('deadline_date', '>=', Carbon::today())
-                    //                             ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
-                    //                     })->orWhere(function ($subQ) {
-                    //                         $subQ->whereNull('deadline_date')
-                    //                             ->whereNotNull('interest_deadline_date')
-                    //                             ->whereDate('interest_deadline_date', '>=', Carbon::today())
-                    //                             ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(15));
-                    //                     });
-                    //                 });
-                    //                 break;
-                    //             case BiddingFilter::INSPECTION15->value:
-                    //                 $query->whereNotNull('inspection_deadline_date')
-                    //                     ->whereDate('inspection_deadline_date', '>=', Carbon::today())
-                    //                     ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
-                    //                 break;
-                    //             case BiddingFilter::SEND30->value:
-                    //                 $query->where(function ($q) {
-                    //                     $q->where(function ($subQ) {
-                    //                         $subQ->whereNotNull('send_date')
-                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
-                    //                             ->whereDate('send_date', '<', Carbon::today());
-                    //                     })->orWhere(function ($subQ) {
-                    //                         $subQ->whereNull('send_date')
-                    //                             ->whereNotNull('interest_send_date')
-                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(30))
-                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
-                    //                     });
-                    //                 });
-                    //                 break;
-                    //             case BiddingFilter::SEND60->value:
-                    //                 $query->where(function ($q) {
-                    //                     $q->where(function ($subQ) {
-                    //                         $subQ->whereNotNull('send_date')
-                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
-                    //                             ->whereDate('send_date', '<', Carbon::today());
-                    //                     })->orWhere(function ($subQ) {
-                    //                         $subQ->whereNull('send_date')
-                    //                             ->whereNotNull('interest_send_date')
-                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(60))
-                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
-                    //                     });
-                    //                 });
-                    //                 break;
-                    //             case BiddingFilter::SEND90->value:
-                    //                 $query->where(function ($q) {
-                    //                     $q->where(function ($subQ) {
-                    //                         $subQ->whereNotNull('send_date')
-                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
-                    //                             ->whereDate('send_date', '<', Carbon::today());
-                    //                     })->orWhere(function ($subQ) {
-                    //                         $subQ->whereNull('send_date')
-                    //                             ->whereNotNull('interest_send_date')
-                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(90))
-                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
-                    //                     });
-                    //                 });
-                    //                 break;
-                    //             case BiddingFilter::SEND180->value:
-                    //                 $query->where(function ($q) {
-                    //                     $q->where(function ($subQ) {
-                    //                         $subQ->whereNotNull('send_date')
-                    //                             ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
-                    //                             ->whereDate('send_date', '<', Carbon::today());
-                    //                     })->orWhere(function ($subQ) {
-                    //                         $subQ->whereNull('send_date')
-                    //                             ->whereNotNull('interest_send_date')
-                    //                             ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(180))
-                    //                             ->whereDate('interest_send_date', '<', Carbon::today());
-                    //                     });
-                    //                 });
-                    //                 break;
-                    //         }
-                    //     }),
                 SelectFilter::make('feasibility_type')
                         ->label('Fattibilità')
                         ->multiple()
@@ -1145,9 +985,6 @@ class BiddingResource extends Resource
                         }
                         return null;
                     }),
-                // SelectFilter::make('services')->label('Gara relativa al servizio di')
-                //     ->relationship('serviceTypes', 'name')
-                //     ->multiple()->preload(),
                 SelectFilter::make('services')
                     ->label('Gara relativa al servizio di')
                     ->relationship('serviceTypes', 'name')
@@ -1177,7 +1014,6 @@ class BiddingResource extends Resource
                     )
                     ->multiple()->preload(),
                 SelectFilter::make('bidding_processing_state')->label('Stato lavorazione')
-                    // ->options(BiddingProcessingState::class)
                     ->options(function () {
                         // Creiamo l'array con il valore personalizzato
                         $options = ['da_assegnare' => 'Da assegnare'];
@@ -1245,7 +1081,7 @@ class BiddingResource extends Resource
         ];
     }
 
-    private static function getReferenceDate($record)
+    private static function getReferenceDateOld($record)
     {
         return match (true) {
             // Se c'è solo la data di scadenza della gara usa quella
@@ -1257,6 +1093,24 @@ class BiddingResource extends Resource
             // Se c'è la scadenza del sopralluogo ed è nel passato e non ho la data del sopralluogo
             $record->inspection_deadline_date && Carbon::parse($record->inspection_deadline_date)->isPast() && !$record->inspection_date => $record->inspection_deadline_date,
             // Altrimenti ripiego sulla deadline finale
+            default => $record->deadline_date,
+        };
+    }
+
+    private static function getReferenceDate($record)
+    {
+        $inspectionDeadline = $record->inspection_deadline_date
+            ? Carbon::parse($record->inspection_deadline_date)
+            : null;
+
+        return match (true) {
+            // Se manca la scadenza del sopralluogo, uso la scadenza gara (se esiste), altrimenti quella dell amanifestazione di interesse
+            !$inspectionDeadline => $record->deadline_date ?? $record->interest_deadline_date,
+            // Se c'è la scadenza del sopralluogo ed è oggi o nel futuro, la uso
+            $inspectionDeadline->isAfter(now()->subDay()) => $record->inspection_deadline_date,
+            // Se c'è la scadenza del sopralluogo ed è passato ma non c'è la data in cui è effettuato, la uso
+            $inspectionDeadline->isPast() && !$record->inspection_date => $record->inspection_deadline_date,
+            // In tutti gli altri casi
             default => $record->deadline_date,
         };
     }

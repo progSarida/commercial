@@ -193,7 +193,7 @@ class Bidding extends Model
         $query->where(function (Builder $subQuery) {
             // 1. Record con deadline futura o odierna
             $subQuery->whereDate('deadline_date', '>=', today())
-                // 2. OPPURE record senza deadline, ma solo se fattibili
+                // 2. OPPURE record senza deadline, ma solo se da valutare o fattibili
                 ->orWhere(function (Builder $q) {
                     $q->whereNull('deadline_date')
                     ->where('feasibility_type', '!=', FeasibilityType::NOT_FEASIBLE);
