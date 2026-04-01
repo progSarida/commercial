@@ -6,6 +6,8 @@ use App\Filament\User\Resources\BiddingResource;
 use App\Models\Bidding;
 use App\Models\Client;
 use Filament\Actions;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\MaxWidth;
@@ -121,6 +123,104 @@ class EditBidding extends EditRecord
                 ->visible(fn() => $currentBidding->inspection_deadline_date !== null && $nextInspection !== null)
                 ->action(fn() => $this->redirect(BiddingResource::getUrl('edit', ['record' => $nextInspection->id]))),
 
+            Actions\ActionGroup::make([
+                Actions\Action::make('uploadFile')
+                        ->label('Carica allegati')
+                        ->icon('heroicon-o-document-arrow-up')
+                        ->color('info')
+                        ->modalSubmitActionLabel('Carica')
+                        ->visible(function($record) {
+                                return $record->attachment_path
+                                        && Storage::exists($record->attachment_path);
+                            }
+                        )
+                        ->form([
+                            FileUpload::make('attachments')
+                                ->label('Seleziona File')
+                                ->multiple()
+                                ->directory(fn ($record) => $record->attachment_path)
+                                ->preserveFilenames()
+                                ->getUploadedFileNameForStorageUsing(function ($file, $record) {
+                                    $disk = config('filesystems.default');
+                                    $directory = $record->attachment_path;
+
+                                    $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                                    $extension = $file->getClientOriginalExtension();
+
+                                    $finalName = $filename . '.' . $extension;
+                                    $counter = 1;
+
+                                    while (Storage::disk($disk)->exists($directory . '/' . $finalName)) {
+                                        $finalName = $filename . '_' . $counter . '.' . $extension;
+                                        $counter++;
+                                    }
+
+                                    return $finalName;
+                                })
+                                ->required(),
+                        ])
+                        ->action(function (array $data) {
+                            Notification::make()
+                                ->title('Caricamento completato')
+                                ->success()
+                                ->send();
+                        }),
+
+                Actions\Action::make('deleteFile')
+                    ->label('Elimina file')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->visible(function($record) {
+                            return $record->attachment_path
+                                    && Storage::exists($record->attachment_path)
+                                    && !empty(Storage::files($record->attachment_path));
+                        }
+                    )
+                    ->form([
+                        Select::make('file_to_delete')
+                            ->label('Seleziona il file da eliminare')
+                            ->options(function ($record) {
+                                if (!$record || !$record->attachment_path) {
+                                    return [];
+                                }
+                                $files = Storage::files($record->attachment_path);
+                                return collect($files)->mapWithKeys(function ($file) {
+                                    return [$file => basename($file)];
+                                })->toArray();
+                            })
+                            ->required()
+                            ->native(false)
+                            ->searchable(),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalHeading('Elimina allegato')
+                    ->modalDescription('Questa azione non può essere annullata.')
+                    ->modalSubmitActionLabel('Elimina')
+                    ->modalCancelActionLabel('Annulla')
+                    ->action(function (array $data) {
+                        $file = $data['file_to_delete'];
+
+                        if (Storage::exists($file)) {
+                            Storage::delete($file);
+
+                            Notification::make()
+                                ->title('File eliminato con successo')
+                                ->body('Il file ' . basename($file) . ' è stato eliminato.')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('File non trovato')
+                                ->warning()
+                                ->send();
+                        }
+                    }),
+            ])
+            ->label('Operazioni')
+            ->icon('heroicon-m-ellipsis-vertical')
+            ->color('info')
+            ->button(),
+
             // Cancellazione gara
             // Actions\DeleteAction::make(),
         ];
@@ -218,83 +318,80 @@ class EditBidding extends EditRecord
 
     protected static function handleZipUpload($record, array $data): void
     {
-        // Se non c'è ZIP caricato → esci
-        if (empty($data['restore_zip'])) {
-            return;
-        }
+        // 1. Usa il nome del campo corretto della tua pagina Edit (restore_zip)
+        if (empty($data['restore_zip'])) return;
 
-        $zipPath = is_array($data['restore_zip'])
-            ? array_values($data['restore_zip'])[0]
-            : $data['restore_zip'];
+        $zipField = $data['restore_zip'];
+        $zipPath = is_array($zipField) ? array_values($zipField)[0] : $zipField;
 
-        // Livewire salva i file temporanei nel disco 'local' nella cartella 'livewire-tmp'
-        $livewireDisk = config('livewire.temporary_file_upload.disk', 'local');
+        // 2. Determina i dischi dinamicamente
+        $sourceDiskName = config('filament.default_filesystem_disk', 'public');
+        $targetDiskName = config('filesystems.default', 'public');
 
-        // Verifica l'esistenza nel disco di Livewire
-        if (!Storage::disk($livewireDisk)->exists($zipPath)) {
-            return;
-        }
+        $sourceDisk = Storage::disk($sourceDiskName);
+        $targetDisk = Storage::disk($targetDiskName);
 
-        // Leggi il contenuto del file ZIP dal disco di Livewire
-        $zipContents = Storage::disk($livewireDisk)->get($zipPath);
+        if (!$sourceDisk->exists($zipPath)) return;
 
-        // Crea un file temporaneo locale per ZipArchive
-        $tempZipPath = tempnam(sys_get_temp_dir(), 'zip_');
-        file_put_contents($tempZipPath, $zipContents);
+        // 3. Crea un file temporaneo LOCALE per ZipArchive
+        $tempZipFile = tempnam(sys_get_temp_dir(), 'zip_');
+        file_put_contents($tempZipFile, $sourceDisk->get($zipPath));
+
+        // 4. Cartella temporanea locale per l'estrazione
+        $tempExtractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'extract_' . uniqid();
+        mkdir($tempExtractDir, 0777, true);
 
         try {
-            // CARTELLA FINALE CON L'ID - usa il disco di default (public o S3)
-            $targetDisk = config('filesystems.default', 'public');
-            $extractPath = "biddings_attach/{$record->id}";
-            Storage::disk($targetDisk)->makeDirectory($extractPath);
-
             $zip = new ZipArchive();
-            if ($zip->open($tempZipPath) === true) {
-                // Crea una directory temporanea per l'estrazione
-                $tempExtractPath = sys_get_temp_dir() . '/extract_' . uniqid();
-                mkdir($tempExtractPath, 0777, true);
-
-                // Estrai nella cartella temporanea locale
-                $zip->extractTo($tempExtractPath);
+            if ($zip->open($tempZipFile) === true) {
+                $zip->extractTo($tempExtractDir);
                 $zip->close();
 
-                // Carica tutti i file estratti su Storage (disco target, non livewire)
+                // 5. Scansione file estratti
                 $files = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($tempExtractPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                    new \RecursiveDirectoryIterator($tempExtractDir, \RecursiveDirectoryIterator::SKIP_DOTS),
                     \RecursiveIteratorIterator::SELF_FIRST
                 );
 
+                $extractSubPath = "biddings_attach/{$record->id}";
+
                 foreach ($files as $file) {
                     if ($file->isFile()) {
-                        $relativePath = str_replace($tempExtractPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
-                        // Normalizza i separatori per compatibilità cross-platform e S3
-                        $relativePath = str_replace('\\', '/', $relativePath);
-                        $destinationPath = $extractPath . '/' . $relativePath;
+                        // LOGICA FLATTEN: Prendi solo il nome del file
+                        $originalName = $file->getFilename();
+                        $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+                        $extension = $file->getExtension();
 
-                        // IMPORTANTE: salva sul disco target (public/S3), non su livewire
-                        Storage::disk($targetDisk)->put(
-                            $destinationPath,
-                            file_get_contents($file->getPathname())
-                        );
+                        $finalName = $originalName;
+                        $counter = 1;
+
+                        // ANTI-SOVRASCRITTURA: Controlla se il file esiste già sul target (S3 o Locale)
+                        while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                            $finalName = $filenameOnly . '_' . $counter . '.' . $extension;
+                            $counter++;
+                        }
+
+                        $finalPath = $extractSubPath . '/' . $finalName;
+
+                        // 6. Upload sul disco target (Locale o S3) via Stream
+                        $stream = fopen($file->getPathname(), 'r');
+                        $targetDisk->put($finalPath, $stream);
+                        if (is_resource($stream)) fclose($stream);
                     }
                 }
 
-                // Pulisci la cartella temporanea di estrazione
-                self::deleteDirectory($tempExtractPath);
+                // 7. Aggiorna il DB
+                $record->update(['attachment_path' => $extractSubPath]);
 
-                // Cancella lo ZIP temporaneo dal disco di Livewire
-                Storage::disk($livewireDisk)->delete($zipPath);
-
-                // SALVA IL PERCORSO NEL DATABASE
-                $record->update([
-                    'attachment_path' => $extractPath,
-                ]);
+                // 8. Pulizia: cancella lo ZIP caricato originariamente
+                $sourceDisk->delete($zipPath);
             }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Errore estrazione ZIP in Edit: " . $e->getMessage());
         } finally {
-            // Pulisci il file ZIP temporaneo locale
-            if (file_exists($tempZipPath)) {
-                unlink($tempZipPath);
-            }
+            // Pulizia finale file temporanei locali al server
+            self::deleteDirectory($tempExtractDir);
+            if (file_exists($tempZipFile)) @unlink($tempZipFile);
         }
     }
 

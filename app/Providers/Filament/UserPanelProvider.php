@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\User\Widgets\ContactsCalendar;
 use App\Http\Middleware\CheckDbSession;
 use App\Http\Middleware\EnsureUserCanAccessPanel;
 use Filament\Http\Middleware\Authenticate;
@@ -14,6 +15,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -23,6 +25,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 
 class UserPanelProvider extends PanelProvider
 {
@@ -47,8 +50,9 @@ class UserPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/User/Widgets'), for: 'App\\Filament\\User\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
+                ContactsCalendar::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -87,6 +91,10 @@ class UserPanelProvider extends PanelProvider
                 'logout'=>MenuItem::make()
                     ->label('Vai al Portale')
                     ->icon('heroicon-o-arrow-left-start-on-rectangle'),
-            ]);
+            ])
+            ->plugins([
+                FilamentFullCalendarPlugin::make(), // Register the plugin here
+            ])
+            ->maxContentWidth(MaxWidth::Full);
     }
 }

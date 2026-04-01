@@ -19,6 +19,7 @@
         "orangehill/iseed": "^3.1",
         "owenvoke/blade-fontawesome": "^2.9",
         "phpoffice/phpspreadsheet": "^5.4",
+        "saade/filament-fullcalendar": "^3.2",
         "spatie/simple-excel": "^3.8"
     },
     "require-dev": {

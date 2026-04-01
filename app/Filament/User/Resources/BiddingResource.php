@@ -22,7 +22,6 @@ use App\Models\ServiceType;
 use App\Models\Tender;
 use App\Models\User;
 use Carbon\Carbon;
-use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
@@ -40,9 +39,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
-use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -617,7 +616,7 @@ class BiddingResource extends Resource
                                                 ->extraAttributes(['style' => 'line-height:1.8'])
                                                 ->columnSpanFull(),
                                         ])
-                                        ->columnSpan(['sm' => 'full', 'md' => 24]),
+                                        ->columnSpan(['sm' => 'full', 'md' => 'full']),
 
                                     FileUpload::make('restore_zip')
                                         ->label('Carica ZIP con allegati')
@@ -684,7 +683,7 @@ class BiddingResource extends Resource
 
                         if (!$referenceDate) return 'N/D';
 
-                        $daysUntil = now()->startOfDay()->diffInDays(
+                        $daysUntil = (int) now()->startOfDay()->diffInDays(
                             Carbon::parse($referenceDate)->startOfDay(),
                             false
                         );
@@ -698,14 +697,11 @@ class BiddingResource extends Resource
                     ->color(function ($record) {
                         // Ripeto la stessa logica per la data di riferimento
                         $referenceDate = static::getReferenceDate($record);
-
                         if (!$referenceDate) return 'gray';
-
                         $daysUntil = now()->startOfDay()->diffInDays(
                             Carbon::parse($referenceDate)->startOfDay(),
                             false
                         );
-
                         return match (true) {
                             $daysUntil <= 0 => $record->interest_send_date ? 'gray' : 'danger',
                             $daysUntil <= 3 => 'warning',
@@ -726,11 +722,13 @@ class BiddingResource extends Resource
                 TextColumn::make('description')
                     ->label('Descrizione')
                     ->searchable()
-                    ->limit(40)
+                    ->limit(20)
                     ->tooltip(fn ($record) => $record->description),
                 TextColumn::make('client.name')
                     ->label('Ente')
-                    ->searchable(),
+                    ->searchable()
+                    ->limit(10)
+                    ->tooltip(fn ($record) => $record->client->name),
                 TextColumn::make('province.code')
                     ->label('Prov.'),
                 TextColumn::make('region.name')
@@ -1055,7 +1053,7 @@ class BiddingResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 // Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
