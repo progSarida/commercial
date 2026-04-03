@@ -678,37 +678,43 @@ class BiddingResource extends Resource
                     ->label('')
                     ->badge()
                     ->getStateUsing(function ($record) {
-                        // Individuo la data di riferimento secondo la gerarchia indicata
-                        $referenceDate = static::getReferenceDate($record);
-
-                        if (!$referenceDate) return 'N/D';
-
-                        $daysUntil = (int) now()->startOfDay()->diffInDays(
-                            Carbon::parse($referenceDate)->startOfDay(),
-                            false
-                        );
-
-                        return match (true) {
-                            $daysUntil < 0 => $record->interest_send_date ? 'In attesa gara' : 'Scaduta',
-                            $daysUntil === 0 => 'Oggi',
-                            default => $daysUntil . ' giorni',
-                        };
+                        // Se la manifestazione di interesse è stata inviata e le altre scadenze non ci sono
+                        if($record->interest_send_date && !$record->inspection_deadline_date && !$record->deadline_date)
+                            return 'In attesa gara';
+                        else{
+                            // Individuo la data di riferimento secondo la gerarchia indicata
+                            $referenceDate = static::getReferenceDate($record);
+                            if (!$referenceDate) return 'N/D';
+                            $daysUntil = (int) now()->startOfDay()->diffInDays(
+                                Carbon::parse($referenceDate)->startOfDay(),
+                                false
+                            );
+                            return match (true) {
+                                $daysUntil < 0 => 'Scaduta',
+                                $daysUntil === 0 => 'Oggi',
+                                default => $daysUntil . ' giorni',
+                            };
+                        }
                     })
                     ->color(function ($record) {
-                        // Ripeto la stessa logica per la data di riferimento
-                        $referenceDate = static::getReferenceDate($record);
-                        if (!$referenceDate) return 'gray';
-                        $daysUntil = now()->startOfDay()->diffInDays(
-                            Carbon::parse($referenceDate)->startOfDay(),
-                            false
-                        );
-                        return match (true) {
-                            $daysUntil <= 0 => $record->interest_send_date ? 'gray' : 'danger',
-                            $daysUntil <= 3 => 'warning',
-                            $daysUntil <= 7 => 'info',
-                            $daysUntil <= 15 => 'success',
-                            default => 'gray',
-                        };
+                        if($record->interest_send_date && !$record->inspection_deadline_date && !$record->deadline_date)
+                            return 'gray';
+                        else{
+                            // Ripeto la stessa logica per la data di riferimento
+                            $referenceDate = static::getReferenceDate($record);
+                            if (!$referenceDate) return 'gray';
+                            $daysUntil = now()->startOfDay()->diffInDays(
+                                Carbon::parse($referenceDate)->startOfDay(),
+                                false
+                            );
+                            return match (true) {
+                                $daysUntil <= 0 => 'danger',
+                                $daysUntil <= 3 => 'warning',
+                                $daysUntil <= 7 => 'info',
+                                $daysUntil <= 15 => 'success',
+                                default => 'gray',
+                            };
+                        }
                     }),
                 TextColumn::make('serviceTypes')
                     ->label('Servizi')
