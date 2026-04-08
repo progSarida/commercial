@@ -86,6 +86,7 @@ class BiddingResource extends Resource
                                     ->relationship('serviceTypes', 'name')
                                     ->options(ServiceType::orderBy('position')->pluck('name', 'id')->toArray())
                                     ->columns(6)
+                                    ->dehydrated(true)
                                     ->columnSpan(['sm' => 'full', 'md' => 24])
                                     ->gridDirection('row'),
                                 Select::make('client_type')

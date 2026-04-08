@@ -3,9 +3,14 @@
 namespace App\Filament\User\Resources\BiddingResource\Pages;
 
 use App\Filament\User\Resources\BiddingResource;
+use App\Models\Bidding;
+use DB;
 use Filament\Actions;
+use Filament\Notifications\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Support\Enums\MaxWidth;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -13,129 +18,175 @@ class CreateBidding extends CreateRecord
 {
     protected static string $resource = BiddingResource::class;
 
+    // protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    // {
+    //     // 1. Preparazione ID Servizi
+    //     $serviceTypeIds = array_map('intval', $data['serviceTypes'] ?? []);
+    //     sort($serviceTypeIds);
+
+    //     // 2. Costruzione query di controllo duplicati
+    //     $query = Bidding::where('client_type', $data['client_type'])
+    //         ->where('client_id', $data['client_id']);
+
+    //     // 3. Controllo Date: Solo se il valore è presente in $data, lo aggiungiamo al filtro.
+    //     // Se in $data è null, cerchiamo record che abbiano null nel database.
+    //     $dateFields = [
+    //         'interest_deadline_date',
+    //         'inspection_deadline_date',
+    //         'deadline_date'
+    //     ];
+
+    //     foreach ($dateFields as $field) {
+    //         if (!empty($data[$field])) {
+    //             $query->whereDate($field, $data[$field]);
+    //         } else {
+    //             $query->whereNull($field);
+    //         }
+    //     }
+
+    //     // 4. Esecuzione query con controllo sulla relazione Many-to-Many
+    //     $exists = $query->withCount('serviceTypes')
+    //         ->having('service_types_count', '=', count($serviceTypeIds))
+    //         ->get()
+    //         ->filter(function ($bidding) use ($serviceTypeIds) {
+    //             $currentIds = $bidding->serviceTypes()->pluck('service_type_id')->toArray();
+    //             sort($currentIds);
+
+    //             return $currentIds == $serviceTypeIds;
+    //         })
+    //         ->first();
+
+    //     if ($exists) {
+    //         Notification::make()
+    //             ->title('Gara già esistente')
+    //             ->body("È stata trovata una gara (Id: {$exists->id}) con questi dati")
+    //             ->warning()
+    //             ->persistent() // La notifica non sparisce finché non si interagisce
+    //             ->send();
+
+    //         $this->halt();
+    //     }
+
+    //     DB::beginTransaction();
+    //     try {
+
+    //         $record = parent::handleRecordCreation($data);
+    //         DB::commit();
+    //         return $record;
+
+    //     } catch (Halt $e) {
+    //         throw $e; // Importante: rilanciala per permettere a Filament/Livewire di gestire l'arresto
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+
+    //         Notification::make()
+    //             ->title('Errore durante la creazione della gara')
+    //             ->body($e->getMessage())
+    //             ->danger()
+    //             ->send();
+
+    //         throw $e;
+    //     }
+    // }
+
+    protected bool $forceCreate = false;
+
+    protected function beforeCreate(): void
+    {
+        // Se l'utente ha cliccato su "Forza salvataggio", saltiamo il controllo
+        if ($this->forceCreate) {
+            return;
+        }
+
+        $data = $this->data; // Nelle pagine Create, i dati sono in $this->data
+
+        // Logica di controllo duplicati
+        $serviceTypeIds = array_map('intval', $data['serviceTypes'] ?? []);
+        sort($serviceTypeIds);
+
+        $query = Bidding::where('client_type', $data['client_type'])
+            ->where('client_id', $data['client_id']);
+
+        $dateFields = ['interest_deadline_date', 'inspection_deadline_date', 'deadline_date'];
+        foreach ($dateFields as $field) {
+            if (!empty($data[$field])) {
+                $query->whereDate($field, $data[$field]);
+            } else {
+                $query->whereNull($field);
+            }
+        }
+
+        $exists = $query->withCount('serviceTypes')
+            ->having('service_types_count', '=', count($serviceTypeIds))
+            ->get()
+            ->filter(function ($bidding) use ($serviceTypeIds) {
+                $currentIds = $bidding->serviceTypes()->pluck('service_type_id')->toArray();
+                sort($currentIds);
+                return $currentIds == $serviceTypeIds;
+            })
+            ->first();
+
+        if ($exists) {
+            Notification::make()
+                ->title('Gara già esistente')
+                ->body("Esiste già una gara (ID: {$exists->id}) con gli stessi dati.")
+                ->warning()
+                ->persistent()
+                ->actions([
+                    Action::make('force')
+                        ->label('Forza salvataggio')
+                        ->color('danger')
+                        ->icon('heroicon-o-arrow-right')
+                        ->dispatch('forceCreateEvent'),
+                    Action::make('cancel')
+                        ->label('Annulla')
+                        ->color('gray')
+                        ->close(),
+                ])
+                ->send();
+
+            // Blocca la creazione nativa di Filament
+            $this->halt();
+        }
+    }
+
+    protected function getListeners(): array
+    {
+        return array_merge(parent::getListeners(), [
+            'forceCreateEvent' => 'forceCreateAndSave',
+        ]);
+    }
+
+    public function forceCreateAndSave(): void
+    {
+        $this->forceCreate = true;
+        // Ora il dd scatterà
+
+        $this->create();
+    }
+
+    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    {
+        DB::beginTransaction();
+        try {
+            $record = parent::handleRecordCreation($data);
+            DB::commit();
+            return $record;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Notification::make()
+                ->title('Errore durante la creazione')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+            throw $e;
+        }
+    }
+
     protected function afterCreate(): void
     {
         $this->handleZipUpload($this->record, $this->data);
     }
-
-    // protected static function handleZipUploadOld($record, array $data): void
-    // {
-    //     // Se non c'è ZIP caricato o già processato → esci
-    //     if (empty($data['temp_zip']) || $record->attachment_path) {
-    //         return;
-    //     }
-
-    //     $zipPath = array_values($data['temp_zip'])[0];
-    //     $fullZipPath = storage_path('app/public/' . $zipPath);
-
-    //     if (!file_exists($fullZipPath)) {
-    //         return;
-    //     }
-
-    //     // CARTELLA FINALE CON L'ID
-    //     $extractPath = "biddings_attach/{$record->id}";
-    //     Storage::disk('public')->makeDirectory($extractPath);
-
-    //     $zip = new ZipArchive();
-    //     if ($zip->open($fullZipPath) === true) {
-    //         $zip->extractTo(storage_path('app/public/' . $extractPath));
-    //         $zip->close();
-
-    //         // Cancella lo ZIP temporaneo
-    //         Storage::disk('public')->delete($zipPath);
-
-    //         // SALVA IL PERCORSO NEL DATABASE
-    //         $record->update([
-    //             'attachment_path' => $extractPath,
-    //         ]);
-
-    //         // Opzionale: svuota il campo temp così non riappare
-    //         // (non serve se usi ->visible() sopra)
-    //     }
-    // }
-
-    // protected static function handleZipUploadAAA($record, array $data): void
-    // {
-
-    //     // Se non c'è ZIP caricato o già processato → esci
-    //     if (empty($data['temp_zip']) || $record->attachment_path) {
-    //         return;
-    //     }
-
-    //     $zipPath = is_array($data['temp_zip'])
-    //         ? array_values($data['temp_zip'])[0]
-    //         : $data['temp_zip'];
-
-    //     // Livewire salva i file temporanei nel disco 'local' nella cartella 'livewire-tmp'
-    //     $livewireDisk = config('livewire.temporary_file_upload.disk', 'local');
-
-    //     // Verifica l'esistenza nel disco di Livewire
-    //     if (!Storage::disk($livewireDisk)->exists($zipPath)) {
-    //         return;
-    //     }
-
-    //     // Leggi il contenuto del file ZIP dal disco di Livewire
-    //     $zipContents = Storage::disk($livewireDisk)->get($zipPath);
-
-    //     // Crea un file temporaneo locale per ZipArchive
-    //     $tempZipPath = tempnam(sys_get_temp_dir(), 'zip_');
-    //     file_put_contents($tempZipPath, $zipContents);
-
-    //     try {
-    //         // CARTELLA FINALE CON L'ID - usa il disco di default (public o S3)
-    //         $targetDisk = config('filesystems.default', 'public');
-    //         $extractPath = "biddings_attach/{$record->id}";
-    //         Storage::disk($targetDisk)->makeDirectory($extractPath);
-
-    //         $zip = new ZipArchive();
-    //         if ($zip->open($tempZipPath) === true) {
-    //             // Crea una directory temporanea per l'estrazione
-    //             $tempExtractPath = sys_get_temp_dir() . '/extract_' . uniqid();
-    //             mkdir($tempExtractPath, 0777, true);
-
-    //             // Estrai nella cartella temporanea locale
-    //             $zip->extractTo($tempExtractPath);
-    //             $zip->close();
-
-    //             // Carica tutti i file estratti su Storage (disco target, non livewire)
-    //             $files = new \RecursiveIteratorIterator(
-    //                 new \RecursiveDirectoryIterator($tempExtractPath, \RecursiveDirectoryIterator::SKIP_DOTS),
-    //                 \RecursiveIteratorIterator::SELF_FIRST
-    //             );
-
-    //             foreach ($files as $file) {
-    //                 if ($file->isFile()) {
-    //                     $relativePath = str_replace($tempExtractPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
-    //                     // Normalizza i separatori per compatibilità cross-platform e S3
-    //                     $relativePath = str_replace('\\', '/', $relativePath);
-    //                     $destinationPath = $extractPath . '/' . $relativePath;
-
-    //                     // IMPORTANTE: salva sul disco target (public/S3), non su livewire
-    //                     Storage::disk($targetDisk)->put(
-    //                         $destinationPath,
-    //                         file_get_contents($file->getPathname())
-    //                     );
-    //                 }
-    //             }
-
-    //             // Pulisci la cartella temporanea di estrazione
-    //             self::deleteDirectory($tempExtractPath);
-
-    //             // Cancella lo ZIP temporaneo dal disco di Livewire
-    //             Storage::disk($livewireDisk)->delete($zipPath);
-
-    //             // SALVA IL PERCORSO NEL DATABASE
-    //             $record->update([
-    //                 'attachment_path' => $extractPath,
-    //             ]);
-    //         }
-    //     } finally {
-    //         // Pulisci il file ZIP temporaneo locale
-    //         if (file_exists($tempZipPath)) {
-    //             unlink($tempZipPath);
-    //         }
-    //     }
-    // }
 
     protected static function handleZipUpload($record, array $data): void
     {
