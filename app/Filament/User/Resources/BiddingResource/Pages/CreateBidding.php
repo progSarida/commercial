@@ -10,84 +10,12 @@ use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Support\Enums\MaxWidth;
-use Filament\Support\Exceptions\Halt;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
 class CreateBidding extends CreateRecord
 {
     protected static string $resource = BiddingResource::class;
-
-    // protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
-    // {
-    //     // 1. Preparazione ID Servizi
-    //     $serviceTypeIds = array_map('intval', $data['serviceTypes'] ?? []);
-    //     sort($serviceTypeIds);
-
-    //     // 2. Costruzione query di controllo duplicati
-    //     $query = Bidding::where('client_type', $data['client_type'])
-    //         ->where('client_id', $data['client_id']);
-
-    //     // 3. Controllo Date: Solo se il valore è presente in $data, lo aggiungiamo al filtro.
-    //     // Se in $data è null, cerchiamo record che abbiano null nel database.
-    //     $dateFields = [
-    //         'interest_deadline_date',
-    //         'inspection_deadline_date',
-    //         'deadline_date'
-    //     ];
-
-    //     foreach ($dateFields as $field) {
-    //         if (!empty($data[$field])) {
-    //             $query->whereDate($field, $data[$field]);
-    //         } else {
-    //             $query->whereNull($field);
-    //         }
-    //     }
-
-    //     // 4. Esecuzione query con controllo sulla relazione Many-to-Many
-    //     $exists = $query->withCount('serviceTypes')
-    //         ->having('service_types_count', '=', count($serviceTypeIds))
-    //         ->get()
-    //         ->filter(function ($bidding) use ($serviceTypeIds) {
-    //             $currentIds = $bidding->serviceTypes()->pluck('service_type_id')->toArray();
-    //             sort($currentIds);
-
-    //             return $currentIds == $serviceTypeIds;
-    //         })
-    //         ->first();
-
-    //     if ($exists) {
-    //         Notification::make()
-    //             ->title('Gara già esistente')
-    //             ->body("È stata trovata una gara (Id: {$exists->id}) con questi dati")
-    //             ->warning()
-    //             ->persistent() // La notifica non sparisce finché non si interagisce
-    //             ->send();
-
-    //         $this->halt();
-    //     }
-
-    //     DB::beginTransaction();
-    //     try {
-
-    //         $record = parent::handleRecordCreation($data);
-    //         DB::commit();
-    //         return $record;
-
-    //     } catch (Halt $e) {
-    //         throw $e; // Importante: rilanciala per permettere a Filament/Livewire di gestire l'arresto
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-
-    //         Notification::make()
-    //             ->title('Errore durante la creazione della gara')
-    //             ->body($e->getMessage())
-    //             ->danger()
-    //             ->send();
-
-    //         throw $e;
-    //     }
-    // }
 
     protected bool $forceCreate = false;
 
