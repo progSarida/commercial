@@ -775,6 +775,12 @@ class BiddingResource extends Resource
             ->filtersFormColumns(4)
             ->persistFiltersInSession()
             ->filters([
+                SelectFilter::make('client_id')
+                    ->label('Ente')
+                    ->relationship('client', 'name')
+                    ->preload()
+                    ->searchable()
+                    ->columnSpan(2),
                 // Filtri rapidi selezione multipla
                 SelectFilter::make('bidding_filter')
                     ->label('Filtri rapidi')
@@ -890,6 +896,19 @@ class BiddingResource extends Resource
                             });
                         }
                     }),
+                Filter::make('past_deadline')
+                    ->form([
+                        Checkbox::make('show_past_deadline')
+                            ->label('Mostra scadute'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['show_past_deadline'])) {
+                            $query->upcoming(); // Usa lo scope definito nel modello
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        return empty($data['show_past_deadline']) ? '' : 'Incluse scadute';
+                    }),
                 SelectFilter::make('feasibility_type')
                         ->label('Fattibilità')
                         ->multiple()
@@ -914,102 +933,6 @@ class BiddingResource extends Resource
                                 }
                             });
                         }),
-                Filter::make('past_deadline')
-                    ->form([
-                        Checkbox::make('show_past_deadline')
-                            ->label('Mostra scadute'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (empty($data['show_past_deadline'])) {
-                            $query->upcoming(); // Usa lo scope definito nel modello
-                        }
-                    })
-                    ->indicateUsing(function (array $data): ?string {
-                        return empty($data['show_past_deadline']) ? '' : 'Incluse scadute';
-                    }),
-                Filter::make('inspection_date_range')
-                    ->columns(2)
-                    ->columnSpan(2)
-                    ->form([
-                        DatePicker::make('inspection_from_date')
-                            ->label('Sopralluogo da')
-                            ->columnSpan(1),
-                        DatePicker::make('inspection_to_date')
-                            ->label('Sopralluogo a')
-                            ->columnSpan(1),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (! empty($data['inspection_from_date'])) {
-                            $query->whereDate('inspection_deadline_date', '>=', $data['inspection_from_date']);
-                        }
-                        if (! empty($data['inspection_to_date'])) {
-                            $query->whereDate('inspection_deadline_date', '<=', $data['inspection_to_date']);
-                        }
-                    })
-                    ->indicateUsing(function (array $data): ?string {
-                        if ($data['inspection_from_date'] && $data['inspection_to_date']) {
-                            return "Sopralluoghi dal {$data['inspection_from_date']} al {$data['inspection_to_date']}";
-                        }
-                        if ($data['inspection_from_date']) {
-                            return "Sopralluoghi dal {$data['inspection_from_date']}";
-                        }
-                        if ($data['inspection_to_date']) {
-                            return "Sopralluoghi al {$data['inspection_to_date']}";
-                        }
-                        return null;
-                    }),
-                Filter::make('deadline_date_range')
-                    ->columns(2)
-                    ->columnSpan(2)
-                    ->form([
-                        DatePicker::make('deadline_from_date')
-                            ->label('Scadenza da')
-                            ->columnSpan(1),
-                        DatePicker::make('deadline_to_date')
-                            ->label('Scadenza a')
-                            ->columnSpan(1),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (! empty($data['deadline_from_date'])) {
-                            $query->whereDate('deadline_date', '>=', $data['deadline_from_date']);
-                        }
-                        if (! empty($data['deadline_to_date'])) {
-                            $query->whereDate('deadline_date', '<=', $data['deadline_to_date']);
-                        }
-                    })
-                    ->indicateUsing(function (array $data): ?string {
-                        if ($data['deadline_from_date'] && $data['deadline_to_date']) {
-                            return "Scadenze dal {$data['deadline_from_date']} al {$data['deadline_to_date']}";
-                        }
-                        if ($data['deadline_from_date']) {
-                            return "Scadenze da {$data['deadline_from_date']}";
-                        }
-                        if ($data['deadline_to_date']) {
-                            return "Scadenze al {$data['deadline_to_date']}";
-                        }
-                        return null;
-                    }),
-                SelectFilter::make('services')
-                    ->label('Gara relativa al servizio di')
-                    ->relationship('serviceTypes', 'name')
-                    ->multiple()
-                    ->preload()
-                    ->query(function (Builder $query, array $data) {
-                        if (!empty($data['values'])) {
-                            foreach ($data['values'] as $value) {
-                                $query->whereHas('serviceTypes', function (Builder $subQuery) use ($value) {
-                                    $subQuery->where('service_types.id', $value); // Specifica la tabella
-                                });
-                            }
-                        }
-                    }),
-                SelectFilter::make('bidding_type_id')->label('Tipo gara')
-                    ->relationship(
-                        name: 'biddingType',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
-                    )
-                    ->multiple()->preload(),
                 SelectFilter::make('bidding_state_id')->label('Dettaglio fattibilità')
                     ->relationship(
                         name: 'biddingState',
@@ -1055,6 +978,153 @@ class BiddingResource extends Resource
                         });
                     })
                     ->multiple(),
+                Filter::make('inspection_deadline_date_range')
+                    ->columns(2)
+                    ->columnSpan(2)
+                    ->form([
+                        DatePicker::make('inspection_deadline_from_date')
+                            ->label('Scadenza sopralluogo da')
+                            ->columnSpan(1),
+                        DatePicker::make('inspection_deadline_to_date')
+                            ->label('Scadenza sopralluogo a')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['inspection_deadline_from_date'])) {
+                            $query->whereDate('inspection_deadline_date', '>=', $data['inspection_deadline_from_date']);
+                        }
+                        if (! empty($data['inspection_deadline_to_date'])) {
+                            $query->whereDate('inspection_deadline_date', '<=', $data['inspection_deadline_to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['inspection_deadline_from_date'] && $data['inspection_deadline_to_date']) {
+                            return "Scadenze sopralluogo dal {$data['inspection_deadline_from_date']} al {$data['inspection_deadline_to_date']}";
+                        }
+                        if ($data['inspection_deadline_from_date']) {
+                            return "Scadenze sopralluogo dal {$data['inspection_deadline_from_date']}";
+                        }
+                        if ($data['inspection_deadline_to_date']) {
+                            return "Scadenze sopralluogo al {$data['inspection_deadline_to_date']}";
+                        }
+                        return null;
+                    }),
+                Filter::make('deadline_date_range')
+                    ->columns(2)
+                    ->columnSpan(2)
+                    ->form([
+                        DatePicker::make('deadline_from_date')
+                            ->label('Scadenza gara da')
+                            ->columnSpan(1),
+                        DatePicker::make('deadline_to_date')
+                            ->label('Scadenza gara a')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['deadline_from_date'])) {
+                            $query->whereDate('deadline_date', '>=', $data['deadline_from_date']);
+                        }
+                        if (! empty($data['deadline_to_date'])) {
+                            $query->whereDate('deadline_date', '<=', $data['deadline_to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['deadline_from_date'] && $data['deadline_to_date']) {
+                            return "Scadenze gara dal {$data['deadline_from_date']} al {$data['deadline_to_date']}";
+                        }
+                        if ($data['deadline_from_date']) {
+                            return "Scadenze gara dal {$data['deadline_from_date']}";
+                        }
+                        if ($data['deadline_to_date']) {
+                            return "Scadenze gara al {$data['deadline_to_date']}";
+                        }
+                        return null;
+                    }),
+                SelectFilter::make('services')
+                    ->label('Gara relativa al servizio di')
+                    ->relationship('serviceTypes', 'name')
+                    ->multiple()
+                    ->preload()
+                    ->query(function (Builder $query, array $data) {
+                        if (!empty($data['values'])) {
+                            foreach ($data['values'] as $value) {
+                                $query->whereHas('serviceTypes', function (Builder $subQuery) use ($value) {
+                                    $subQuery->where('service_types.id', $value); // Specifica la tabella
+                                });
+                            }
+                        }
+                    }),
+                SelectFilter::make('bidding_type_id')->label('Tipo gara')
+                    ->relationship(
+                        name: 'biddingType',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn ($query) => $query->orderBy('position')
+                    )
+                    ->multiple()->preload(),
+
+                Filter::make('interest_date_range')
+                    ->columns(2)
+                    ->columnSpan(2)
+                    ->form([
+                        DatePicker::make('interest_from_date')
+                            ->label('Scadenza manifestazione da')
+                            ->columnSpan(1),
+                        DatePicker::make('interest_to_date')
+                            ->label('Scadenza manifestazione a')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['interest_from_date'])) {
+                            $query->whereDate('interest_deadline_date', '>=', $data['interest_from_date']);
+                        }
+                        if (! empty($data['interest_to_date'])) {
+                            $query->whereDate('interest_deadline_date', '<=', $data['interest_to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['interest_from_date'] && $data['interest_to_date']) {
+                            return "Scadenza manifestazione dal {$data['interest_from_date']} al {$data['interest_to_date']}";
+                        }
+                        if ($data['interest_from_date']) {
+                            return "Scadenza manifestazione dal {$data['interest_from_date']}";
+                        }
+                        if ($data['interest_to_date']) {
+                            return "Scadenza manifestazione al {$data['interest_to_date']}";
+                        }
+                        return null;
+                    }),
+
+                Filter::make('inspection_date_range')
+                    ->columns(2)
+                    ->columnSpan(2)
+                    ->form([
+                        DatePicker::make('inspection_from_date')
+                            ->label('Data sopralluogo da')
+                            ->columnSpan(1),
+                        DatePicker::make('inspection_to_date')
+                            ->label('Data sopralluogo a')
+                            ->columnSpan(1),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! empty($data['inspection_from_date'])) {
+                            $query->whereDate('inspection_date', '>=', $data['inspection_from_date']);
+                        }
+                        if (! empty($data['inspection_to_date'])) {
+                            $query->whereDate('inspection_date', '<=', $data['inspection_to_date']);
+                        }
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['inspection_from_date'] && $data['inspection_to_date']) {
+                            return "Data sopralluogo dal {$data['inspection_from_date']} al {$data['inspection_to_date']}";
+                        }
+                        if ($data['inspection_from_date']) {
+                            return "Data sopralluogo dal {$data['inspection_from_date']}";
+                        }
+                        if ($data['inspection_to_date']) {
+                            return "Data sopralluogo al {$data['inspection_to_date']}";
+                        }
+                        return null;
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
