@@ -4,7 +4,6 @@ namespace App\Filament\User\Resources\BiddingResource\Pages;
 
 use App\Filament\User\Resources\BiddingResource;
 use App\Models\Bidding;
-use App\Models\Client;
 use Filament\Actions;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -125,46 +124,192 @@ class EditBidding extends EditRecord
 
             Actions\ActionGroup::make([
                 Actions\Action::make('uploadFile')
-                        ->label('Carica allegati')
-                        ->icon('heroicon-o-document-arrow-up')
-                        ->color('info')
-                        ->modalSubmitActionLabel('Carica')
-                        ->visible(function($record) {
-                                return $record->attachment_path
-                                        && Storage::exists($record->attachment_path);
-                            }
-                        )
-                        ->form([
-                            FileUpload::make('attachments')
-                                ->label('Seleziona File')
-                                ->multiple()
-                                ->directory(fn ($record) => $record->attachment_path)
-                                ->preserveFilenames()
-                                ->getUploadedFileNameForStorageUsing(function ($file, $record) {
-                                    $disk = config('filesystems.default');
-                                    $directory = $record->attachment_path;
+                    ->label('Carica allegati')
+                    ->icon('heroicon-o-document-arrow-up')
+                    ->color('info')
+                    ->modalSubmitActionLabel('Carica')
+                    ->visible(function($record) {
+                        return $record->attachment_path
+                            && Storage::exists($record->attachment_path);
+                    })
+                    ->form([
+                        FileUpload::make('attachments')
+                            ->label('Seleziona File (anche ZIP)')
+                            ->multiple()
+                            ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
+                            ->directory('temp_uploads')
+                            ->preserveFilenames()
+                            ->getUploadedFileNameForStorageUsing(function ($file) {
+                                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                                $extension = $file->getClientOriginalExtension();
 
-                                    $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                                    $extension = $file->getClientOriginalExtension();
+                                $finalName = $filename . '.' . $extension;
+                                $counter = 1;
 
-                                    $finalName = $filename . '.' . $extension;
-                                    $counter = 1;
+                                while (Storage::disk(config('filament.default_filesystem_disk', 'public'))->exists('temp_uploads/' . $finalName)) {
+                                    $finalName = $filename . '_' . $counter . '.' . $extension;
+                                    $counter++;
+                                }
 
-                                    while (Storage::disk($disk)->exists($directory . '/' . $finalName)) {
-                                        $finalName = $filename . '_' . $counter . '.' . $extension;
-                                        $counter++;
+                                return $finalName;
+                            })
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $record) {
+                        $sourceDiskName = config('filament.default_filesystem_disk', 'public');
+                        $targetDiskName = config('filesystems.default', 'public');
+
+                        $sourceDisk = Storage::disk($sourceDiskName);
+                        $targetDisk = Storage::disk($targetDiskName);
+
+                        $extractSubPath = $record->attachment_path;
+                        $processedFiles = 0;
+
+                        foreach ($data['attachments'] as $filePath) {
+                            if (!$sourceDisk->exists($filePath)) continue;
+
+                            $filename = basename($filePath);
+                            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+                            // Se è uno ZIP, estraiamo i file
+                            if ($extension === 'zip') {
+                                // Crea file temporaneo locale
+                                $tempZipFile = tempnam(sys_get_temp_dir(), 'zip_');
+                                file_put_contents($tempZipFile, $sourceDisk->get($filePath));
+
+                                $tempExtractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'extract_' . uniqid();
+                                mkdir($tempExtractDir, 0777, true);
+
+                                try {
+                                    $zip = new ZipArchive();
+                                    if ($zip->open($tempZipFile) === true) {
+                                        $zip->extractTo($tempExtractDir);
+                                        $zip->close();
+
+                                        // Scansione file estratti
+                                        $files = new \RecursiveIteratorIterator(
+                                            new \RecursiveDirectoryIterator($tempExtractDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                                            \RecursiveIteratorIterator::SELF_FIRST
+                                        );
+
+                                        foreach ($files as $file) {
+                                            if ($file->isFile()) {
+                                                $originalName = $file->getFilename();
+                                                $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+                                                $fileExtension = $file->getExtension();
+
+                                                $finalName = $originalName;
+                                                $counter = 1;
+
+                                                // Anti-sovrascrittura
+                                                while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                                                    $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
+                                                    $counter++;
+                                                }
+
+                                                $finalPath = $extractSubPath . '/' . $finalName;
+
+                                                // Upload sul disco target usando Stream
+                                                $stream = fopen($file->getPathname(), 'r');
+                                                $targetDisk->put($finalPath, $stream);
+                                                if (is_resource($stream)) fclose($stream);
+
+                                                $processedFiles++;
+                                            }
+                                        }
                                     }
+                                } catch (\Exception $e) {
+                                    \Illuminate\Support\Facades\Log::error("Errore estrazione ZIP: " . $e->getMessage());
 
-                                    return $finalName;
-                                })
-                                ->required(),
-                        ])
-                        ->action(function (array $data) {
-                            Notification::make()
-                                ->title('Caricamento completato')
-                                ->success()
-                                ->send();
-                        }),
+                                    Notification::make()
+                                        ->title('Errore durante l\'estrazione dello ZIP')
+                                        ->body($e->getMessage())
+                                        ->danger()
+                                        ->send();
+                                } finally {
+                                    // Pulizia
+                                    self::deleteDirectory($tempExtractDir);
+                                    if (file_exists($tempZipFile)) @unlink($tempZipFile);
+                                }
+
+                                // Cancella lo ZIP temporaneo
+                                $sourceDisk->delete($filePath);
+
+                            } else {
+                                // File normale: copia diretta con anti-sovrascrittura
+                                $filenameOnly = pathinfo($filename, PATHINFO_FILENAME);
+                                $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
+
+                                $finalName = $filename;
+                                $counter = 1;
+
+                                while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                                    $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
+                                    $counter++;
+                                }
+
+                                $finalPath = $extractSubPath . '/' . $finalName;
+
+                                // Copia il file usando Stream per compatibilità S3
+                                $stream = $sourceDisk->readStream($filePath);
+                                $targetDisk->put($finalPath, $stream);
+                                if (is_resource($stream)) fclose($stream);
+
+                                // Cancella il file temporaneo
+                                $sourceDisk->delete($filePath);
+
+                                $processedFiles++;
+                            }
+                        }
+
+                        Notification::make()
+                            ->title('Caricamento completato')
+                            ->body($processedFiles . ' file caricati con successo.')
+                            ->success()
+                            ->send();
+                    }),
+
+                // Actions\Action::make('uploadFile')
+                //         ->label('Carica allegati')
+                //         ->icon('heroicon-o-document-arrow-up')
+                //         ->color('info')
+                //         ->modalSubmitActionLabel('Carica')
+                //         ->visible(function($record) {
+                //                 return $record->attachment_path
+                //                         && Storage::exists($record->attachment_path);
+                //             }
+                //         )
+                //         ->form([
+                //             FileUpload::make('attachments')
+                //                 ->label('Seleziona File')
+                //                 ->multiple()
+                //                 ->directory(fn ($record) => $record->attachment_path)
+                //                 ->preserveFilenames()
+                //                 ->getUploadedFileNameForStorageUsing(function ($file, $record) {
+                //                     $disk = config('filesystems.default');
+                //                     $directory = $record->attachment_path;
+
+                //                     $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                //                     $extension = $file->getClientOriginalExtension();
+
+                //                     $finalName = $filename . '.' . $extension;
+                //                     $counter = 1;
+
+                //                     while (Storage::disk($disk)->exists($directory . '/' . $finalName)) {
+                //                         $finalName = $filename . '_' . $counter . '.' . $extension;
+                //                         $counter++;
+                //                     }
+
+                //                     return $finalName;
+                //                 })
+                //                 ->required(),
+                //         ])
+                //         ->action(function (array $data) {
+                //             Notification::make()
+                //                 ->title('Caricamento completato')
+                //                 ->success()
+                //                 ->send();
+                //         }),
 
                 Actions\Action::make('deleteFile')
                     ->label('Elimina file')

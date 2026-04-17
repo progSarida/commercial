@@ -151,15 +151,67 @@ class ContactsCalendar extends FullCalendarWidget
     /**
      * Configurazione del calendario FullCalendar
      */
+    // public function config(): array
+    // {
+    //     return [
+    //         'locale' => 'it',
+    //         'firstDay' => 1, // Lunedì come primo giorno
+    //         'headerToolbar' => [
+    //             'left' => 'prev,next today',
+    //             'center' => 'title',
+    //             'right' => 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+    //         ],
+    //         'buttonText' => [
+    //             'today' => 'Oggi',
+    //             'month' => 'Mese',
+    //             'week' => 'Settimana',
+    //             'day' => 'Giorno',
+    //             'list' => 'Lista'
+    //         ],
+    //         'views' => [
+    //             'dayGridMonth' => [
+    //                 'titleFormat' => ['year' => 'numeric', 'month' => 'long']
+    //             ],
+    //         ],
+    //         'initialView' => 'dayGridMonth',
+    //         'navLinks' => true,
+    //         'editable' => false,
+    //         'selectable' => false,
+    //         'droppable' => false,
+    //         'eventStartEditable' => false,
+    //         'eventDurationEditable' => false,
+    //         'selectMirror' => true,
+    //         'dayMaxEvents' => 3,
+    //         'slotMinTime' => '08:00:00',
+    //         'slotMaxTime' => '20:00:00',
+    //         'nowIndicator' => true,
+    //         'eventTimeFormat' => [
+    //             'hour' => '2-digit',
+    //             'minute' => '2-digit',
+    //             'hour12' => false
+    //         ],
+    //         'slotLabelFormat' => [
+    //             'hour' => '2-digit',
+    //             'minute' => '2-digit',
+    //             'hour12' => false
+    //         ],
+    //         'height' => 'auto',
+    //     ];
+    // }
+
     public function config(): array
     {
+        // Determina la vista iniziale in base al user agent (lato server)
+        $isMobile = request()->header('User-Agent') &&
+                    preg_match('/(android|iphone|ipad|mobile)/i', request()->header('User-Agent'));
+
         return [
             'locale' => 'it',
-            'firstDay' => 1, // Lunedì come primo giorno
+            'firstDay' => 1,
             'headerToolbar' => [
                 'left' => 'prev,next today',
                 'center' => 'title',
-                'right' => 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                'right' => $isMobile ? '' : 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
             ],
             'buttonText' => [
                 'today' => 'Oggi',
@@ -172,8 +224,13 @@ class ContactsCalendar extends FullCalendarWidget
                 'dayGridMonth' => [
                     'titleFormat' => ['year' => 'numeric', 'month' => 'long']
                 ],
+                'listMonth' => [
+                    'titleFormat' => ['year' => 'numeric', 'month' => 'long']
+                ],
             ],
-            'initialView' => 'dayGridMonth',
+            // Vista iniziale diversa per mobile
+            'initialView' => $isMobile ? 'listDay' : 'dayGridMonth',
+
             'navLinks' => true,
             'editable' => false,
             'selectable' => false,
@@ -181,7 +238,7 @@ class ContactsCalendar extends FullCalendarWidget
             'eventStartEditable' => false,
             'eventDurationEditable' => false,
             'selectMirror' => true,
-            'dayMaxEvents' => 3,
+            'dayMaxEvents' => $isMobile ? 2 : 3, // Meno eventi su mobile
             'slotMinTime' => '08:00:00',
             'slotMaxTime' => '20:00:00',
             'nowIndicator' => true,
@@ -196,6 +253,7 @@ class ContactsCalendar extends FullCalendarWidget
                 'hour12' => false
             ],
             'height' => 'auto',
+            'contentHeight' => 'auto',
         ];
     }
 
