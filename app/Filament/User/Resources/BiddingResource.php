@@ -468,16 +468,16 @@ class BiddingResource extends Resource
                                     //     ->columnSpanFull()
                                     //     ->visible(fn ($record) => blank($record?->attachment_path)), // mostra solo se non già caricato
 
-                                    // 1. SOLO IN CREAZIONE o se non c'è attachment_path
-                                    FileUpload::make('temp_zip')
-                                        ->label('Carica ZIP con allegati')
-                                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                                        // ->maxSize(102400)
-                                        ->directory('biddings-temp')
-                                        ->dehydrated(false)
-                                        ->visible(fn ($livewire, $record) => $livewire instanceof \Filament\Resources\Pages\CreateRecord ||
-                                                                                !$record->attachment_path)
-                                        ->columnSpanFull(),
+                                    // SOLO IN CREAZIONE o se non c'è attachment_path
+                                    // FileUpload::make('temp_zip')
+                                    //     ->label('Carica ZIP con allegati')
+                                    //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                    //     // ->maxSize(102400)
+                                    //     ->directory('biddings-temp')
+                                    //     ->dehydrated(false)
+                                    //     ->visible(fn ($livewire, $record) => $livewire instanceof \Filament\Resources\Pages\CreateRecord ||
+                                    //                                             !$record->attachment_path)
+                                    //     ->columnSpanFull(),
 
 
                                     Section::make('Allegati')
@@ -618,16 +618,48 @@ class BiddingResource extends Resource
                                         ])
                                         ->columnSpan(['sm' => 'full', 'md' => 'full']),
 
-                                    FileUpload::make('restore_zip')
-                                        ->label('Carica ZIP con allegati')
-                                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                    // IN MODIFICA
+                                    // FileUpload::make('restore_zip')
+                                    //     ->label('Carica ZIP con allegati')
+                                    //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                                    //     ->directory('biddings-temp')
+                                    //     ->dehydrated(false)
+                                    //     ->visible(fn ($record) =>
+                                    //         $record &&
+                                    //         $record->attachment_path &&
+                                    //         collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                    //     )
+                                    //     ->columnSpanFull(),
+
+                                    FileUpload::make('attachments')
+                                        ->label('Carica allegati')
+                                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
+                                        ->multiple()
+                                        ->maxSize(102400)
                                         ->directory('biddings-temp')
+                                        ->preserveFilenames()
+                                        ->getUploadedFileNameForStorageUsing(function ($file) {
+                                            $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                                            $extension = $file->getClientOriginalExtension();
+
+                                            $finalName = $filename . '.' . $extension;
+                                            $counter = 1;
+
+                                            $disk = config('filament.default_filesystem_disk', 'public');
+                                            while (Storage::disk($disk)->exists('biddings-temp/' . $finalName)) {
+                                                $finalName = $filename . '_' . $counter . '.' . $extension;
+                                                $counter++;
+                                            }
+
+                                            return $finalName;
+                                        })
                                         ->dehydrated(false)
-                                        ->visible(fn ($record) =>
-                                            $record &&
-                                            $record->attachment_path &&
+                                        ->visible(fn ($livewire, $record) =>
+                                            $livewire instanceof \Filament\Resources\Pages\CreateRecord ||
+                                            !$record->attachment_path ||
                                             collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
                                         )
+                                        ->helperText('Si possono caricare file singoli o archivi ZIP. Gli ZIP verranno estratti automaticamente.')
                                         ->columnSpanFull(),
                                 ]),
                         ]),
