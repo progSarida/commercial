@@ -205,9 +205,10 @@ class Bidding extends Model
                             $q4->select('id')
                                 ->from('bidding_states')
                                 ->where('name', 'Serve avvalimento');
+                        })
+                        ->whereNotNull('interest_expression_type');
                     });
                 });
-            });
         });
     }
 
