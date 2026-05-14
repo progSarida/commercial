@@ -206,7 +206,8 @@ class Bidding extends Model
                                 ->from('bidding_states')
                                 ->where('name', 'Serve avvalimento');
                         })
-                        ->whereNotNull('interest_expression_type');
+                        ->whereNotNull('interest_expression_type')
+                        ->whereNotNull('interest_send_date');
                     });
                 });
         });
