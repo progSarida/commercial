@@ -201,7 +201,7 @@ class Bidding extends Model
                     ->orWhere(function (Builder $q3) {
                         $q3->whereNull('deadline_date')
                         ->where('feasibility_type', '=', FeasibilityType::NOT_FEASIBLE)
-                        ->where('bidding_state_id', function ($q4) {
+                        ->whereIn('bidding_state_id', function ($q4) {
                             $q4->select('id')
                                 ->from('bidding_states')
                                 ->where('name', 'Serve avvalimento');
