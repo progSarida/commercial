@@ -636,7 +636,7 @@ class BiddingResource extends Resource
                                                     }),
 
                                                 Action::make('deleteFile')
-                                                    ->label('Elimina file')
+                                                    ->label('Elimina allegati')
                                                     ->icon('fluentui-document-dismiss-20-o')
                                                     ->color('warning')
                                                     ->visible(function($record) {
@@ -647,7 +647,7 @@ class BiddingResource extends Resource
                                                     )
                                                     ->form([
                                                         Select::make('file_to_delete')
-                                                            ->label('Seleziona il file da eliminare')
+                                                            ->label('Seleziona gli allegati da eliminare')
                                                             ->options(function ($record) {
                                                                 if (!$record || !$record->attachment_path) {
                                                                     return [];
