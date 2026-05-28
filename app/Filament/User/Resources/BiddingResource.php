@@ -489,39 +489,234 @@ class BiddingResource extends Resource
                                             !collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
                                         )
                                         ->headerActions([
-                                            Action::make('delete')
-                                                ->label('Svuota allegati')
-                                                ->icon('heroicon-o-trash')
-                                                ->color('danger')
-                                                ->requiresConfirmation()
-                                                ->action(function ($record) {
-                                                    $directory = $record->attachment_path;
-                                                    $disk = config('filesystems.default', 'public');
+                                                Action::make('uploadFile')
+                                                    ->label('Carica allegati')
+                                                    ->icon('fluentui-document-arrow-up-20-o')
+                                                    ->color('info')
+                                                    ->modalSubmitActionLabel('Carica')
+                                                    ->visible(function($record) {
+                                                        return $record->attachment_path
+                                                            && Storage::exists($record->attachment_path);
+                                                    })
+                                                    ->form([
+                                                        FileUpload::make('attachments')
+                                                            ->label('Seleziona File (anche ZIP)')
+                                                            ->multiple()
+                                                            ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
+                                                            ->directory('temp_uploads')
+                                                            ->preserveFilenames()
+                                                            ->getUploadedFileNameForStorageUsing(function ($file) {
+                                                                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                                                                $extension = $file->getClientOriginalExtension();
 
-                                                    if (!$directory || !Storage::disk($disk)->exists($directory)) {
-                                                        return;
-                                                    }
+                                                                $finalName = $filename . '.' . $extension;
+                                                                $counter = 1;
 
-                                                    // 1. Recupera tutti i file all'interno della cartella
-                                                    $files = Storage::disk($disk)->allFiles($directory);
+                                                                while (Storage::disk(config('filament.default_filesystem_disk', 'public'))->exists('temp_uploads/' . $finalName)) {
+                                                                    $finalName = $filename . '_' . $counter . '.' . $extension;
+                                                                    $counter++;
+                                                                }
 
-                                                    // 2. Elimina i file
-                                                    Storage::disk($disk)->delete($files);
+                                                                return $finalName;
+                                                            })
+                                                            ->required(),
+                                                    ])
+                                                    ->action(function (array $data, $record) {
+                                                        $sourceDiskName = config('filament.default_filesystem_disk', 'public');
+                                                        $targetDiskName = config('filesystems.default', 'public');
 
-                                                    // 3. Se ci sono sottocartelle, allFiles non le elimina.
-                                                    // Per eliminare anche le sottocartelle ma mantenere la "root":
-                                                    $directories = Storage::disk($disk)->allDirectories($directory);
-                                                    foreach ($directories as $subDir) {
-                                                        Storage::disk($disk)->deleteDirectory($subDir);
-                                                    }
+                                                        $sourceDisk = Storage::disk($sourceDiskName);
+                                                        $targetDisk = Storage::disk($targetDiskName);
 
-                                                    Notification::make()
-                                                        ->title('Cartella svuotata con successo')
-                                                        ->success()
-                                                        ->send();
+                                                        $extractSubPath = $record->attachment_path;
+                                                        $processedFiles = 0;
 
-                                                    return redirect(request()->header('Referer'));
-                                                }),
+                                                        foreach ($data['attachments'] as $filePath) {
+                                                            if (!$sourceDisk->exists($filePath)) continue;
+
+                                                            $filename = basename($filePath);
+                                                            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+                                                            // Se è uno ZIP, estraiamo i file
+                                                            if ($extension === 'zip') {
+                                                                // Crea file temporaneo locale
+                                                                $tempZipFile = tempnam(sys_get_temp_dir(), 'zip_');
+                                                                file_put_contents($tempZipFile, $sourceDisk->get($filePath));
+
+                                                                $tempExtractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'extract_' . uniqid();
+                                                                mkdir($tempExtractDir, 0777, true);
+
+                                                                try {
+                                                                    $zip = new ZipArchive();
+                                                                    if ($zip->open($tempZipFile) === true) {
+                                                                        $zip->extractTo($tempExtractDir);
+                                                                        $zip->close();
+
+                                                                        // Scansione file estratti
+                                                                        $files = new \RecursiveIteratorIterator(
+                                                                            new \RecursiveDirectoryIterator($tempExtractDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                                                                            \RecursiveIteratorIterator::SELF_FIRST
+                                                                        );
+
+                                                                        foreach ($files as $file) {
+                                                                            if ($file->isFile()) {
+                                                                                $originalName = $file->getFilename();
+                                                                                $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+                                                                                $fileExtension = $file->getExtension();
+
+                                                                                $finalName = $originalName;
+                                                                                $counter = 1;
+
+                                                                                // Anti-sovrascrittura
+                                                                                while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                                                                                    $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
+                                                                                    $counter++;
+                                                                                }
+
+                                                                                $finalPath = $extractSubPath . '/' . $finalName;
+
+                                                                                // Upload sul disco target usando Stream
+                                                                                $stream = fopen($file->getPathname(), 'r');
+                                                                                $targetDisk->put($finalPath, $stream);
+                                                                                if (is_resource($stream)) fclose($stream);
+
+                                                                                $processedFiles++;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } catch (\Exception $e) {
+                                                                    \Illuminate\Support\Facades\Log::error("Errore estrazione ZIP: " . $e->getMessage());
+
+                                                                    Notification::make()
+                                                                        ->title('Errore durante l\'estrazione dello ZIP')
+                                                                        ->body($e->getMessage())
+                                                                        ->danger()
+                                                                        ->send();
+                                                                } finally {
+                                                                    // Pulizia
+                                                                    self::deleteDirectory($tempExtractDir);
+                                                                    if (file_exists($tempZipFile)) @unlink($tempZipFile);
+                                                                }
+
+                                                                // Cancella lo ZIP temporaneo
+                                                                $sourceDisk->delete($filePath);
+
+                                                            } else {
+                                                                // File normale: copia diretta con anti-sovrascrittura
+                                                                $filenameOnly = pathinfo($filename, PATHINFO_FILENAME);
+                                                                $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
+
+                                                                $finalName = $filename;
+                                                                $counter = 1;
+
+                                                                while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                                                                    $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
+                                                                    $counter++;
+                                                                }
+
+                                                                $finalPath = $extractSubPath . '/' . $finalName;
+
+                                                                // Copia il file usando Stream per compatibilità S3
+                                                                $stream = $sourceDisk->readStream($filePath);
+                                                                $targetDisk->put($finalPath, $stream);
+                                                                if (is_resource($stream)) fclose($stream);
+
+                                                                // Cancella il file temporaneo
+                                                                $sourceDisk->delete($filePath);
+
+                                                                $processedFiles++;
+                                                            }
+                                                        }
+
+                                                        Notification::make()
+                                                            ->title('Caricamento completato')
+                                                            ->body($processedFiles . ' file caricati con successo.')
+                                                            ->success()
+                                                            ->send();
+                                                    }),
+
+                                                Action::make('deleteFile')
+                                                    ->label('Elimina file')
+                                                    ->icon('fluentui-document-dismiss-20-o')
+                                                    ->color('warning')
+                                                    ->visible(function($record) {
+                                                            return $record->attachment_path
+                                                                    && Storage::exists($record->attachment_path)
+                                                                    && !empty(Storage::files($record->attachment_path));
+                                                        }
+                                                    )
+                                                    ->form([
+                                                        Select::make('file_to_delete')
+                                                            ->label('Seleziona il file da eliminare')
+                                                            ->options(function ($record) {
+                                                                if (!$record || !$record->attachment_path) {
+                                                                    return [];
+                                                                }
+                                                                $files = Storage::files($record->attachment_path);
+                                                                return collect($files)->mapWithKeys(function ($file) {
+                                                                    return [$file => basename($file)];
+                                                                })->toArray();
+                                                            })
+                                                            ->required()
+                                                            ->native(false)
+                                                            ->searchable(),
+                                                    ])
+                                                    ->requiresConfirmation()
+                                                    ->modalHeading('Elimina allegato')
+                                                    ->modalDescription('Questa azione non può essere annullata.')
+                                                    ->modalSubmitActionLabel('Elimina')
+                                                    ->modalCancelActionLabel('Annulla')
+                                                    ->action(function (array $data) {
+                                                        $file = $data['file_to_delete'];
+
+                                                        if (Storage::exists($file)) {
+                                                            Storage::delete($file);
+
+                                                            Notification::make()
+                                                                ->title('File eliminato con successo')
+                                                                ->body('Il file ' . basename($file) . ' è stato eliminato.')
+                                                                ->success()
+                                                                ->send();
+                                                        } else {
+                                                            Notification::make()
+                                                                ->title('File non trovato')
+                                                                ->warning()
+                                                                ->send();
+                                                        }
+                                                    }),
+                                                Action::make('delete')
+                                                    ->label('Svuota allegati')
+                                                    ->icon('fluentui-document-multiple-prohibited-20-o')
+                                                    ->color('danger')
+                                                    ->requiresConfirmation()
+                                                    ->action(function ($record) {
+                                                        $directory = $record->attachment_path;
+                                                        $disk = config('filesystems.default', 'public');
+
+                                                        if (!$directory || !Storage::disk($disk)->exists($directory)) {
+                                                            return;
+                                                        }
+
+                                                        // 1. Recupera tutti i file all'interno della cartella
+                                                        $files = Storage::disk($disk)->allFiles($directory);
+
+                                                        // 2. Elimina i file
+                                                        Storage::disk($disk)->delete($files);
+
+                                                        // 3. Se ci sono sottocartelle, allFiles non le elimina.
+                                                        // Per eliminare anche le sottocartelle ma mantenere la "root":
+                                                        $directories = Storage::disk($disk)->allDirectories($directory);
+                                                        foreach ($directories as $subDir) {
+                                                            Storage::disk($disk)->deleteDirectory($subDir);
+                                                        }
+
+                                                        Notification::make()
+                                                            ->title('Cartella svuotata con successo')
+                                                            ->success()
+                                                            ->send();
+
+                                                        return redirect(request()->header('Referer'));
+                                                    }),
                                         ])
                                         ->schema([
                                             Placeholder::make('attachments')
