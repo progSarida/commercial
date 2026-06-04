@@ -324,42 +324,15 @@ class BiddingResource extends Resource
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->default('06:00')
                                         ->columnSpan(['sm' => 'full', 'md' => 5]),
-
                                     DatePicker::make('deadline_date')
                                         ->label('Data scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->required(fn (Get $get) => $get('bidding_type_id'))
-                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
                                     TimePicker::make('deadline_time')
                                         ->label('Orario scadenza')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->required(fn (Get $get) => $get('bidding_type_id'))
-                                        ->default('06:00')
-                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
-                                    DatePicker::make('send_date')
-                                        ->label('Data invio offerta')
-                                        ->extraInputAttributes(['class' => 'text-center'])
-                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
-                                    TimePicker::make('send_time')
-                                        ->label('Orario invio offerta')
-                                        ->extraInputAttributes(['class' => 'text-center'])
-                                        ->default('06:00')
-                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
-                                    // TextInput::make('send_mode')
-                                    //     ->label('Modalità invio')
-                                    //     ->columnSpan(['sm' => 'full', 'md' => 6]),
-                                    Select::make('send_mode_type')
-                                        ->label('Modalità d\'invio')
-                                        ->options(SendModeType::class)
-                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
-
-                                    DatePicker::make('opening_date')
-                                        ->label('Data apertura offerte')
-                                        ->extraInputAttributes(['class' => 'text-center'])
-                                        ->columnSpan(['sm' => 'full', 'md' => 4]),
-                                    TimePicker::make('opening_time')
-                                        ->label('Orario apertura offerte')
-                                        ->extraInputAttributes(['class' => 'text-center'])
                                         ->default('06:00')
                                         ->columnSpan(['sm' => 'full', 'md' => 4]),
                                     DatePicker::make('closure_date')
@@ -373,11 +346,9 @@ class BiddingResource extends Resource
                                     TextInput::make('contact')
                                         ->label('Nome contatto')
                                         ->columnSpan(['sm' => 'full', 'md' => 9]),
-
                                     TextInput::make('note')
                                         ->label('Note')
                                         ->columnSpan(['sm' => 'full', 'md' => 'full']),
-
                                     TextInput::make('contracting_station')
                                         ->label('Gestore appalto')
                                         ->columnSpan(['sm' => 'full', 'md' => 18]),
@@ -387,7 +358,6 @@ class BiddingResource extends Resource
                                         ->options(BiddingProcedureType::class)
                                         ->default(BiddingProcedureType::TELEMATIC)
                                         ->columnSpan(['sm' => 'full', 'md' => 7]),
-
                                     TextInput::make('procedure_portal')
                                         ->label('Portale procedura')
                                         ->columnSpan(['sm' => 'full', 'md' => 10]),
@@ -398,7 +368,6 @@ class BiddingResource extends Resource
                                     TextInput::make('procedure_id')
                                         ->label('ID Procedura')
                                         ->columnSpan(['sm' => 'full', 'md' => 10]),
-
                                     TextInput::make('year')
                                         ->label('Durata anni')
                                         ->extraInputAttributes(['class' => 'text-right'])
@@ -415,7 +384,6 @@ class BiddingResource extends Resource
                                         ->label('Rinnovo')
                                         ->extraInputAttributes(['class' => 'text-center'])
                                         ->columnSpan(['sm' => 'full', 'md' => 7]),
-
                                     Select::make('source1_id')
                                         ->label('Fonte dati 1')
                                         ->relationship('source1', 'name')
@@ -431,7 +399,6 @@ class BiddingResource extends Resource
                                         ->relationship('source3', 'name')
                                         ->options(BiddingDataSource::orderBy('position')->pluck('name', 'id')->toArray())
                                         ->columnSpan(['sm' => 'full', 'md' => 4]),
-
                                     // Placeholder::make('')
                                     //     ->visible(fn (callable $get) => $get('modified_user_id') === null)
                                     //     ->columnSpan(['sm' => 0, 'md' =>16]),
@@ -439,13 +406,11 @@ class BiddingResource extends Resource
                                         ->label('Assegnato a')
                                         ->relationship('assignedUser', 'name')
                                         ->options(User::pluck('name', 'id')->toArray())
-                                        ->columns(6)
                                         ->columnSpan(['sm' => 'full', 'md' => 4]),
                                     Select::make('modified_user_id')
                                         ->label('Modificato da')
                                         ->relationship('modifiedUser', 'name')
                                         ->options(User::pluck('name', 'id')->toArray())
-                                        // ->columns(6)
                                         ->disabled()
                                         ->dehydrated()
                                         ->visible(fn ($state) => $state !== null)
@@ -479,384 +444,443 @@ class BiddingResource extends Resource
                                     //                                             !$record->attachment_path)
                                     //     ->columnSpanFull(),
 
+                                ]),
+                            
+                            Fieldset::make('Offerta')
+                                ->columns(25)
+                                ->schema([
+                                    DatePicker::make('send_date')
+                                        ->label('Data invio offerta')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('send_time')
+                                        ->label('Orario invio offerta')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default('06:00')
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    Select::make('send_mode_type')
+                                        ->label('Modalità d\'invio')
+                                        ->options(SendModeType::class)
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    DatePicker::make('opening_date')
+                                        ->label('Data apertura offerte')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                    TimePicker::make('opening_time')
+                                        ->label('Orario apertura offerte')
+                                        ->extraInputAttributes(['class' => 'text-center'])
+                                        ->default('06:00')
+                                        ->columnSpan(['sm' => 'full', 'md' => 5]),
+                                ]),
 
-                                    Section::make('Allegati')
-                                        ->collapsed()
-                                        ->visible(fn($record) => $record && $record->attachment_path)
-                                        ->visible(fn ($record) =>
-                                            $record &&
-                                            $record->attachment_path &&
-                                            !collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
-                                        )
-                                        ->headerActions([
-                                                Action::make('uploadFile')
-                                                    ->label('Carica allegati')
-                                                    ->icon('fluentui-document-arrow-up-20-o')
-                                                    ->color('info')
-                                                    ->modalSubmitActionLabel('Carica')
-                                                    ->visible(function($record) {
-                                                        return $record->attachment_path
-                                                            && Storage::exists($record->attachment_path);
+                            Section::make('Allegati')
+                                ->collapsed()
+                                ->visible(fn($record) => $record && $record->attachment_path)
+                                ->visible(fn ($record) =>
+                                    $record &&
+                                    $record->attachment_path &&
+                                    !collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                )
+                                ->headerActions([
+                                        Action::make('uploadFile')
+                                            ->label('Carica allegati')
+                                            ->icon('fluentui-document-arrow-up-20-o')
+                                            ->color('info')
+                                            ->modalSubmitActionLabel('Carica')
+                                            ->visible(function($record) {
+                                                return $record->attachment_path
+                                                    && Storage::exists($record->attachment_path);
+                                            })
+                                            ->form([
+                                                FileUpload::make('attachments')
+                                                    ->label('Seleziona File (anche ZIP)')
+                                                    ->multiple()
+                                                    // ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
+                                                    ->acceptedFileTypes([
+                                                        'application/zip', 
+                                                        'application/x-zip-compressed', 
+                                                        'image/*', 
+                                                        'application/pdf', 
+                                                        
+                                                        // --- WORD ---
+                                                        'application/msword',                                                       // .doc
+                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',   // .docx
+                                                        
+                                                        // --- EXCEL ---
+                                                        'application/vnd.ms-excel',                                                 // .xls
+                                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',        // .xlsx
+                                                        
+                                                        '*/*' // Nota su questo sotto!
+                                                    ])
+                                                    ->directory('temp_uploads')
+                                                    ->preserveFilenames()
+                                                    ->getUploadedFileNameForStorageUsing(function ($file) {
+                                                        $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                                                        $extension = $file->getClientOriginalExtension();
+
+                                                        $finalName = $filename . '.' . $extension;
+                                                        $counter = 1;
+
+                                                        while (Storage::disk(config('filament.default_filesystem_disk', 'public'))->exists('temp_uploads/' . $finalName)) {
+                                                            $finalName = $filename . '_' . $counter . '.' . $extension;
+                                                            $counter++;
+                                                        }
+
+                                                        return $finalName;
                                                     })
-                                                    ->form([
-                                                        FileUpload::make('attachments')
-                                                            ->label('Seleziona File (anche ZIP)')
-                                                            ->multiple()
-                                                            ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
-                                                            ->directory('temp_uploads')
-                                                            ->preserveFilenames()
-                                                            ->getUploadedFileNameForStorageUsing(function ($file) {
-                                                                $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                                                                $extension = $file->getClientOriginalExtension();
+                                                    ->required(),
+                                            ])
+                                            ->action(function (array $data, $record) {
+                                                $sourceDiskName = config('filament.default_filesystem_disk', 'public');
+                                                $targetDiskName = config('filesystems.default', 'public');
 
-                                                                $finalName = $filename . '.' . $extension;
-                                                                $counter = 1;
+                                                $sourceDisk = Storage::disk($sourceDiskName);
+                                                $targetDisk = Storage::disk($targetDiskName);
 
-                                                                while (Storage::disk(config('filament.default_filesystem_disk', 'public'))->exists('temp_uploads/' . $finalName)) {
-                                                                    $finalName = $filename . '_' . $counter . '.' . $extension;
-                                                                    $counter++;
-                                                                }
+                                                $extractSubPath = $record->attachment_path;
+                                                $processedFiles = 0;
 
-                                                                return $finalName;
-                                                            })
-                                                            ->required(),
-                                                    ])
-                                                    ->action(function (array $data, $record) {
-                                                        $sourceDiskName = config('filament.default_filesystem_disk', 'public');
-                                                        $targetDiskName = config('filesystems.default', 'public');
+                                                foreach ($data['attachments'] as $filePath) {
+                                                    if (!$sourceDisk->exists($filePath)) continue;
 
-                                                        $sourceDisk = Storage::disk($sourceDiskName);
-                                                        $targetDisk = Storage::disk($targetDiskName);
+                                                    $filename = basename($filePath);
+                                                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-                                                        $extractSubPath = $record->attachment_path;
-                                                        $processedFiles = 0;
+                                                    // Se è uno ZIP, estraiamo i file
+                                                    if ($extension === 'zip') {
+                                                        // Crea file temporaneo locale
+                                                        $tempZipFile = tempnam(sys_get_temp_dir(), 'zip_');
+                                                        file_put_contents($tempZipFile, $sourceDisk->get($filePath));
 
-                                                        foreach ($data['attachments'] as $filePath) {
-                                                            if (!$sourceDisk->exists($filePath)) continue;
+                                                        $tempExtractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'extract_' . uniqid();
+                                                        mkdir($tempExtractDir, 0777, true);
 
-                                                            $filename = basename($filePath);
-                                                            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                                                        try {
+                                                            $zip = new ZipArchive();
+                                                            if ($zip->open($tempZipFile) === true) {
+                                                                $zip->extractTo($tempExtractDir);
+                                                                $zip->close();
 
-                                                            // Se è uno ZIP, estraiamo i file
-                                                            if ($extension === 'zip') {
-                                                                // Crea file temporaneo locale
-                                                                $tempZipFile = tempnam(sys_get_temp_dir(), 'zip_');
-                                                                file_put_contents($tempZipFile, $sourceDisk->get($filePath));
-
-                                                                $tempExtractDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'extract_' . uniqid();
-                                                                mkdir($tempExtractDir, 0777, true);
-
-                                                                try {
-                                                                    $zip = new ZipArchive();
-                                                                    if ($zip->open($tempZipFile) === true) {
-                                                                        $zip->extractTo($tempExtractDir);
-                                                                        $zip->close();
-
-                                                                        // Scansione file estratti
-                                                                        $files = new \RecursiveIteratorIterator(
-                                                                            new \RecursiveDirectoryIterator($tempExtractDir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                                                                            \RecursiveIteratorIterator::SELF_FIRST
-                                                                        );
-
-                                                                        foreach ($files as $file) {
-                                                                            if ($file->isFile()) {
-                                                                                $originalName = $file->getFilename();
-                                                                                $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
-                                                                                $fileExtension = $file->getExtension();
-
-                                                                                $finalName = $originalName;
-                                                                                $counter = 1;
-
-                                                                                // Anti-sovrascrittura
-                                                                                while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
-                                                                                    $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
-                                                                                    $counter++;
-                                                                                }
-
-                                                                                $finalPath = $extractSubPath . '/' . $finalName;
-
-                                                                                // Upload sul disco target usando Stream
-                                                                                $stream = fopen($file->getPathname(), 'r');
-                                                                                $targetDisk->put($finalPath, $stream);
-                                                                                if (is_resource($stream)) fclose($stream);
-
-                                                                                $processedFiles++;
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                } catch (\Exception $e) {
-                                                                    \Illuminate\Support\Facades\Log::error("Errore estrazione ZIP: " . $e->getMessage());
-
-                                                                    Notification::make()
-                                                                        ->title('Errore durante l\'estrazione dello ZIP')
-                                                                        ->body($e->getMessage())
-                                                                        ->danger()
-                                                                        ->send();
-                                                                } finally {
-                                                                    // Pulizia
-                                                                    self::deleteDirectory($tempExtractDir);
-                                                                    if (file_exists($tempZipFile)) @unlink($tempZipFile);
-                                                                }
-
-                                                                // Cancella lo ZIP temporaneo
-                                                                $sourceDisk->delete($filePath);
-
-                                                            } else {
-                                                                // File normale: copia diretta con anti-sovrascrittura
-                                                                $filenameOnly = pathinfo($filename, PATHINFO_FILENAME);
-                                                                $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
-
-                                                                $finalName = $filename;
-                                                                $counter = 1;
-
-                                                                while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
-                                                                    $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
-                                                                    $counter++;
-                                                                }
-
-                                                                $finalPath = $extractSubPath . '/' . $finalName;
-
-                                                                // Copia il file usando Stream per compatibilità S3
-                                                                $stream = $sourceDisk->readStream($filePath);
-                                                                $targetDisk->put($finalPath, $stream);
-                                                                if (is_resource($stream)) fclose($stream);
-
-                                                                // Cancella il file temporaneo
-                                                                $sourceDisk->delete($filePath);
-
-                                                                $processedFiles++;
-                                                            }
-                                                        }
-
-                                                        Notification::make()
-                                                            ->title('Caricamento completato')
-                                                            ->body($processedFiles . ' file caricati con successo.')
-                                                            ->success()
-                                                            ->send();
-                                                    }),
-
-                                                Action::make('deleteFile')
-                                                    ->label('Elimina allegati')
-                                                    ->icon('fluentui-document-dismiss-20-o')
-                                                    ->color('warning')
-                                                    ->visible(function($record) {
-                                                            return $record->attachment_path
-                                                                    && Storage::exists($record->attachment_path)
-                                                                    && !empty(Storage::files($record->attachment_path));
-                                                        }
-                                                    )
-                                                    ->form([
-                                                        Select::make('file_to_delete')
-                                                            ->label('Seleziona gli allegati da eliminare')
-                                                            ->options(function ($record) {
-                                                                if (!$record || !$record->attachment_path) {
-                                                                    return [];
-                                                                }
-                                                                $files = Storage::files($record->attachment_path);
-                                                                return collect($files)->mapWithKeys(function ($file) {
-                                                                    return [$file => basename($file)];
-                                                                })->toArray();
-                                                            })
-                                                            ->required()
-                                                            ->native(false)
-                                                            ->searchable(),
-                                                    ])
-                                                    ->requiresConfirmation()
-                                                    ->modalHeading('Elimina allegato')
-                                                    ->modalDescription('Questa azione non può essere annullata.')
-                                                    ->modalSubmitActionLabel('Elimina')
-                                                    ->modalCancelActionLabel('Annulla')
-                                                    ->action(function (array $data) {
-                                                        $file = $data['file_to_delete'];
-
-                                                        if (Storage::exists($file)) {
-                                                            Storage::delete($file);
-
-                                                            Notification::make()
-                                                                ->title('File eliminato con successo')
-                                                                ->body('Il file ' . basename($file) . ' è stato eliminato.')
-                                                                ->success()
-                                                                ->send();
-                                                        } else {
-                                                            Notification::make()
-                                                                ->title('File non trovato')
-                                                                ->warning()
-                                                                ->send();
-                                                        }
-                                                    }),
-                                                Action::make('delete')
-                                                    ->label('Svuota allegati')
-                                                    ->icon('fluentui-document-multiple-prohibited-20-o')
-                                                    ->color('danger')
-                                                    ->requiresConfirmation()
-                                                    ->action(function ($record) {
-                                                        $directory = $record->attachment_path;
-                                                        $disk = config('filesystems.default', 'public');
-
-                                                        if (!$directory || !Storage::disk($disk)->exists($directory)) {
-                                                            return;
-                                                        }
-
-                                                        // 1. Recupera tutti i file all'interno della cartella
-                                                        $files = Storage::disk($disk)->allFiles($directory);
-
-                                                        // 2. Elimina i file
-                                                        Storage::disk($disk)->delete($files);
-
-                                                        // 3. Se ci sono sottocartelle, allFiles non le elimina.
-                                                        // Per eliminare anche le sottocartelle ma mantenere la "root":
-                                                        $directories = Storage::disk($disk)->allDirectories($directory);
-                                                        foreach ($directories as $subDir) {
-                                                            Storage::disk($disk)->deleteDirectory($subDir);
-                                                        }
-
-                                                        Notification::make()
-                                                            ->title('Cartella svuotata con successo')
-                                                            ->success()
-                                                            ->send();
-
-                                                        return redirect(request()->header('Referer'));
-                                                    }),
-                                        ])
-                                        ->schema([
-                                            Placeholder::make('attachments')
-                                                ->key('attachments_list')
-                                                ->label('')
-                                                ->hintAction(
-                                                    Action::make('downloadAll')
-                                                        ->label('Scarica tutti (ZIP)')
-                                                        ->icon('heroicon-o-arrow-down-tray')
-                                                        ->action(function ($record) {
-                                                            $services = '';
-                                                            for($i = 0; $i < count($record->serviceTypes); $i++) {
-                                                                if($i != 0) $services .= ' ';
-                                                                $services .= $record->serviceTypes[$i]->name;
-                                                            }
-                                                            return response()->streamDownload(function () use ($record) {
-                                                                $zip = new ZipArchive();
-                                                                $path = tempnam(sys_get_temp_dir(), 'zip');
-
-                                                                $zip->open($path, ZipArchive::CREATE);
-
-                                                                $disk = config('filesystems.default', 'public');
-                                                                $files = Storage::disk($disk)->allFiles($record->attachment_path);
+                                                                // Scansione file estratti
+                                                                $files = new \RecursiveIteratorIterator(
+                                                                    new \RecursiveDirectoryIterator($tempExtractDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                                                                    \RecursiveIteratorIterator::SELF_FIRST
+                                                                );
 
                                                                 foreach ($files as $file) {
-                                                                    // Legge il file dal disco e lo aggiunge allo ZIP
-                                                                    $fileContent = Storage::disk($disk)->get($file);
-                                                                    $zip->addFromString(basename($file), $fileContent);
+                                                                    if ($file->isFile()) {
+                                                                        $originalName = $file->getFilename();
+                                                                        $filenameOnly = pathinfo($originalName, PATHINFO_FILENAME);
+                                                                        $fileExtension = $file->getExtension();
+
+                                                                        $finalName = $originalName;
+                                                                        $counter = 1;
+
+                                                                        // Anti-sovrascrittura
+                                                                        while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                                                                            $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
+                                                                            $counter++;
+                                                                        }
+
+                                                                        $finalPath = $extractSubPath . '/' . $finalName;
+
+                                                                        // Upload sul disco target usando Stream
+                                                                        $stream = fopen($file->getPathname(), 'r');
+                                                                        $targetDisk->put($finalPath, $stream);
+                                                                        if (is_resource($stream)) fclose($stream);
+
+                                                                        $processedFiles++;
+                                                                    }
                                                                 }
+                                                            }
+                                                        } catch (\Exception $e) {
+                                                            \Illuminate\Support\Facades\Log::error("Errore estrazione ZIP: " . $e->getMessage());
 
-                                                                $zip->close();
-                                                                readfile($path);
-                                                                unlink($path);
-                                                            }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
-                                                        })
-                                                )
-                                                ->content(function ($record) {
-                                                    if (!$record || !$record->attachment_path) {
-                                                        return 'Nessun allegato.';
+                                                            Notification::make()
+                                                                ->title('Errore durante l\'estrazione dello ZIP')
+                                                                ->body($e->getMessage())
+                                                                ->danger()
+                                                                ->send();
+                                                        } finally {
+                                                            // Pulizia
+                                                            self::deleteDirectory($tempExtractDir);
+                                                            if (file_exists($tempZipFile)) @unlink($tempZipFile);
+                                                        }
+
+                                                        // Cancella lo ZIP temporaneo
+                                                        $sourceDisk->delete($filePath);
+
+                                                    } else {
+                                                        // File normale: copia diretta con anti-sovrascrittura
+                                                        $filenameOnly = pathinfo($filename, PATHINFO_FILENAME);
+                                                        $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
+
+                                                        $finalName = $filename;
+                                                        $counter = 1;
+
+                                                        while ($targetDisk->exists($extractSubPath . '/' . $finalName)) {
+                                                            $finalName = $filenameOnly . '_' . $counter . '.' . $fileExtension;
+                                                            $counter++;
+                                                        }
+
+                                                        $finalPath = $extractSubPath . '/' . $finalName;
+
+                                                        // Copia il file usando Stream per compatibilità S3
+                                                        $stream = $sourceDisk->readStream($filePath);
+                                                        $targetDisk->put($finalPath, $stream);
+                                                        if (is_resource($stream)) fclose($stream);
+
+                                                        // Cancella il file temporaneo
+                                                        $sourceDisk->delete($filePath);
+
+                                                        $processedFiles++;
                                                     }
+                                                }
 
-                                                    // dd([
-                                                    //     'path' => $record->attachment_path,
-                                                    //     'default_disk' => config('filesystems.default'),
-                                                    //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
-                                                    //     'files_on_default' => Storage::files($record->attachment_path),
-                                                    //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
-                                                    // ]);
+                                                Notification::make()
+                                                    ->title('Caricamento completato')
+                                                    ->body($processedFiles . ' file caricati con successo.')
+                                                    ->success()
+                                                    ->send();
+                                            }),
 
-                                                    $disk = config('filesystems.default', 'public');
+                                        Action::make('deleteFile')
+                                            ->label('Elimina allegati')
+                                            ->icon('fluentui-document-dismiss-20-o')
+                                            ->color('warning')
+                                            ->visible(function($record) {
+                                                    return $record->attachment_path
+                                                            && Storage::exists($record->attachment_path)
+                                                            && !empty(Storage::files($record->attachment_path));
+                                                }
+                                            )
+                                            ->form([
+                                                Select::make('file_to_delete')
+                                                    ->label('Seleziona gli allegati da eliminare')
+                                                    ->options(function ($record) {
+                                                        if (!$record || !$record->attachment_path) {
+                                                            return [];
+                                                        }
+                                                        $files = Storage::files($record->attachment_path);
+                                                        return collect($files)->mapWithKeys(function ($file) {
+                                                            return [$file => basename($file)];
+                                                        })->toArray();
+                                                    })
+                                                    ->required()
+                                                    ->native(false)
+                                                    ->searchable(),
+                                            ])
+                                            ->requiresConfirmation()
+                                            ->modalHeading('Elimina allegato')
+                                            ->modalDescription('Questa azione non può essere annullata.')
+                                            ->modalSubmitActionLabel('Elimina')
+                                            ->modalCancelActionLabel('Annulla')
+                                            ->action(function (array $data) {
+                                                $file = $data['file_to_delete'];
 
-                                                    // Usa allFiles per prendere anche file in sottocartelle
-                                                    $files = Storage::disk($disk)->allFiles($record->attachment_path);
+                                                if (Storage::exists($file)) {
+                                                    Storage::delete($file);
 
-                                                    if (empty($files)) {
-                                                        return 'Nessuna cartella allegati trovata.';
+                                                    Notification::make()
+                                                        ->title('File eliminato con successo')
+                                                        ->body('Il file ' . basename($file) . ' è stato eliminato.')
+                                                        ->success()
+                                                        ->send();
+                                                } else {
+                                                    Notification::make()
+                                                        ->title('File non trovato')
+                                                        ->warning()
+                                                        ->send();
+                                                }
+                                            }),
+                                        Action::make('delete')
+                                            ->label('Svuota allegati')
+                                            ->icon('fluentui-document-multiple-prohibited-20-o')
+                                            ->color('danger')
+                                            ->requiresConfirmation()
+                                            ->action(function ($record) {
+                                                $directory = $record->attachment_path;
+                                                $disk = config('filesystems.default', 'public');
+
+                                                if (!$directory || !Storage::disk($disk)->exists($directory)) {
+                                                    return;
+                                                }
+
+                                                // 1. Recupera tutti i file all'interno della cartella
+                                                $files = Storage::disk($disk)->allFiles($directory);
+
+                                                // 2. Elimina i file
+                                                Storage::disk($disk)->delete($files);
+
+                                                // 3. Se ci sono sottocartelle, allFiles non le elimina.
+                                                // Per eliminare anche le sottocartelle ma mantenere la "root":
+                                                $directories = Storage::disk($disk)->allDirectories($directory);
+                                                foreach ($directories as $subDir) {
+                                                    Storage::disk($disk)->deleteDirectory($subDir);
+                                                }
+
+                                                Notification::make()
+                                                    ->title('Cartella svuotata con successo')
+                                                    ->success()
+                                                    ->send();
+
+                                                return redirect(request()->header('Referer'));
+                                            }),
+                                ])
+                                ->schema([
+                                    Placeholder::make('attachments')
+                                        ->key('attachments_list')
+                                        ->label('')
+                                        ->hintAction(
+                                            Action::make('downloadAll')
+                                                ->label('Scarica tutti (ZIP)')
+                                                ->icon('heroicon-o-arrow-down-tray')
+                                                ->action(function ($record) {
+                                                    $services = '';
+                                                    for($i = 0; $i < count($record->serviceTypes); $i++) {
+                                                        if($i != 0) $services .= ' ';
+                                                        $services .= $record->serviceTypes[$i]->name;
                                                     }
+                                                    return response()->streamDownload(function () use ($record) {
+                                                        $zip = new ZipArchive();
+                                                        $path = tempnam(sys_get_temp_dir(), 'zip');
 
-                                                    return new \Illuminate\Support\HtmlString(
-                                                        collect($files)
-                                                            ->sort()
-                                                            ->map(function ($file) use ($disk) {
-                                                                $name = basename($file);
+                                                        $zip->open($path, ZipArchive::CREATE);
 
-                                                                // Genera URL in base al tipo di disco
-                                                                // try {
-                                                                //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
-                                                                //         // Per S3 usa temporaryUrl
-                                                                //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
-                                                                //     } else {
-                                                                //         // Per locale usa url normale
-                                                                //         $url = Storage::disk($disk)->url($file);
-                                                                //     }
-                                                                // } catch (\Exception $e) {
-                                                                //     // Fallback se temporaryUrl non è supportato
-                                                                //     $url = Storage::disk($disk)->url($file);
-                                                                // }
+                                                        $disk = config('filesystems.default', 'public');
+                                                        $files = Storage::disk($disk)->allFiles($record->attachment_path);
 
-                                                                $url = Storage::temporaryUrl($file, now()->addMinutes(5));
+                                                        foreach ($files as $file) {
+                                                            // Legge il file dal disco e lo aggiunge allo ZIP
+                                                            $fileContent = Storage::disk($disk)->get($file);
+                                                            $zip->addFromString(basename($file), $fileContent);
+                                                        }
 
-                                                                return <<<HTML
-                                                                <div class="flex items-center gap-3 py-1">
-                                                                    <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
-                                                                        {$name}
-                                                                    </a>
-                                                                </div>
-                                                                HTML;
-                                                            })
-                                                            ->implode('')
-                                                    );
+                                                        $zip->close();
+                                                        readfile($path);
+                                                        unlink($path);
+                                                    }, "Allegati gara {$record->client->name} - {$record->cig} ({$services}).zip");
                                                 })
-                                                ->extraAttributes(['style' => 'line-height:1.8'])
-                                                ->columnSpanFull(),
-                                        ])
-                                        ->columnSpan(['sm' => 'full', 'md' => 'full']),
-
-                                    // IN MODIFICA
-                                    // FileUpload::make('restore_zip')
-                                    //     ->label('Carica ZIP con allegati')
-                                    //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                                    //     ->directory('biddings-temp')
-                                    //     ->dehydrated(false)
-                                    //     ->visible(fn ($record) =>
-                                    //         $record &&
-                                    //         $record->attachment_path &&
-                                    //         collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
-                                    //     )
-                                    //     ->columnSpanFull(),
-
-                                    FileUpload::make('attachments')
-                                        ->label('Carica allegati')
-                                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
-                                        ->multiple()
-                                        ->maxSize(102400)
-                                        ->directory('biddings-temp')
-                                        ->preserveFilenames()
-                                        ->getUploadedFileNameForStorageUsing(function ($file) {
-                                            $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                                            $extension = $file->getClientOriginalExtension();
-
-                                            $finalName = $filename . '.' . $extension;
-                                            $counter = 1;
-
-                                            $disk = config('filament.default_filesystem_disk', 'public');
-                                            while (Storage::disk($disk)->exists('biddings-temp/' . $finalName)) {
-                                                $finalName = $filename . '_' . $counter . '.' . $extension;
-                                                $counter++;
+                                        )
+                                        ->content(function ($record) {
+                                            if (!$record || !$record->attachment_path) {
+                                                return 'Nessun allegato.';
                                             }
 
-                                            return $finalName;
+                                            // dd([
+                                            //     'path' => $record->attachment_path,
+                                            //     'default_disk' => config('filesystems.default'),
+                                            //     'files_on_public' => Storage::disk('public')->files($record->attachment_path),
+                                            //     'files_on_default' => Storage::files($record->attachment_path),
+                                            //     'exists_public' => Storage::disk('public')->exists($record->attachment_path),
+                                            // ]);
+
+                                            $disk = config('filesystems.default', 'public');
+
+                                            // Usa allFiles per prendere anche file in sottocartelle
+                                            $files = Storage::disk($disk)->allFiles($record->attachment_path);
+
+                                            if (empty($files)) {
+                                                return 'Nessuna cartella allegati trovata.';
+                                            }
+
+                                            return new \Illuminate\Support\HtmlString(
+                                                collect($files)
+                                                    ->sort()
+                                                    ->map(function ($file) use ($disk) {
+                                                        $name = basename($file);
+
+                                                        // Genera URL in base al tipo di disco
+                                                        // try {
+                                                        //     if ($disk === 's3' || config("filesystems.disks.{$disk}.driver") === 's3') {
+                                                        //         // Per S3 usa temporaryUrl
+                                                        //         $url = Storage::disk($disk)->temporaryUrl($file, now()->addMinutes(5));
+                                                        //     } else {
+                                                        //         // Per locale usa url normale
+                                                        //         $url = Storage::disk($disk)->url($file);
+                                                        //     }
+                                                        // } catch (\Exception $e) {
+                                                        //     // Fallback se temporaryUrl non è supportato
+                                                        //     $url = Storage::disk($disk)->url($file);
+                                                        // }
+
+                                                        $url = Storage::temporaryUrl($file, now()->addMinutes(5));
+
+                                                        return <<<HTML
+                                                        <div class="flex items-center gap-3 py-1">
+                                                            <a href="{$url}" target="_blank" download class="text-primary-600 hover:underline font-medium">
+                                                                {$name}
+                                                            </a>
+                                                        </div>
+                                                        HTML;
+                                                    })
+                                                    ->implode('')
+                                            );
                                         })
-                                        ->dehydrated(false)
-                                        ->visible(fn ($livewire, $record) =>
-                                            $livewire instanceof \Filament\Resources\Pages\CreateRecord ||
-                                            !$record->attachment_path ||
-                                            collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
-                                        )
-                                        ->helperText('Si possono caricare file singoli o archivi ZIP. Gli ZIP verranno estratti automaticamente.')
+                                        ->extraAttributes(['style' => 'line-height:1.8'])
                                         ->columnSpanFull(),
-                                ]),
+                                ])
+                                ->columnSpan(['sm' => 'full', 'md' => 'full']),
+
+                            // IN MODIFICA
+                            // FileUpload::make('restore_zip')
+                            //     ->label('Carica ZIP con allegati')
+                            //     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                            //     ->directory('biddings-temp')
+                            //     ->dehydrated(false)
+                            //     ->visible(fn ($record) =>
+                            //         $record &&
+                            //         $record->attachment_path &&
+                            //         collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                            //     )
+                            //     ->columnSpanFull(),
+
+                            FileUpload::make('attachments')
+                                ->label('Carica allegati')
+                                // ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed', 'image/*', 'application/pdf', '*/*'])
+                                ->acceptedFileTypes([
+                                    'application/zip', 
+                                    'application/x-zip-compressed', 
+                                    'image/*', 
+                                    'application/pdf', 
+                                    
+                                    // --- WORD ---
+                                    'application/msword',                                                       // .doc
+                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
+                                    
+                                    // --- EXCEL ---
+                                    'application/vnd.ms-excel',                                                 // .xls
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',        // .xlsx
+                                    
+                                    '*/*' // Nota su questo sotto!
+                                ])
+                                ->multiple()
+                                ->maxSize(102400)
+                                ->directory('biddings-temp')
+                                ->preserveFilenames()
+                                ->getUploadedFileNameForStorageUsing(function ($file) {
+                                    $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                                    $extension = $file->getClientOriginalExtension();
+
+                                    $finalName = $filename . '.' . $extension;
+                                    $counter = 1;
+
+                                    $disk = config('filament.default_filesystem_disk', 'public');
+                                    while (Storage::disk($disk)->exists('biddings-temp/' . $finalName)) {
+                                        $finalName = $filename . '_' . $counter . '.' . $extension;
+                                        $counter++;
+                                    }
+
+                                    return $finalName;
+                                })
+                                ->dehydrated(false)
+                                ->visible(fn ($livewire, $record) =>
+                                    $livewire instanceof \Filament\Resources\Pages\CreateRecord ||
+                                    !$record->attachment_path ||
+                                    collect(Storage::disk(config('filesystems.default', 'public'))->allFiles($record->attachment_path))->isEmpty()
+                                )
+                                ->helperText('Si possono caricare file singoli o archivi ZIP. Gli ZIP verranno estratti automaticamente.')
+                                ->columnSpanFull(),
                         ]),
 
                         // Tab::make('Dati Appalto')
