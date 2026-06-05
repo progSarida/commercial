@@ -501,10 +501,19 @@ class BiddingResource extends Resource
                                                         'application/x-zip-compressed', 
                                                         'image/*', 
                                                         'application/pdf', 
+                                    
+                                                        // --- XML ---
+                                                        'application/xml',
+                                                        'text/xml',
+                                                        
+                                                        // --- P7M (Firme Digitali / Fatture Elettroniche) ---
+                                                        'application/pkcs7-mime',
+                                                        'application/x-pkcs7-mime',
+                                                        'application/pkcs7-signature',
                                                         
                                                         // --- WORD ---
                                                         'application/msword',                                                       // .doc
-                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',   // .docx
+                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // .docx
                                                         
                                                         // --- EXCEL ---
                                                         'application/vnd.ms-excel',                                                 // .xls
@@ -842,7 +851,16 @@ class BiddingResource extends Resource
                                     'application/zip', 
                                     'application/x-zip-compressed', 
                                     'image/*', 
-                                    'application/pdf', 
+                                    'application/pdf',
+                                    
+                                    // --- XML ---
+                                    'application/xml',
+                                    'text/xml',
+                                    
+                                    // --- P7M (Firme Digitali / Fatture Elettroniche) ---
+                                    'application/pkcs7-mime',
+                                    'application/x-pkcs7-mime',
+                                    'application/pkcs7-signature',
                                     
                                     // --- WORD ---
                                     'application/msword',                                                       // .doc
