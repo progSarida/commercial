@@ -4,12 +4,12 @@ namespace App\Filament\User\Resources\BiddingResource\Pages;
 
 use App\Filament\User\Resources\BiddingResource;
 use App\Models\Bidding;
-use DB;
 use Filament\Actions;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Support\Enums\MaxWidth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
@@ -44,27 +44,45 @@ class CreateBidding extends CreateRecord
             }
         }
 
-        $exists = $query->withCount('serviceTypes')
-            ->having('service_types_count', '=', count($serviceTypeIds))
-            ->get()
+        // TUTTI I SERVIZI SONO UGUALI
+        // $exists = $query->withCount('serviceTypes')
+        //     ->having('service_types_count', '=', count($serviceTypeIds))
+        //     ->get()
+        //     ->filter(function ($bidding) use ($serviceTypeIds) {
+        //         $currentIds = $bidding->serviceTypes()->pluck('service_type_id')->toArray();
+        //         sort($currentIds);
+        //         return $currentIds == $serviceTypeIds;
+        //     })
+        //     ->first();
+
+        // ALMENO UN SERVIZIO E' UGUALE
+        $exists = $query->get()
             ->filter(function ($bidding) use ($serviceTypeIds) {
                 $currentIds = $bidding->serviceTypes()->pluck('service_type_id')->toArray();
-                sort($currentIds);
-                return $currentIds == $serviceTypeIds;
+                
+                // 2. Calcoliamo l'intersezione tra i due array
+                $intersection = array_intersect($currentIds, $serviceTypeIds);
+                
+                // 3. Ritorna true se l'intersezione non è vuota (quindi almeno un ID coincide)
+                return !empty($intersection);
             })
             ->first();
 
         if ($exists) {
             Notification::make()
                 ->title('Gara già esistente')
-                ->body("Esiste già una gara (ID: {$exists->id}) con gli stessi dati.")
+                ->body("Esiste già una gara (ID: {$exists->id}) con dati simili.")
                 ->warning()
                 ->persistent()
                 ->actions([
+                    Action::make('view')
+                        ->label('Vedi Gara')
+                        ->color('success')
+                        ->url(BiddingResource::getUrl('edit', ['record' => $exists]))
+                        ->openUrlInNewTab(),
                     Action::make('force')
                         ->label('Forza salvataggio')
                         ->color('danger')
-                        ->icon('heroicon-o-arrow-right')
                         ->dispatch('forceCreateEvent'),
                     Action::make('cancel')
                         ->label('Annulla')
