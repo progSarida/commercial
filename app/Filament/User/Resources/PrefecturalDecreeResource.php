@@ -1,0 +1,266 @@
+<?php
+
+namespace App\Filament\User\Resources;
+
+use App\Filament\User\Resources\PrefecturalDecreeResource\Pages;
+use App\Filament\User\Resources\PrefecturalDecreeResource\RelationManagers;
+use App\Models\City;
+use App\Models\Client;
+use App\Models\PrefecturalDecree;
+use App\Models\Province;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
+
+class PrefecturalDecreeResource extends Resource
+{
+    protected static ?string $model = PrefecturalDecree::class;
+
+    public static ?string $pluralModelLabel = 'Decreti Prefettizi';
+
+    public static ?string $modelLabel = 'Decretto Prefettiziale';
+
+    protected static ?string $navigationIcon = 'heroicon-s-document-text';
+
+    protected static ?string $navigationGroup = 'Gestione';
+
+    protected static ?int $navigationSort = 2;
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->columns(3)
+            ->schema([
+                // 1. Relazione standard BelongsTo con Province
+                Forms\Components\Select::make('province_id')
+                    ->relationship('province', 'name') // Cerca automaticamente sulla relazione
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->live()
+                    ->columnSpan(1),
+
+                // 2. Relazione BelongsToMany con Cities (Comuni)
+                Forms\Components\Select::make('cities')
+                    ->label('Comuni') 
+                    ->relationship(
+                        name: 'cities', 
+                        titleAttribute: 'name',
+                        // Usiamo una query personalizzata per la relazione
+                        modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
+                            ->when(
+                                $get('province_id'),
+                                fn ($query, $provinceId) => $query->where('province_id', $provinceId),
+                                fn ($query) => $query->whereRaw('1 = 0') // Se non c'è una provincia selezionata, non mostra nulla
+                            )
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->columnSpan(2),
+
+                Forms\Components\Textarea::make('note')
+                    ->label('Note')
+                    ->columnSpanFull(),
+
+                // // 3. Relazione BelongsToMany con Clients (Clienti)
+                // Forms\Components\Select::make('clients')
+                //     ->relationship('clients', 'name') // Mappa la relazione belongsToMany() del modello
+                //     ->multiple()
+                //     ->searchable()
+                //     ->preload(),
+
+                // Forms\Components\Placeholder::make('attachment_current')
+                //     ->label('File attuale')
+                //     ->visible(fn ($record) => $record && $record->attachment_path)
+                //     ->content(function ($record) {
+                //         if (!$record || !$record->attachment_path) return '';
+
+                //         $disk = config('filesystems.default', 'public');
+                //         $storage = \Illuminate\Support\Facades\Storage::disk($disk);
+
+                //         try {
+                //             $url = $storage->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+                //         } catch (\Exception $e) {
+                //             // Fallback per dischi che non supportano temporaryUrl (es. locale)
+                //             $url = $storage->url($record->attachment_path);
+                //         }
+
+                //         $name = basename($record->attachment_path);
+
+                //         return new \Illuminate\Support\HtmlString(
+                //             "<a href=\"{$url}\" target=\"_blank\" class=\"text-primary-600 hover:underline font-medium\">📄 {$name}</a>"
+                //         );
+                //     }),
+
+                Forms\Components\FileUpload::make('attachment_upload')
+                    ->label(fn ($record) => $record && $record->attachment_path ? 'Sostituisci decreto' : 'Carica decreto')
+                    ->hintAction(
+                        Forms\Components\Actions\Action::make('viewCurrentAttachment')
+                            ->label('Visualizza decreto')
+                            ->icon('heroicon-o-document-text')
+                            ->color('primary')
+                            ->visible(fn ($record) => $record && $record->attachment_path)
+                            ->url(function ($record) {
+                                $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default', 'public'));
+                                try {
+                                    return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+                                } catch (\Exception $e) {
+                                    return $disk->url($record->attachment_path);
+                                }
+                            })
+                            ->openUrlInNewTab()
+                    )
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->directory('temp_uploads')
+                    ->preserveFilenames()
+                    ->maxSize(20480) // 20MB
+                    ->dehydrated(false) // gestito manualmente in afterCreate/afterSave, non va nel record via mass-fill
+                    ->helperText('Caricare un nuovo file sostituirà quello esistente.')
+                    ->columnSpanFull(),
+
+                // 4. Sezione Dinamica per le Strade (Relazione HasMany)
+                Forms\Components\Section::make('Strade Interessate')
+                    ->description('Aggiungi le strade coinvolte in questo decreto')
+                    ->collapsed(fn($record) => $record && $record->streets()->count() > 0) // Collassa se ci sono già strade
+                    ->schema([
+                        Repeater::make('streets')
+                            ->relationship('streets')
+                            ->label('')
+                            ->columns(3)
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label('Nome Strada / Via')
+                                    ->placeholder('Es. Via Roma o S.S. 16')
+                                    ->required(),
+                                Select::make('city_id')
+                                    ->label('Comune della strada')
+                                    ->relationship(
+                                        name: 'city', 
+                                        titleAttribute: 'name',
+                                        // Filtriamo la query basandoci sui comuni selezionati sopra
+                                        modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
+                                            ->whereIn(
+                                                'id', 
+                                                // '../../cities' permette di risalire fuori dal repeater per leggere il campo 'cities'
+                                                $get('../../cities') ?? [] 
+                                            )
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                TextInput::make('note')
+                                    ->label('Note / Tratto interessato')
+                                    ->placeholder('Es. dal km 10 al km 15 o intero tratto'),
+                            ])
+                            ->addActionLabel('Aggiungi Strada')
+                    ])->columnSpanFull(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('province.name')
+                    ->label('Provincia')
+                    ->sortable()
+                    ->searchable(),
+
+                // Mostra l'elenco dei comuni separati da virgola in automatico e supporta i badge
+                Tables\Columns\TextColumn::make('cities.name')
+                    ->label('Comuni')
+                    ->badge() // Opzionale: rende i comuni dei comodi "tag" visivi
+                    ->separator(', '),
+
+                // Conta quante strade ci sono in quel decreto direttamente in tabella
+                Tables\Columns\TextColumn::make('streets_count')
+                    ->label('N. Strade')
+                    ->counts('streets')
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                // Tables\Columns\TextColumn::make('attachment_path')
+                //     ->label('Decreto')
+                //     ->formatStateUsing(fn ($state) => $state ? '📄 PDF' : '—')
+                //     ->color(fn ($state) => $state ? 'primary' : 'gray')
+                //     ->url(function ($record) {
+                //         if (!$record->attachment_path) return null;
+                //         $disk = Storage::disk(config('filesystems.default', 'public'));
+                //         try {
+                //             return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+                //         } catch (\Exception $e) {
+                //             return $disk->url($record->attachment_path);
+                //         }
+                //     })
+                //     ->openUrlInNewTab(),
+            ])
+            ->filters([
+                SelectFilter::make('province_id')->label('Provincia')
+                    ->relationship(name: 'province', titleAttribute: 'name')
+                    ->searchable()
+                    ->preload()->optionsLimit(5),
+                SelectFilter::make('clients')
+                    ->label('Clienti')
+                    ->relationship(name: 'clients', titleAttribute: 'name') // Usa la relazione belongsToMany del modello
+                    ->multiple() // Abilita la selezione multipla
+                    ->searchable() // Permette di cercare tra i clienti se sono molti
+                    ->preload() // Carica i primi record per velocizzare l'interfaccia
+            ])
+            ->actions([
+                Tables\Actions\Action::make('viewAttachment')
+                    ->label('')
+                    ->tooltip('Visualizza decreto')
+                    ->icon('hugeicons-pdf-02')
+                    ->size('xl')
+                    ->color('primary')
+                    ->visible(fn ($record) => filled($record->attachment_path))
+                    ->url(function ($record) {
+                        $disk = Storage::disk(config('filesystems.default', 'public'));
+                        try {
+                            return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+                        } catch (\Exception $e) {
+                            return $disk->url($record->attachment_path);
+                        }
+                    })
+                    ->openUrlInNewTab(),
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListPrefecturalDecrees::route('/'),
+            'create' => Pages\CreatePrefecturalDecree::route('/create'),
+            'view' => Pages\ViewPrefecturalDecree::route('/{record}'),
+            'edit' => Pages\EditPrefecturalDecree::route('/{record}/edit'),
+        ];
+    }
+}

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ClientType;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Client extends Model
 {
@@ -65,6 +66,11 @@ class Client extends Model
     public function referents()
     {
         return $this->hasMany(Referent::class);
+    }
+
+    public function prefecturalDecrees(): BelongsToMany
+    {
+        return $this->belongsToMany(PrefecturalDecree::class, 'client_prefectural_decree');
     }
 
     protected static function booted()

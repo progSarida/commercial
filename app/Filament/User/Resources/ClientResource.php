@@ -8,11 +8,13 @@ use App\Filament\User\Resources\ClientResource\RelationManagers;
 use App\Filament\User\Resources\ClientResource\RelationManagers\ClientServicesRelationManager;
 use App\Filament\User\Resources\ClientResource\RelationManagers\ContactsRelationManager;
 use App\Filament\User\Resources\ClientResource\RelationManagers\EstimatesRelationManager;
+use App\Filament\User\Resources\ClientResource\RelationManagers\PrefecturalDecreesRelationManager;
 use App\Models\City;
 use App\Models\Client;
 use App\Models\Province;
 use App\Models\State;
 use Filament\Forms;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -22,6 +24,7 @@ use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -274,6 +277,27 @@ class ClientResource extends Resource
                     ->relationship(name: 'province', titleAttribute: 'name')
                     ->searchable()
                     ->preload()->optionsLimit(5),
+                Filter::make('has_decrees')
+                    ->label('Mostra solo clienti con decreti prefettizi')
+                    ->form([
+                        Checkbox::make('checked')
+                            ->label('Clienti con decreti')
+                            ->default(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        // Se la checkbox è spuntata, filtra i record
+                        if ($data['checked'] ?? false) {
+                            return $query->whereHas('prefecturalDecrees');
+                        }
+                        
+                        return $query;
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if ($data['checked']) {
+                            return "Clienti associati a decreti prefettizi";
+                        }
+                        return null;
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -293,6 +317,7 @@ class ClientResource extends Resource
             ClientServicesRelationManager::class,
             ContactsRelationManager::class,
             EstimatesRelationManager::class,
+            PrefecturalDecreesRelationManager::class,
         ];
     }
 
