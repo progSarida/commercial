@@ -54,6 +54,12 @@ class ClientServicesRelationManager extends RelationManager
                 TextInput::make('phone')
                     ->label('Telefono')
                     ->tel()
+                    ->suffixAction(
+                        Forms\Components\Actions\Action::make('call')
+                            ->icon('heroicon-m-phone')
+                            ->color('success')
+                            ->url(fn ($state) => $state ? "tel:{$state}" : null)
+                    )
                     ->required()
                     ->columnSpan(3),
                 TextInput::make('email')

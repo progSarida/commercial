@@ -31,7 +31,7 @@ use Jenssegers\Agent\Agent;
 class ClientResource extends Resource
 {
     protected static ?string $model = Client::class;
-    public static ?string $pluralModelLabel = 'Elenco clienti';
+    public static ?string $pluralModelLabel = 'Clienti';
     public static ?string $modelLabel = 'Cliente';
     protected static ?string $navigationIcon = 'fas-users';
     protected static ?string $navigationGroup = 'Clienti';
@@ -150,7 +150,13 @@ class ClientResource extends Resource
 
                                 TextInput::make('address')->label('Indirizzo')->columnSpan(6),
                                 TextInput::make('civic')->label('Civico')->columnSpan(2),
-                                TextInput::make('phone')->tel()->label('Telefono')->columnSpan(3),
+                                TextInput::make('phone')->tel()->label('Telefono')->tel()
+                                            ->suffixAction(
+                                                Forms\Components\Actions\Action::make('call')
+                                                    ->icon('heroicon-m-phone')
+                                                    ->color('success')
+                                                    ->url(fn ($state) => $state ? "tel:{$state}" : null)
+                                            )->columnSpan(3),
                                 TextInput::make('email')->email()->label('Email')->columnSpan(5),
                                 TextInput::make('site')->label('Sito')->columnSpan(4),
                                 Textarea::make('note')->label('Note')->columnSpanFull(),
@@ -165,8 +171,20 @@ class ClientResource extends Resource
                                     ->schema([
                                         Forms\Components\TextInput::make('name')->label('Nome')->required()->columnSpan(4),
                                         Forms\Components\TextInput::make('title')->label('Qualifica')->columnSpan(4),
-                                        Forms\Components\TextInput::make('phone')->label('Telefono')->columnSpan(2),
-                                        Forms\Components\TextInput::make('smart')->label('Cellulare')->columnSpan(2),
+                                        Forms\Components\TextInput::make('phone')->label('Telefono')->tel()
+                                            ->suffixAction(
+                                                Forms\Components\Actions\Action::make('call')
+                                                    ->icon('heroicon-m-phone')
+                                                    ->color('success')
+                                                    ->url(fn ($state) => $state ? "tel:{$state}" : null)
+                                            )->columnSpan(2),
+                                        Forms\Components\TextInput::make('smart')->label('Cellulare')->tel()
+                                            ->suffixAction(
+                                                Forms\Components\Actions\Action::make('call')
+                                                    ->icon('heroicon-m-phone')
+                                                    ->color('success')
+                                                    ->url(fn ($state) => $state ? "tel:{$state}" : null)
+                                            )->columnSpan(2),
                                         Forms\Components\TextInput::make('email')->email()->columnSpanFull(),
                                         Forms\Components\Textarea::make('note')->rows(2)->columnSpanFull(),
                                     ])
