@@ -7,6 +7,7 @@ use App\Filament\User\Resources\ClientResource\Pages;
 use App\Filament\User\Resources\ClientResource\RelationManagers;
 use App\Filament\User\Resources\ClientResource\RelationManagers\ClientServicesRelationManager;
 use App\Filament\User\Resources\ClientResource\RelationManagers\ContactsRelationManager;
+use App\Filament\User\Resources\ClientResource\RelationManagers\EstimatesRelationManager;
 use App\Models\City;
 use App\Models\Client;
 use App\Models\Province;
@@ -273,6 +274,7 @@ class ClientResource extends Resource
         return [
             ClientServicesRelationManager::class,
             ContactsRelationManager::class,
+            EstimatesRelationManager::class,
         ];
     }
 

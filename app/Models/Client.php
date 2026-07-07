@@ -52,6 +52,11 @@ class Client extends Model
         return $this->hasMany(Contact::class);
     }
 
+    public function estimates()
+    {
+        return $this->hasMany(Estimate::class);
+    }
+
     public function clientServices()
     {
         return $this->hasMany(ClientService::class);

@@ -107,6 +107,22 @@ class Contact extends Model
                 if($estimate){
                     $estimate->delete();
                 }
+            } else {
+                $estimate = Estimate::where('contact_id', $contact->id)->first();
+                if(!$estimate){
+                    Estimate::create([
+                        'client_id' => $contact->client_id,
+                        'contact_type' => $contact->contact_type,
+                        'contact_id' => $contact->id,
+                        'date' => $contact->date,
+                        'request_user_id' => Auth::user()->id,
+                        'done' => 0,
+                        'done_user_id' => null,
+                        'path' => null,
+                        'estimate_state' => null,
+                        'state_user_id' => null,
+                    ]);
+                }
             }
         });
 
