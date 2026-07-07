@@ -10,6 +10,7 @@ class ServiceType extends Model
         'name',
         'description',
         'position',
+        'ref',
         'mandatory'
     ];
 
