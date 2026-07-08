@@ -119,6 +119,17 @@ class CallResource extends Resource
                             ->action(fn (array $data, $record) => CallResource::saveClient($data, $record->client))
                     )
                     ->columnSpan(['sm' => 'full', 'md' => 20]),
+                DatePicker::make('date')
+                    ->label('Data')
+                    ->extraInputAttributes(['class' => 'text-center'])
+                    ->required(fn(Get $get) => $get('outcome_type'))
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
+                TimePicker::make('time')
+                    ->label('Orario')
+                    ->required(fn(Get $get) => $get('outcome_type'))
+                    ->seconds(false)
+                    ->displayFormat('H:i')
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('outcome_type')
                     ->label('Esito')
                     ->live()
@@ -135,17 +146,6 @@ class CallResource extends Resource
                         }
                     })
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
-                DatePicker::make('date')
-                    ->label('Data')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->required(fn(Get $get) => $get('outcome_type'))
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TimePicker::make('time')
-                    ->label('Orario')
-                    ->required(fn(Get $get) => $get('outcome_type'))
-                    ->seconds(false)
-                    ->displayFormat('H:i')
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 DatePicker::make('visit_date')
                     ->label('Data visita')
                     ->visible(fn (Get $get) => $get('outcome_type') === OutcomeType::VISIT->value)

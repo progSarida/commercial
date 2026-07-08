@@ -122,6 +122,17 @@ class VisitResource extends Resource
                             ->action(fn (array $data, $record) => CallResource::saveClient($data, $record->client))
                     )
                     ->columnSpan(['sm' => 'full', 'md' => 20]),
+                DatePicker::make('date')
+                    ->label('Data')
+                    ->extraInputAttributes(['class' => 'text-center'])
+                    ->required()
+                    ->columnSpan(['sm' => 'full', 'md' => 4]),
+                TimePicker::make('time')
+                    ->label('Orario')
+                    ->required()
+                    ->seconds(false)
+                    ->displayFormat('H:i')
+                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('outcome_type')
                     ->label('Esito')
                     // ->options(OutcomeType::class)
@@ -137,17 +148,6 @@ class VisitResource extends Resource
                         }
                     })
                     ->columnSpan(['sm' => 'full', 'md' => 5]),
-                DatePicker::make('date')
-                    ->label('Data')
-                    ->extraInputAttributes(['class' => 'text-center'])
-                    ->required()
-                    ->columnSpan(['sm' => 'full', 'md' => 4]),
-                TimePicker::make('time')
-                    ->label('Orario')
-                    ->required()
-                    ->seconds(false)
-                    ->displayFormat('H:i')
-                    ->columnSpan(['sm' => 'full', 'md' => 3]),
                 Select::make('services')
                     ->label('Servizi')
                     ->options(ServiceType::pluck('name', 'id'))
