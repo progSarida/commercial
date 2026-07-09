@@ -34,6 +34,139 @@ class PrefecturalDecreeResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    // public static function form(Form $form): Form
+    // {
+    //     return $form
+    //         ->columns(3)
+    //         ->schema([
+    //             // 1. Relazione standard BelongsTo con Province
+    //             Forms\Components\Select::make('province_id')
+    //                 ->relationship('province', 'name') // Cerca automaticamente sulla relazione
+    //                 ->searchable()
+    //                 ->preload()
+    //                 ->required()
+    //                 ->live()
+    //                 ->columnSpan(1),
+
+    //             // 2. Relazione BelongsToMany con Cities (Comuni)
+    //             Forms\Components\Select::make('cities')
+    //                 ->label('Comuni') 
+    //                 ->relationship(
+    //                     name: 'cities', 
+    //                     titleAttribute: 'name',
+    //                     // Usiamo una query personalizzata per la relazione
+    //                     modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
+    //                         ->when(
+    //                             $get('province_id'),
+    //                             fn ($query, $provinceId) => $query->where('province_id', $provinceId),
+    //                             fn ($query) => $query->whereRaw('1 = 0') // Se non c'è una provincia selezionata, non mostra nulla
+    //                         )
+    //                 )
+    //                 ->multiple()
+    //                 ->searchable()
+    //                 ->preload()
+    //                 ->required()
+    //                 ->columnSpan(2),
+
+    //             Forms\Components\Textarea::make('note')
+    //                 ->label('Note')
+    //                 ->columnSpanFull(),
+
+    //             // // 3. Relazione BelongsToMany con Clients (Clienti)
+    //             // Forms\Components\Select::make('clients')
+    //             //     ->relationship('clients', 'name') // Mappa la relazione belongsToMany() del modello
+    //             //     ->multiple()
+    //             //     ->searchable()
+    //             //     ->preload(),
+
+    //             // Forms\Components\Placeholder::make('attachment_current')
+    //             //     ->label('File attuale')
+    //             //     ->visible(fn ($record) => $record && $record->attachment_path)
+    //             //     ->content(function ($record) {
+    //             //         if (!$record || !$record->attachment_path) return '';
+
+    //             //         $disk = config('filesystems.default', 'public');
+    //             //         $storage = \Illuminate\Support\Facades\Storage::disk($disk);
+
+    //             //         try {
+    //             //             $url = $storage->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+    //             //         } catch (\Exception $e) {
+    //             //             // Fallback per dischi che non supportano temporaryUrl (es. locale)
+    //             //             $url = $storage->url($record->attachment_path);
+    //             //         }
+
+    //             //         $name = basename($record->attachment_path);
+
+    //             //         return new \Illuminate\Support\HtmlString(
+    //             //             "<a href=\"{$url}\" target=\"_blank\" class=\"text-primary-600 hover:underline font-medium\">📄 {$name}</a>"
+    //             //         );
+    //             //     }),
+
+    //             Forms\Components\FileUpload::make('attachment_upload')
+    //                 ->label(fn ($record) => $record && $record->attachment_path ? 'Sostituisci decreto' : 'Carica decreto')
+    //                 ->hintAction(
+    //                     Forms\Components\Actions\Action::make('viewCurrentAttachment')
+    //                         ->label('Visualizza decreto')
+    //                         ->icon('heroicon-o-document-text')
+    //                         ->color('primary')
+    //                         ->visible(fn ($record) => $record && $record->attachment_path)
+    //                         ->url(function ($record) {
+    //                             $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default', 'public'));
+    //                             try {
+    //                                 return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+    //                             } catch (\Exception $e) {
+    //                                 return $disk->url($record->attachment_path);
+    //                             }
+    //                         })
+    //                         ->openUrlInNewTab()
+    //                 )
+    //                 ->acceptedFileTypes(['application/pdf'])
+    //                 ->directory('temp_uploads')
+    //                 ->preserveFilenames()
+    //                 ->maxSize(20480) // 20MB
+    //                 ->dehydrated(false) // gestito manualmente in afterCreate/afterSave, non va nel record via mass-fill
+    //                 ->helperText('Caricare un nuovo file sostituirà quello esistente.')
+    //                 ->columnSpanFull(),
+
+    //             // 4. Sezione Dinamica per le Strade (Relazione HasMany)
+    //             Forms\Components\Section::make('Strade Interessate')
+    //                 ->description('Aggiungi le strade coinvolte in questo decreto')
+    //                 ->collapsed(fn($record) => $record && $record->streets()->count() > 0) // Collassa se ci sono già strade
+    //                 ->schema([
+    //                     Repeater::make('streets')
+    //                         ->relationship('streets')
+    //                         ->label('')
+    //                         ->columns(3)
+    //                         ->schema([
+    //                             TextInput::make('name')
+    //                                 ->label('Nome Strada / Via')
+    //                                 ->placeholder('Es. Via Roma o S.S. 16')
+    //                                 ->required(),
+    //                             Select::make('city_id')
+    //                                 ->label('Comune della strada')
+    //                                 ->relationship(
+    //                                     name: 'city', 
+    //                                     titleAttribute: 'name',
+    //                                     // Filtriamo la query basandoci sui comuni selezionati sopra
+    //                                     modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
+    //                                         ->whereIn(
+    //                                             'id', 
+    //                                             // '../../cities' permette di risalire fuori dal repeater per leggere il campo 'cities'
+    //                                             $get('../../cities') ?? [] 
+    //                                         )
+    //                                 )
+    //                                 ->searchable()
+    //                                 ->preload()
+    //                                 ->required(),
+    //                             TextInput::make('note')
+    //                                 ->label('Note / Tratto interessato')
+    //                                 ->placeholder('Es. dal km 10 al km 15 o intero tratto'),
+    //                         ])
+    //                         ->addActionLabel('Aggiungi Strada')
+    //                 ])->columnSpanFull(),
+    //         ]);
+    // }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -41,66 +174,36 @@ class PrefecturalDecreeResource extends Resource
             ->schema([
                 // 1. Relazione standard BelongsTo con Province
                 Forms\Components\Select::make('province_id')
-                    ->relationship('province', 'name') // Cerca automaticamente sulla relazione
+                    ->relationship('province', 'name')
                     ->searchable()
                     ->preload()
                     ->required()
                     ->live()
                     ->columnSpan(1),
 
-                // 2. Relazione BelongsToMany con Cities (Comuni)
+                // 2. Relazione BelongsToMany con Cities (Comuni) - Modificata per la reattività passiva
                 Forms\Components\Select::make('cities')
                     ->label('Comuni') 
                     ->relationship(
                         name: 'cities', 
                         titleAttribute: 'name',
-                        // Usiamo una query personalizzata per la relazione
+                        // Filtra comunque per provincia se selezionata, altrimenti mostra tutti o lascia libero
                         modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
                             ->when(
                                 $get('province_id'),
-                                fn ($query, $provinceId) => $query->where('province_id', $provinceId),
-                                fn ($query) => $query->whereRaw('1 = 0') // Se non c'è una provincia selezionata, non mostra nulla
+                                fn ($query, $provinceId) => $query->where('province_id', $provinceId)
                             )
                     )
                     ->multiple()
                     ->searchable()
                     ->preload()
                     ->required()
+                    ->live() // Manteniamo live per aggiornamenti consistenti
                     ->columnSpan(2),
 
                 Forms\Components\Textarea::make('note')
                     ->label('Note')
                     ->columnSpanFull(),
-
-                // // 3. Relazione BelongsToMany con Clients (Clienti)
-                // Forms\Components\Select::make('clients')
-                //     ->relationship('clients', 'name') // Mappa la relazione belongsToMany() del modello
-                //     ->multiple()
-                //     ->searchable()
-                //     ->preload(),
-
-                // Forms\Components\Placeholder::make('attachment_current')
-                //     ->label('File attuale')
-                //     ->visible(fn ($record) => $record && $record->attachment_path)
-                //     ->content(function ($record) {
-                //         if (!$record || !$record->attachment_path) return '';
-
-                //         $disk = config('filesystems.default', 'public');
-                //         $storage = \Illuminate\Support\Facades\Storage::disk($disk);
-
-                //         try {
-                //             $url = $storage->temporaryUrl($record->attachment_path, now()->addMinutes(5));
-                //         } catch (\Exception $e) {
-                //             // Fallback per dischi che non supportano temporaryUrl (es. locale)
-                //             $url = $storage->url($record->attachment_path);
-                //         }
-
-                //         $name = basename($record->attachment_path);
-
-                //         return new \Illuminate\Support\HtmlString(
-                //             "<a href=\"{$url}\" target=\"_blank\" class=\"text-primary-600 hover:underline font-medium\">📄 {$name}</a>"
-                //         );
-                //     }),
 
                 Forms\Components\FileUpload::make('attachment_upload')
                     ->label(fn ($record) => $record && $record->attachment_path ? 'Sostituisci decreto' : 'Carica decreto')
@@ -130,34 +233,64 @@ class PrefecturalDecreeResource extends Resource
 
                 // 4. Sezione Dinamica per le Strade (Relazione HasMany)
                 Forms\Components\Section::make('Strade Interessate')
-                    ->description('Aggiungi le strade coinvolte in questo decreto')
-                    ->collapsed(fn($record) => $record && $record->streets()->count() > 0) // Collassa se ci sono già strade
+                    // ->description('Aggiungi le strade coinvolte in questo decreto')
+                    ->collapsed(fn($record) => $record && $record->streets()->count() > 0)
                     ->schema([
                         Repeater::make('streets')
                             ->relationship('streets')
                             ->label('')
                             ->columns(3)
+                            ->live() // Rende l'intero repeater reattivo ai cambiamenti (aggiunte/rimozioni di righe)
+                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
+                                // Quando una riga viene eliminata o lo stato del repeater cambia, ricalcoliamo i comuni
+                                $streets = $get('streets') ?? [];
+                                $cityIds = collect($streets)
+                                    ->pluck('city_id')
+                                    ->filter()
+                                    ->unique()
+                                    ->values()
+                                    ->toArray();
+                                
+                                $set('cities', $cityIds);
+                            })
                             ->schema([
                                 TextInput::make('name')
                                     ->label('Nome Strada / Via')
                                     ->placeholder('Es. Via Roma o S.S. 16')
                                     ->required(),
+                                    
                                 Select::make('city_id')
                                     ->label('Comune della strada')
                                     ->relationship(
                                         name: 'city', 
                                         titleAttribute: 'name',
-                                        // Filtriamo la query basandoci sui comuni selezionati sopra
+                                        // Filtra le città del repeater solo per la provincia selezionata a monte
                                         modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
-                                            ->whereIn(
-                                                'id', 
-                                                // '../../cities' permette di risalire fuori dal repeater per leggere il campo 'cities'
-                                                $get('../../cities') ?? [] 
+                                            ->when(
+                                                $get('../../province_id'),
+                                                fn ($query, $provinceId) => $query->where('province_id', $provinceId)
                                             )
                                     )
                                     ->searchable()
                                     ->preload()
-                                    ->required(),
+                                    ->required()
+                                    ->live() // Rende la select interna reattiva appena cambia il valore
+                                    ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
+                                        // Risaliamo al livello superiore del form per recuperare lo stato attuale delle strade
+                                        $streets = $get('../../streets') ?? [];
+                                        
+                                        // Estraiamo tutti i city_id unici attualmente selezionati nel repeater
+                                        $cityIds = collect($streets)
+                                            ->pluck('city_id')
+                                            ->filter() // Rimuove eventuali valori nulli
+                                            ->unique()
+                                            ->values()
+                                            ->toArray();
+                                        
+                                        // Aggiorna lo stato della select multi-select 'cities' globale
+                                        $set('../../cities', $cityIds);
+                                    }),
+                                    
                                 TextInput::make('note')
                                     ->label('Note / Tratto interessato')
                                     ->placeholder('Es. dal km 10 al km 15 o intero tratto'),
