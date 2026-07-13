@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
@@ -205,31 +206,149 @@ class PrefecturalDecreeResource extends Resource
                     ->label('Note')
                     ->columnSpanFull(),
 
+                // Forms\Components\FileUpload::make('attachment_upload')
+                //     ->label(fn ($record) => $record && $record->attachment_path ? 'Sostituisci decreto' : 'Carica decreto')
+                //     ->hintAction(
+                //         Forms\Components\Actions\Action::make('viewCurrentAttachment')
+                //             ->label('Visualizza decreto')
+                //             ->icon('heroicon-o-document-text')
+                //             ->color('primary')
+                //             ->visible(fn ($record) => $record && $record->attachment_path)
+                //             ->url(function ($record) {
+                //                 $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default', 'public'));
+                //                 try {
+                //                     return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+                //                 } catch (\Exception $e) {
+                //                     return $disk->url($record->attachment_path);
+                //                 }
+                //             })
+                //             ->openUrlInNewTab()
+                //     )
+                //     ->acceptedFileTypes(['application/pdf'])
+                //     ->directory('temp_uploads')
+                //     ->preserveFilenames()
+                //     ->maxSize(20480) // 20MB
+                //     ->dehydrated(false) // gestito manualmente in afterCreate/afterSave, non va nel record via mass-fill
+                //     ->helperText('Caricare un nuovo file sostituirà quello esistente.')
+                //     ->columnSpanFull(),
+
                 Forms\Components\FileUpload::make('attachment_upload')
-                    ->label(fn ($record) => $record && $record->attachment_path ? 'Sostituisci decreto' : 'Carica decreto')
-                    ->hintAction(
-                        Forms\Components\Actions\Action::make('viewCurrentAttachment')
-                            ->label('Visualizza decreto')
-                            ->icon('heroicon-o-document-text')
-                            ->color('primary')
-                            ->visible(fn ($record) => $record && $record->attachment_path)
-                            ->url(function ($record) {
-                                $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default', 'public'));
-                                try {
-                                    return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
-                                } catch (\Exception $e) {
-                                    return $disk->url($record->attachment_path);
-                                }
-                            })
-                            ->openUrlInNewTab()
-                    )
+                    ->label('Carica decreto/i')
+                    ->multiple()
+                    ->reorderable()
                     ->acceptedFileTypes(['application/pdf'])
                     ->directory('temp_uploads')
                     ->preserveFilenames()
-                    ->maxSize(20480) // 20MB
-                    ->dehydrated(false) // gestito manualmente in afterCreate/afterSave, non va nel record via mass-fill
-                    ->helperText('Caricare un nuovo file sostituirà quello esistente.')
+                    ->maxSize(20480) // 20MB per file
+                    ->dehydrated(false) // gestito manualmente in afterCreate/afterSave
+                    ->helperText('Puoi caricare più file PDF. I nuovi file si aggiungono a quelli esistenti.')
                     ->columnSpanFull(),
+
+                Forms\Components\Section::make('Decreti caricati')
+                    ->collapsed(fn ($record) => $record && $record->attachment_path)
+                    ->visible(fn ($record) => $record && $record->attachment_path)
+                    ->schema([
+                        Forms\Components\Placeholder::make('current_attachments')
+                            ->label('')
+                            ->content(function ($record) {
+                                if (!$record || !$record->attachment_path) {
+                                    return 'Nessun decreto caricato.';
+                                }
+
+                                $disk = Storage::disk(config('filesystems.default', 'public'));
+                                $files = $disk->files($record->attachment_path);
+
+                                if (empty($files)) {
+                                    return 'Nessun decreto caricato.';
+                                }
+
+                                return new \Illuminate\Support\HtmlString(
+                                    collect($files)->map(function ($file) use ($disk) {
+                                        $name = basename($file);
+                                        try {
+                                            $url = $disk->temporaryUrl($file, now()->addMinutes(15));
+                                        } catch (\Exception $e) {
+                                            $url = $disk->url($file);
+                                        }
+                                        return <<<HTML
+                                        <div class="flex items-center gap-2 py-1">
+                                            <span class="text-gray-400 text-xs">📄</span>
+                                            <a href="{$url}" target="_blank" class="text-sm text-primary-600 hover:underline">
+                                                {$name}
+                                            </a>
+                                        </div>
+                                        HTML;
+                                    })->implode('')
+                                );
+                            })
+                            ->columnSpan('full'),
+                    ]),
+
+                // Forms\Components\Section::make('Decreti caricati')
+                //     ->collapsed(fn ($record) => $record && $record->attachment_path)
+                //     ->visible(fn ($record) => $record && $record->attachment_path)
+                //     ->schema(function ($record) {
+                //         if (!$record || !$record->attachment_path) {
+                //             return [
+                //                 Forms\Components\Placeholder::make('none')
+                //                     ->label('')
+                //                     ->content('Nessun decreto caricato.'),
+                //             ];
+                //         }
+
+                //         $disk = Storage::disk(config('filesystems.default', 'public'));
+                //         $files = $disk->files($record->attachment_path);
+
+                //         if (empty($files)) {
+                //             return [
+                //                 Forms\Components\Placeholder::make('none')
+                //                     ->label('')
+                //                     ->content('Nessun decreto caricato.'),
+                //             ];
+                //         }
+
+                //         return collect($files)->map(function ($file) use ($disk, $record) {
+                //             $name = basename($file);
+                //             $key = md5($file);
+
+                //             return Forms\Components\Actions::make([
+                //                 Forms\Components\Actions\Action::make("view_{$key}")
+                //                     ->label($name)
+                //                     ->icon('heroicon-o-document-text')
+                //                     ->color('gray')
+                //                     ->url(function () use ($disk, $file) {
+                //                         try {
+                //                             return $disk->temporaryUrl($file, now()->addMinutes(15));
+                //                         } catch (\Exception $e) {
+                //                             return $disk->url($file);
+                //                         }
+                //                     })
+                //                     ->openUrlInNewTab(),
+
+                //                 Forms\Components\Actions\Action::make("delete_{$key}")
+                //                     ->label('Elimina')
+                //                     ->icon('heroicon-o-trash')
+                //                     ->color('danger')
+                //                     ->requiresConfirmation()
+                //                     ->modalHeading("Eliminare {$name}?")
+                //                     ->modalDescription('Questa azione non può essere annullata.')
+                //                     ->modalSubmitActionLabel('Elimina')
+                //                     ->action(function () use ($disk, $file, $record) {
+                //                         $disk->delete($file);
+
+                //                         // se non restano più file, azzero il path
+                //                         if (empty($disk->files($record->attachment_path))) {
+                //                             $record->update(['attachment_path' => null]);
+                //                         }
+
+                //                         Notification::make()
+                //                             ->title('Decreto eliminato')
+                //                             ->success()
+                //                             ->send();
+                //                     }),
+                //             ])->key($key);
+                //         })->toArray();
+                //     }),
 
                 // 4. Sezione Dinamica per le Strade (Relazione HasMany)
                 Forms\Components\Section::make('Strade Interessate')
@@ -354,22 +473,22 @@ class PrefecturalDecreeResource extends Resource
                     ->preload() // Carica i primi record per velocizzare l'interfaccia
             ])
             ->actions([
-                Tables\Actions\Action::make('viewAttachment')
-                    ->label('')
-                    ->tooltip('Visualizza decreto')
-                    ->icon('hugeicons-pdf-02')
-                    ->size('xl')
-                    ->color('primary')
-                    ->visible(fn ($record) => filled($record->attachment_path))
-                    ->url(function ($record) {
-                        $disk = Storage::disk(config('filesystems.default', 'public'));
-                        try {
-                            return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
-                        } catch (\Exception $e) {
-                            return $disk->url($record->attachment_path);
-                        }
-                    })
-                    ->openUrlInNewTab(),
+                // Tables\Actions\Action::make('viewAttachment')
+                //     ->label('')
+                //     ->tooltip('Visualizza decreto')
+                //     ->icon('hugeicons-pdf-02')
+                //     ->size('xl')
+                //     ->color('primary')
+                //     ->visible(fn ($record) => filled($record->attachment_path))
+                //     ->url(function ($record) {
+                //         $disk = Storage::disk(config('filesystems.default', 'public'));
+                //         try {
+                //             return $disk->temporaryUrl($record->attachment_path, now()->addMinutes(5));
+                //         } catch (\Exception $e) {
+                //             return $disk->url($record->attachment_path);
+                //         }
+                //     })
+                //     ->openUrlInNewTab(),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
