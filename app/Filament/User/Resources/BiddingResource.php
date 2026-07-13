@@ -1051,120 +1051,254 @@ class BiddingResource extends Resource
                     ->searchable()
                     ->columnSpan(2),
                 // Filtri rapidi selezione multipla
-                SelectFilter::make('bidding_filter')
-                    ->label('Filtri rapidi')
-                    ->options(BiddingFilter::class)
-                    ->multiple()
-                    ->preload()
-                    ->columnSpan(2)
-                    ->query(function (Builder $query, array $data) {
-                        if (!empty($data['values'])) {
-                            $query->where(function ($q) use ($data) {
-                                foreach ($data['values'] as $value) {
-                                    switch ($value) {
-                                        case BiddingFilter::TENDER30->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->where(function ($deepQ) {
-                                                    $deepQ->whereNotNull('deadline_date')
-                                                        ->whereDate('deadline_date', '>=', Carbon::today())
-                                                        ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
-                                                })->orWhere(function ($deepQ) {
-                                                    $deepQ->whereNull('deadline_date')
-                                                        ->whereNotNull('interest_deadline_date')
-                                                        ->whereDate('interest_deadline_date', '>=', Carbon::today())
-                                                        ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(30));
-                                                });
-                                            });
-                                            break;
-                                        case BiddingFilter::INSPECTION30->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->whereNotNull('inspection_deadline_date')
-                                                    ->whereDate('inspection_deadline_date', '>=', Carbon::today())
-                                                    ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
-                                            });
-                                            break;
-                                        case BiddingFilter::TENDER15->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->where(function ($deepQ) {
-                                                    $deepQ->whereNotNull('deadline_date')
-                                                        ->whereDate('deadline_date', '>=', Carbon::today())
-                                                        ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
-                                                })->orWhere(function ($deepQ) {
-                                                    $deepQ->whereNull('deadline_date')
-                                                        ->whereNotNull('interest_deadline_date')
-                                                        ->whereDate('interest_deadline_date', '>=', Carbon::today())
-                                                        ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(15));
-                                                });
-                                            });
-                                            break;
-                                        case BiddingFilter::INSPECTION15->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->whereNotNull('inspection_deadline_date')
-                                                    ->whereDate('inspection_deadline_date', '>=', Carbon::today())
-                                                    ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
-                                            });
-                                            break;
-                                        case BiddingFilter::SEND30->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->where(function ($deepQ) {
-                                                    $deepQ->whereNotNull('send_date')
-                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
-                                                        ->whereDate('send_date', '<', Carbon::today());
-                                                })->orWhere(function ($deepQ) {
-                                                    $deepQ->whereNull('send_date')
-                                                        ->whereNotNull('interest_send_date')
-                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(30))
-                                                        ->whereDate('interest_send_date', '<', Carbon::today());
-                                                });
-                                            });
-                                            break;
-                                        case BiddingFilter::SEND60->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->where(function ($deepQ) {
-                                                    $deepQ->whereNotNull('send_date')
-                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
-                                                        ->whereDate('send_date', '<', Carbon::today());
-                                                })->orWhere(function ($deepQ) {
-                                                    $deepQ->whereNull('send_date')
-                                                        ->whereNotNull('interest_send_date')
-                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(60))
-                                                        ->whereDate('interest_send_date', '<', Carbon::today());
-                                                });
-                                            });
-                                            break;
-                                        case BiddingFilter::SEND90->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->where(function ($deepQ) {
-                                                    $deepQ->whereNotNull('send_date')
-                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
-                                                        ->whereDate('send_date', '<', Carbon::today());
-                                                })->orWhere(function ($deepQ) {
-                                                    $deepQ->whereNull('send_date')
-                                                        ->whereNotNull('interest_send_date')
-                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(90))
-                                                        ->whereDate('interest_send_date', '<', Carbon::today());
-                                                });
-                                            });
-                                            break;
-                                        case BiddingFilter::SEND180->value:
-                                            $q->orWhere(function ($subQ) {
-                                                $subQ->where(function ($deepQ) {
-                                                    $deepQ->whereNotNull('send_date')
-                                                        ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
-                                                        ->whereDate('send_date', '<', Carbon::today());
-                                                })->orWhere(function ($deepQ) {
-                                                    $deepQ->whereNull('send_date')
-                                                        ->whereNotNull('interest_send_date')
-                                                        ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(180))
-                                                        ->whereDate('interest_send_date', '<', Carbon::today());
-                                                });
-                                            });
-                                            break;
-                                    }
-                                }
-                            });
-                        }
-                    }),
+                // SelectFilter::make('bidding_filter')
+                //     ->label('Filtri rapidi')
+                //     ->options(BiddingFilter::class)
+                //     ->multiple()
+                //     ->preload()
+                //     ->columnSpan(2)
+                //     ->query(function (Builder $query, array $data) {
+                //         if (!empty($data['values'])) {
+                //             $query->where(function ($q) use ($data) {
+                //                 foreach ($data['values'] as $value) {
+                //                     switch ($value) {
+                //                         case BiddingFilter::TENDER30->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->where(function ($deepQ) {
+                //                                     $deepQ->whereNotNull('deadline_date')
+                //                                         ->whereDate('deadline_date', '>=', Carbon::today())
+                //                                         ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
+                //                                 })->orWhere(function ($deepQ) {
+                //                                     $deepQ->whereNull('deadline_date')
+                //                                         ->whereNotNull('interest_deadline_date')
+                //                                         ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                //                                         ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(30));
+                //                                 });
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::INSPECTION30->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->whereNotNull('inspection_deadline_date')
+                //                                     ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                //                                     ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::TENDER15->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->where(function ($deepQ) {
+                //                                     $deepQ->whereNotNull('deadline_date')
+                //                                         ->whereDate('deadline_date', '>=', Carbon::today())
+                //                                         ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
+                //                                 })->orWhere(function ($deepQ) {
+                //                                     $deepQ->whereNull('deadline_date')
+                //                                         ->whereNotNull('interest_deadline_date')
+                //                                         ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                //                                         ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(15));
+                //                                 });
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::INSPECTION15->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->whereNotNull('inspection_deadline_date')
+                //                                     ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                //                                     ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::SEND30->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->where(function ($deepQ) {
+                //                                     $deepQ->whereNotNull('send_date')
+                //                                         ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
+                //                                         ->whereDate('send_date', '<', Carbon::today());
+                //                                 })->orWhere(function ($deepQ) {
+                //                                     $deepQ->whereNull('send_date')
+                //                                         ->whereNotNull('interest_send_date')
+                //                                         ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(30))
+                //                                         ->whereDate('interest_send_date', '<', Carbon::today());
+                //                                 });
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::SEND60->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->where(function ($deepQ) {
+                //                                     $deepQ->whereNotNull('send_date')
+                //                                         ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
+                //                                         ->whereDate('send_date', '<', Carbon::today());
+                //                                 })->orWhere(function ($deepQ) {
+                //                                     $deepQ->whereNull('send_date')
+                //                                         ->whereNotNull('interest_send_date')
+                //                                         ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(60))
+                //                                         ->whereDate('interest_send_date', '<', Carbon::today());
+                //                                 });
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::SEND90->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->where(function ($deepQ) {
+                //                                     $deepQ->whereNotNull('send_date')
+                //                                         ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
+                //                                         ->whereDate('send_date', '<', Carbon::today());
+                //                                 })->orWhere(function ($deepQ) {
+                //                                     $deepQ->whereNull('send_date')
+                //                                         ->whereNotNull('interest_send_date')
+                //                                         ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(90))
+                //                                         ->whereDate('interest_send_date', '<', Carbon::today());
+                //                                 });
+                //                             });
+                //                             break;
+                //                         case BiddingFilter::SEND180->value:
+                //                             $q->orWhere(function ($subQ) {
+                //                                 $subQ->where(function ($deepQ) {
+                //                                     $deepQ->whereNotNull('send_date')
+                //                                         ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
+                //                                         ->whereDate('send_date', '<', Carbon::today());
+                //                                 })->orWhere(function ($deepQ) {
+                //                                     $deepQ->whereNull('send_date')
+                //                                         ->whereNotNull('interest_send_date')
+                //                                         ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(180))
+                //                                         ->whereDate('interest_send_date', '<', Carbon::today());
+                //                                 });
+                //                             });
+                //                             break;
+                //                     }
+                //                 }
+                //             });
+                //         }
+                //     }),
+                    SelectFilter::make('bidding_filter')
+                        ->label('Filtri rapidi')
+                        ->options(BiddingFilter::class)
+                        ->preload()
+                        ->columnSpan(2)
+                        ->query(function (Builder $query, array $data) {
+                            if (empty($data['value'])) {
+                                return;
+                            }
+
+                            $value = $data['value'];
+
+                            switch ($value) {
+                                case BiddingFilter::INTERESTS->value:
+                                    // Escludo manifestazioni scadute
+                                    $query->where(function ($q) {
+                                        $q->whereNull('interest_deadline_date')
+                                            ->orWhereDate('interest_deadline_date', '>=', Carbon::today());
+                                    });
+                                    // Escludo quelle "in attesa di gara"
+                                    $query->where(function ($q) {
+                                        $q->whereNull('interest_send_date')
+                                            ->orWhereNotNull('inspection_deadline_date')
+                                            ->orWhereNotNull('deadline_date');
+                                    });
+                                    break;
+
+                                case BiddingFilter::TENDER30->value:
+                                    $query->where(function ($q) {
+                                        $q->where(function ($deepQ) {
+                                            $deepQ->whereNotNull('deadline_date')
+                                                ->whereDate('deadline_date', '>=', Carbon::today())
+                                                ->whereDate('deadline_date', '<=', Carbon::today()->addDays(30));
+                                        })->orWhere(function ($deepQ) {
+                                            $deepQ->whereNull('deadline_date')
+                                                ->whereNotNull('interest_deadline_date')
+                                                ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                                                ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(30));
+                                        });
+                                    });
+                                    break;
+
+                                case BiddingFilter::INSPECTION30->value:
+                                    $query->where(function ($q) {
+                                        $q->whereNotNull('inspection_deadline_date')
+                                            ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                                            ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(30));
+                                    });
+                                    break;
+
+                                case BiddingFilter::TENDER15->value:
+                                    $query->where(function ($q) {
+                                        $q->where(function ($deepQ) {
+                                            $deepQ->whereNotNull('deadline_date')
+                                                ->whereDate('deadline_date', '>=', Carbon::today())
+                                                ->whereDate('deadline_date', '<=', Carbon::today()->addDays(15));
+                                        })->orWhere(function ($deepQ) {
+                                            $deepQ->whereNull('deadline_date')
+                                                ->whereNotNull('interest_deadline_date')
+                                                ->whereDate('interest_deadline_date', '>=', Carbon::today())
+                                                ->whereDate('interest_deadline_date', '<=', Carbon::today()->addDays(15));
+                                        });
+                                    });
+                                    break;
+
+                                case BiddingFilter::INSPECTION15->value:
+                                    $query->where(function ($q) {
+                                        $q->whereNotNull('inspection_deadline_date')
+                                            ->whereDate('inspection_deadline_date', '>=', Carbon::today())
+                                            ->whereDate('inspection_deadline_date', '<=', Carbon::today()->addDays(15));
+                                    });
+                                    break;
+
+                                case BiddingFilter::SEND30->value:
+                                    $query->where(function ($q) {
+                                        $q->where(function ($deepQ) {
+                                            $deepQ->whereNotNull('send_date')
+                                                ->whereDate('send_date', '>=', Carbon::today()->subDays(30))
+                                                ->whereDate('send_date', '<', Carbon::today());
+                                        })->orWhere(function ($deepQ) {
+                                            $deepQ->whereNull('send_date')
+                                                ->whereNotNull('interest_send_date')
+                                                ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(30))
+                                                ->whereDate('interest_send_date', '<', Carbon::today());
+                                        });
+                                    });
+                                    break;
+
+                                case BiddingFilter::SEND60->value:
+                                    $query->where(function ($q) {
+                                        $q->where(function ($deepQ) {
+                                            $deepQ->whereNotNull('send_date')
+                                                ->whereDate('send_date', '>=', Carbon::today()->subDays(60))
+                                                ->whereDate('send_date', '<', Carbon::today());
+                                        })->orWhere(function ($deepQ) {
+                                            $deepQ->whereNull('send_date')
+                                                ->whereNotNull('interest_send_date')
+                                                ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(60))
+                                                ->whereDate('interest_send_date', '<', Carbon::today());
+                                        });
+                                    });
+                                    break;
+
+                                case BiddingFilter::SEND90->value:
+                                    $query->where(function ($q) {
+                                        $q->where(function ($deepQ) {
+                                            $deepQ->whereNotNull('send_date')
+                                                ->whereDate('send_date', '>=', Carbon::today()->subDays(90))
+                                                ->whereDate('send_date', '<', Carbon::today());
+                                        })->orWhere(function ($deepQ) {
+                                            $deepQ->whereNull('send_date')
+                                                ->whereNotNull('interest_send_date')
+                                                ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(90))
+                                                ->whereDate('interest_send_date', '<', Carbon::today());
+                                        });
+                                    });
+                                    break;
+
+                                case BiddingFilter::SEND180->value:
+                                    $query->where(function ($q) {
+                                        $q->where(function ($deepQ) {
+                                            $deepQ->whereNotNull('send_date')
+                                                ->whereDate('send_date', '>=', Carbon::today()->subDays(180))
+                                                ->whereDate('send_date', '<', Carbon::today());
+                                        })->orWhere(function ($deepQ) {
+                                            $deepQ->whereNull('send_date')
+                                                ->whereNotNull('interest_send_date')
+                                                ->whereDate('interest_send_date', '>=', Carbon::today()->subDays(180))
+                                                ->whereDate('interest_send_date', '<', Carbon::today());
+                                        });
+                                    });
+                                    break;
+                            }
+                        }),
                 Filter::make('past_deadline')
                     ->form([
                         Checkbox::make('show_past_deadline')

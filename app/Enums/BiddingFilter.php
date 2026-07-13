@@ -6,6 +6,7 @@ use Filament\Support\Contracts\HasLabel;
 
 enum BiddingFilter: string implements HasLabel
 {
+    case INTERESTS = "interests";
     case TENDER30 = "tender30";
     case INSPECTION30 = "inspection30";
     case TENDER15 = "tender15";
@@ -18,6 +19,7 @@ enum BiddingFilter: string implements HasLabel
     public function getLabel(): string
     {
         return match($this) {
+            self::INTERESTS => 'Escludi manifestazioni d\'interesse scadute o in attesa di gara',
             self::TENDER30 => 'Gare prossimi 30 giorni',
             self::INSPECTION30 => 'Sopralluoghi prossimi 30 giorni',
             self::TENDER15 => 'Gare prossimi 15 giorni',
