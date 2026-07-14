@@ -179,7 +179,25 @@ class PrefecturalDecreeResource extends Resource
                     ->searchable()
                     ->preload()
                     ->required()
+                    ->afterStateUpdated(fn($set, $state) => $set(
+                        'region_name',
+                        Province::find($state)?->region?->name
+                    ))
                     ->live()
+                    ->columnSpan(1),
+                    
+                Forms\Components\Placeholder::make('region_name')
+                    ->label('Regione')
+                    ->content(function (Forms\Get $get, $record) {
+                        $provinceId = $get('province_id');
+                        if (! $provinceId) {
+                            return 'Seleziona prima una provincia';
+                        }
+                        
+                        // Cerca la regione collegata alla provincia selezionata
+                        $province = \App\Models\Province::with('region')->find($provinceId);
+                        return $province?->region?->name ?? '—';
+                    })
                     ->columnSpan(1),
 
                 // 2. Relazione BelongsToMany con Cities (Comuni) - Modificata per la reattività passiva
@@ -423,6 +441,11 @@ class PrefecturalDecreeResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('region.name')
+                    ->label('Regione')
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('province.name')
                     ->label('Provincia')
                     ->sortable()
@@ -461,13 +484,19 @@ class PrefecturalDecreeResource extends Resource
                 //     ->openUrlInNewTab(),
             ])
             ->filters([
+                SelectFilter::make('region_id')
+                    ->label('Regione')
+                    ->relationship(name: 'region', titleAttribute: 'name')
+                    ->searchable()
+                    ->preload(),
+
                 SelectFilter::make('province_id')->label('Provincia')
                     ->relationship(name: 'province', titleAttribute: 'name')
                     ->searchable()
                     ->preload()->optionsLimit(5),
-                SelectFilter::make('clients')
-                    ->label('Clienti')
-                    ->relationship(name: 'clients', titleAttribute: 'name') // Usa la relazione belongsToMany del modello
+                SelectFilter::make('cities')
+                    ->label('Comuni')
+                    ->relationship(name: 'cities', titleAttribute: 'name') // Usa la relazione belongsToMany del modello
                     ->multiple() // Abilita la selezione multipla
                     ->searchable() // Permette di cercare tra i clienti se sono molti
                     ->preload() // Carica i primi record per velocizzare l'interfaccia

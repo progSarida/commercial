@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class PrefecturalDecree extends Model
 {
@@ -22,6 +23,18 @@ class PrefecturalDecree extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class, 'province_id');
+    }
+
+    public function region(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Region::class,
+            Province::class,
+            'id',            // Chiave esterna su provinces (ID della provincia)
+            'id',            // Chiave esterna su regions (ID della regione)
+            'province_id',   // Chiave locale su prefectural_decrees
+            'region_id'      // Chiave locale su provinces
+        );
     }
 
     /**
