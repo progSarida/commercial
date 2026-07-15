@@ -43,7 +43,7 @@ class PrefecturalDecree extends Model
     public function cities(): BelongsToMany
     {
         // Se hai seguito la convenzione dei nomi, basta questo:
-        return $this->belongsToMany(City::class);
+        return $this->belongsToMany(City::class)->orderBy('name');
         
         // Se la tabella pivot ha un nome diverso, specificalo così:
         // return $this->belongsToMany(City::class, 'nome_tabella_pivot');
@@ -54,7 +54,7 @@ class PrefecturalDecree extends Model
      */
     public function clients(): BelongsToMany
     {
-        return $this->belongsToMany(Client::class);
+        return $this->belongsToMany(Client::class)->orderBy('name');
     }
 
     /**

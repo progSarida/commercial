@@ -208,6 +208,7 @@ class PrefecturalDecreeResource extends Resource
                         titleAttribute: 'name',
                         // Filtra comunque per provincia se selezionata, altrimenti mostra tutti o lascia libero
                         modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
+                            ->orderBy('name')
                             ->when(
                                 $get('province_id'),
                                 fn ($query, $provinceId) => $query->where('province_id', $provinceId)
