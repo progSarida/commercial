@@ -187,33 +187,60 @@ class Bidding extends Model
     //     });
     // }
 
-    public function scopeUpcoming(Builder $query): void
+    public function scopeUpcomingOld(Builder $query): void
     {
         $query->where(function (Builder $subQuery) {
             $subQuery->whereDate('deadline_date', '>=', today())                                    // scadenza futura o odierna
                 ->orWhere(function (Builder $q) {                                                   //
                     $q->orWhere(function (Builder $q2) {                                            //
                         $q2->whereNull('deadline_date')                                             // senza scadenza
-                        ->where('feasibility_type', '!=', FeasibilityType::NOT_FEASIBLE);           // fattibili o da valutare
+                            ->where('feasibility_type', '!=', FeasibilityType::NOT_FEASIBLE);       // fattibili o da valutare
                     })                                                                              //
                     ->orWhere(function (Builder $q3) {                                              //
                         $q3->whereNull('deadline_date')                                             // senza scadenza
-                        ->where('feasibility_type', '=', FeasibilityType::NOT_FEASIBLE) //          // non fattibili
-                        ->whereIn('bidding_state_id', function ($q4) {                              // dettagli fattibilità 'Serve avvalimento'
-                            $q4->select('id')                                                       //
-                                ->from('bidding_states')                                            //
-                                ->where('name', 'Serve avvalimento');                               //
-                        })
+                            ->where('feasibility_type', '=', FeasibilityType::NOT_FEASIBLE) //      // non fattibili
+                            ->whereIn('bidding_state_id', function ($q4) {                          // dettagli fattibilità 'Serve avvalimento'
+                                $q4->select('id')                                                   //
+                                    ->from('bidding_states')                                        //
+                                    ->where('name', 'Serve avvalimento');                           //
+                            })
                         // ->whereNotNull('interest_expression_type')
                         ->where(function (Builder $q5) {                                            //
                             $q5->orWhere('interest_deadline_date', '>=', today())                   // scadenza manifestazione d'interesse futura o odierna
                                 ->orWhere(function (Builder $q5) {                                  //
                                     $q5->where('interest_deadline_date', '<', today())              // scadenza manifestazione d'interesse passata
-                                        ->where('interest_send_date', '!=', null);                  // data invio manifestazione d'interesse valorizzata
+                                        ->whereNotNull('interest_send_date');                       // data invio manifestazione d'interesse valorizzata
                                 });                                                                 //
                         });
                     });
                 });
+        });
+    }
+
+    public function scopeUpcomingNew(Builder $query): void
+    {
+        $today = today();
+        $serveAvvalimentoId = BiddingState::where('name', 'Serve avvalimento')
+            ->value('id');
+        $query->where(function (Builder $q) use ($today, $serveAvvalimentoId) {
+            $q->whereDate('deadline_date', '>=', $today);                                           // Ha deadline_date futura o odierna
+            $q->orWhere(function (Builder $q) use ($today, $serveAvvalimentoId) {                   // Non ha deadline_date ma ha manifestazione di interesse attiva
+                $q->whereNull('deadline_date');
+                $q->where(function (Builder $q) use ($today) {                                      // 
+                    $q->whereDate('interest_deadline_date', '>=', $today)                           // 
+                    ->orWhere(function (Builder $q) use ($today) {                                  // Manifestazione di interesse inviata => in attesa della gara
+                        $q->whereDate('interest_deadline_date', '<', $today)                        // 
+                            ->whereNotNull('interest_send_date');                                   // 
+                    });
+                });
+                $q->where(function (Builder $q) use ($serveAvvalimentoId) {                         // 
+                    $q->where('feasibility_type', '!=', FeasibilityType::NOT_FEASIBLE)              // 
+                    ->orWhere(function (Builder $q) use ($serveAvvalimentoId) {                     // Se non è fattibile, deve essere nello stato "Serve avvalimento"
+                        $q->where('feasibility_type', FeasibilityType::NOT_FEASIBLE)                // 
+                            ->where('bidding_state_id', $serveAvvalimentoId);                       // 
+                    });
+                });
+            });
         });
     }
 

@@ -1169,6 +1169,7 @@ class BiddingResource extends Resource
                         ->label('Filtri rapidi')
                         ->options(BiddingFilter::class)
                         ->preload()
+                        ->placeholder('')
                         ->columnSpan(2)
                         ->query(function (Builder $query, array $data) {
                             if (empty($data['value'])) {
@@ -1180,10 +1181,10 @@ class BiddingResource extends Resource
                             switch ($value) {
                                 case BiddingFilter::INTERESTS->value:
                                     // Escludo manifestazioni scadute
-                                    $query->where(function ($q) {
-                                        $q->whereNull('interest_deadline_date')
-                                            ->orWhereDate('interest_deadline_date', '>=', Carbon::today());
-                                    });
+                                    // $query->where(function ($q) {
+                                    //     $q->whereNull('interest_deadline_date')
+                                    //         ->orWhereDate('interest_deadline_date', '>=', Carbon::today());
+                                    // });
                                     // Escludo quelle "in attesa di gara"
                                     $query->where(function ($q) {
                                         $q->whereNull('interest_send_date')
@@ -1306,7 +1307,7 @@ class BiddingResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data) {
                         if (empty($data['show_past_deadline'])) {
-                            $query->upcoming(); // Usa lo scope definito nel modello
+                            $query->upcomingNew(); // Usa lo scope definito nel modello
                         }
                     })
                     ->indicateUsing(function (array $data): ?string {

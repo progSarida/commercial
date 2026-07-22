@@ -19,7 +19,7 @@ enum BiddingFilter: string implements HasLabel
     public function getLabel(): string
     {
         return match($this) {
-            self::INTERESTS => 'Escludi manifestazioni d\'interesse scadute o in attesa di gara',
+            self::INTERESTS => 'Escludi manifestazioni d\'interesse in attesa di gara',
             self::TENDER30 => 'Gare prossimi 30 giorni',
             self::INSPECTION30 => 'Sopralluoghi prossimi 30 giorni',
             self::TENDER15 => 'Gare prossimi 15 giorni',
