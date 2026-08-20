@@ -45,8 +45,7 @@ class EstimateResource extends Resource
             ->columns([
                 TextColumn::make('client.name')
                     ->label('Cliente')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
                 TextColumn::make('date')
                     ->label('Data')
                     ->date('d/m/Y')

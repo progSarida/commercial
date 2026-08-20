@@ -995,12 +995,12 @@ class BiddingResource extends Resource
                         return $record->serviceTypes->pluck('name')->join(' - ');
                     }),
                 TextColumn::make('description')
-                    ->label('Descrizione')
+                    ->label('🔍 Descrizione')
                     ->searchable()
                     ->limit(20)
                     ->tooltip(fn ($record) => $record->description),
                 TextColumn::make('client.name')
-                    ->label('Ente')
+                    ->label('🔍 Ente')
                     ->searchable()
                     ->limit(10)
                     ->tooltip(fn ($record) => $record->client->name),

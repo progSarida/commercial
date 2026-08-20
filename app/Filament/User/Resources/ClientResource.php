@@ -215,14 +215,13 @@ class ClientResource extends Resource
                     ->sortable(),
                 TextColumn::make('client_type')->label('Tipo cliente')
                     // ->badge()
+                    ->sortable(),
+                TextColumn::make('name')->label('🔍 Denominazione')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('name')->label('Denominazione')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('phone')->label('Telefono')
+                TextColumn::make('phone')->label('🔍 Telefono')
                     ->searchable(),
-                TextColumn::make('email')->label('Email')
+                TextColumn::make('email')->label('🔍 Email')
                     ->searchable(),
                 TextColumn::make('state.name')->label('Paese')
                     ->numeric()
@@ -234,11 +233,11 @@ class ClientResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
-                TextColumn::make('place')->label('Luogo')
+                TextColumn::make('place')->label('🔍 Luogo')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),
-                TextColumn::make('zip_code')->label('CAP')
+                TextColumn::make('zip_code')->label('🔍 CAP')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->hidden($isMobile),

@@ -444,13 +444,11 @@ class PrefecturalDecreeResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('region.name')
                     ->label('Regione')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('province.name')
                     ->label('Provincia')
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
 
                 // Mostra l'elenco dei comuni separati da virgola in automatico e supporta i badge
                 Tables\Columns\TextColumn::make('cities.name')

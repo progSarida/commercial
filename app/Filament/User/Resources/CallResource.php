@@ -211,7 +211,6 @@ class CallResource extends Resource
             ->poll('10s')
             ->columns([
                 Tables\Columns\TextColumn::make('client.name')
-                    ->searchable()
                     ->label('Cliente'),
                 Tables\Columns\TextColumn::make('services')
                     ->label('Servizi')
@@ -234,6 +233,7 @@ class CallResource extends Resource
                     ->alignCenter()
                     ->width('1%'),
             ])
+            ->filtersFormColumns(2)
             ->filters([
                 SelectFilter::make('region_id')
                     ->label('Regione')
@@ -258,6 +258,10 @@ class CallResource extends Resource
                     })
                     ->searchable()
                     ->preload(),
+                SelectFilter::make('client_id')
+                    ->label('Cliente')
+                    ->relationship('client', 'name')
+                    ->searchable(),
                 SelectFilter::make('outcome_type')
                     ->label('Esito')
                     ->options(function () {
@@ -314,20 +318,8 @@ class CallResource extends Resource
                             }
                         });
                     }),
-                SelectFilter::make('date_status')
-                    ->label('Stato Data')
-                    ->options([
-                        'no_date' => 'Senza data',
-                        'date' => 'Con data programmata',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return match ($data['value']) {
-                            'no_date' => $query->whereNull('date'),
-                            'date' => $query->whereNotNull('date'),
-                            default => $query,
-                        };
-                    }),
                 Filter::make('date_range')
+                    ->columns(2)
                     ->form([
                         DatePicker::make('from_date')
                             ->label('Da data'),
@@ -353,6 +345,20 @@ class CallResource extends Resource
                             return "Fino a {$data['to_date']}";
                         }
                         return null;
+                    })
+                    ->columnSpan(2),
+                SelectFilter::make('date_status')
+                    ->label('Stato Data')
+                    ->options([
+                        'no_date' => 'Senza data',
+                        'date' => 'Con data programmata',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value']) {
+                            'no_date' => $query->whereNull('date'),
+                            'date' => $query->whereNotNull('date'),
+                            default => $query,
+                        };
                     }),
                 SelectFilter::make('user_id')->label('Utente')
                     ->relationship(name: 'user', titleAttribute: 'name')

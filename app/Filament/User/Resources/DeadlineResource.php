@@ -196,7 +196,6 @@ class DeadlineResource extends Resource
             ->query(Contact::deadlines())
             ->columns([
                 Tables\Columns\TextColumn::make('client.name')
-                    ->searchable()
                     ->label('Cliente'),
                 Tables\Columns\TextColumn::make('date')
                     ->label('Data scadenza')
@@ -223,10 +222,12 @@ class DeadlineResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('note')
-                    ->label('Note')
+                    ->label('🔍 Note')
                     ->limit(70)
                     ->tooltip(fn($record) => $record->note ?? '')
-                    ->searchable(),
+                    // La query della tabella fa il join con 'clients', che ha anch'essa
+                    // la colonna 'note': va qualificata per evitare l'ambiguità SQL.
+                    ->searchable(query: fn(Builder $query, string $search): Builder => $query->where('contacts.note', 'like', "%{$search}%")),
             ])
             ->filters([
                 SelectFilter::make('region_id')
