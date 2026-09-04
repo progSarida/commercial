@@ -165,7 +165,7 @@ class CallResource extends Resource
                     ->label('Servizi')
                     ->live()
                     ->required(fn (Get $get) =>
-                        $get('outcome_type') !== '' &&
+                        $get('outcome_type') !== null &&
                         $get('outcome_type') !== OutcomeType::NEGATIVE->value
                     )
                     ->options(ServiceType::pluck('name', 'id'))
