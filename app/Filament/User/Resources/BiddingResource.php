@@ -1049,7 +1049,7 @@ class BiddingResource extends Resource
                     ->relationship('client', 'name')
                     ->preload()
                     ->searchable()
-                    ->columnSpan(2),
+                    ->columnSpan(['default' => 'full', 'lg' => 2]),
                 // Filtri rapidi selezione multipla
                 // SelectFilter::make('bidding_filter')
                 //     ->label('Filtri rapidi')
@@ -1170,7 +1170,7 @@ class BiddingResource extends Resource
                         ->options(BiddingFilter::class)
                         ->preload()
                         ->placeholder('')
-                        ->columnSpan(2)
+                        ->columnSpan(['default' => 'full', 'lg' => 2])
                         ->query(function (Builder $query, array $data) {
                             if (empty($data['value'])) {
                                 return;
@@ -1384,7 +1384,7 @@ class BiddingResource extends Resource
                     ->multiple(),
                 Filter::make('inspection_deadline_date_range')
                     ->columns(2)
-                    ->columnSpan(2)
+                    ->columnSpan(['default' => 'full', 'lg' => 2])
                     ->form([
                         DatePicker::make('inspection_deadline_from_date')
                             ->label('Scadenza sopralluogo da')
@@ -1415,7 +1415,7 @@ class BiddingResource extends Resource
                     }),
                 Filter::make('deadline_date_range')
                     ->columns(2)
-                    ->columnSpan(2)
+                    ->columnSpan(['default' => 'full', 'lg' => 2])
                     ->form([
                         DatePicker::make('deadline_from_date')
                             ->label('Scadenza gara da')
@@ -1468,7 +1468,7 @@ class BiddingResource extends Resource
 
                 Filter::make('interest_date_range')
                     ->columns(2)
-                    ->columnSpan(2)
+                    ->columnSpan(['default' => 'full', 'lg' => 2])
                     ->form([
                         DatePicker::make('interest_from_date')
                             ->label('Scadenza manifestazione da')
@@ -1500,7 +1500,7 @@ class BiddingResource extends Resource
 
                 Filter::make('inspection_date_range')
                     ->columns(2)
-                    ->columnSpan(2)
+                    ->columnSpan(['default' => 'full', 'lg' => 2])
                     ->form([
                         DatePicker::make('inspection_from_date')
                             ->label('Data sopralluogo da')

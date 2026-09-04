@@ -318,6 +318,32 @@ class CallResource extends Resource
                             }
                         });
                     }),
+                SelectFilter::make('status_select')
+                    ->label('Stato chiamata (seleziona)')
+                    ->multiple()
+                    ->options(static::getVisitStatusOptions())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $values = $data['values'] ?? [];
+                        if (empty($values)) {
+                            return $query;
+                        }
+                        return static::applyVisitStatuses($query, $values);
+                    }),
+                SelectFilter::make('status_exclude')
+                    ->label('Stato chiamata (escludi)')
+                    ->multiple()
+                    ->default(['no_date', 'expired_without_outcome', 'expired_with_outcome'])
+                    ->options(static::getVisitStatusOptions())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $values = $data['values'] ?? [];
+                        if (empty($values)) {
+                            return $query;
+                        }
+                        // Gli stati sono mutuamente esclusivi: escludere N stati
+                        // equivale a includere tutti gli altri
+                        $remaining = array_diff(array_keys(static::getVisitStatusOptions()), $values);
+                        return static::applyVisitStatuses($query, array_values($remaining));
+                    }),
                 Filter::make('date_range')
                     ->columns(2)
                     ->form([
@@ -346,20 +372,20 @@ class CallResource extends Resource
                         }
                         return null;
                     })
-                    ->columnSpan(2),
-                SelectFilter::make('date_status')
-                    ->label('Stato Data')
-                    ->options([
-                        'no_date' => 'Senza data',
-                        'date' => 'Con data programmata',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return match ($data['value']) {
-                            'no_date' => $query->whereNull('date'),
-                            'date' => $query->whereNotNull('date'),
-                            default => $query,
-                        };
-                    }),
+                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                // SelectFilter::make('date_status')
+                //     ->label('Stato Data')
+                //     ->options([
+                //         'no_date' => 'Senza data',
+                //         'date' => 'Con data programmata',
+                //     ])
+                //     ->query(function (Builder $query, array $data): Builder {
+                //         return match ($data['value']) {
+                //             'no_date' => $query->whereNull('date'),
+                //             'date' => $query->whereNotNull('date'),
+                //             default => $query,
+                //         };
+                //     }),
                 SelectFilter::make('user_id')->label('Utente')
                     ->relationship(name: 'user', titleAttribute: 'name')
                     ->searchable()
@@ -376,6 +402,48 @@ class CallResource extends Resource
                 ]),
             ]);
     }
+    
+    /**
+     * Stati della visita, mutuamente esclusivi ed esaustivi.
+     */
+    public static function getVisitStatusOptions(): array
+    {
+        return [
+            'no_date' => 'Senza data',
+            'scheduled' => 'Programmata',
+            'expired_without_outcome' => 'Scaduta senza esito',
+            'expired_with_outcome' => 'Scaduta con esito',
+        ];
+    }
+
+    /**
+     * Limita la query alle sole visite che rientrano negli stati indicati.
+     */
+    public static function applyVisitStatuses(Builder $query, array $statuses): Builder
+    {
+        if (empty($statuses)) {
+            // Nessuno stato ammesso: nessun risultato
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $group) use ($statuses) {
+            foreach ($statuses as $status) {
+                $group->orWhere(function (Builder $q) use ($status) {
+                    match ($status) {
+                        'no_date' => $q->whereNull('date'),
+                        'scheduled' => $q->whereNotNull('date')
+                            ->whereDate('date', '>=', today()),
+                        'expired_without_outcome' => $q->whereDate('date', '<', today())
+                            ->whereNull('outcome_type'),
+                        'expired_with_outcome' => $q->whereDate('date', '<', today())
+                            ->whereNotNull('outcome_type'),
+                        default => $q->whereRaw('1 = 0'),
+                    };
+                });
+            }
+        });
+    }
+
     public static function getRelations(): array
     {
         return [

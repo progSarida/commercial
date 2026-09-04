@@ -231,14 +231,15 @@ class DeadlineResource extends Resource
                     // la colonna 'note': va qualificata per evitare l'ambiguità SQL.
                     ->searchable(query: fn(Builder $query, string $search): Builder => $query->where('contacts.note', 'like', "%{$search}%")),
             ])
+            ->filtersFormColumns(2)
             ->filters([
                 SelectFilter::make('region_id')
                     ->label('Regione')
-                    ->options(fn() => Region::pluck('name', 'id')->toArray())
+                    ->options(fn () => Region::pluck('name', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
                         $value = $data['value'] ?? null;
                         if ($value) {
-                            $query->whereHas('client', fn(Builder $q) => $q->where('region_id', $value));
+                            $query->whereHas('client', fn (Builder $q) => $q->where('region_id', $value));
                         }
                     })
                     ->searchable()
@@ -246,85 +247,99 @@ class DeadlineResource extends Resource
 
                 SelectFilter::make('province_id')
                     ->label('Provincia')
-                    ->options(fn() => Province::pluck('name', 'id')->toArray())
+                    ->options(fn () => Province::pluck('name', 'id')->toArray())
                     ->query(function (Builder $query, array $data) {
                         $value = $data['value'] ?? null;
                         if ($value) {
-                            $query->whereHas('client', fn(Builder $q) => $q->where('province_id', $value));
+                            $query->whereHas('client', fn (Builder $q) => $q->where('province_id', $value));
                         }
                     })
                     ->searchable()
                     ->preload(),
-                SelectFilter::make('outcome_type')
-                    ->label('Esito')
-                    ->options(function () {
-                        // Creiamo l'array partendo da quello che vogliamo noi
-                        $options = [
-                            'void' => 'Nessun esito',
-                        ];
+                // SelectFilter::make('outcome_type')
+                //     ->label('Esito')
+                //     ->options(function () {
+                //         // Creiamo l'array partendo da quello che vogliamo noi
+                //         $options = [
+                //             'void' => 'Nessun esito',
+                //         ];
 
-                        // Aggiungiamo i casi dell'Enum
-                        foreach (OutcomeType::cases() as $case) {
-                            // Usa $case->getLabel() se hai implementato HasLabel,
-                            // altrimenti usa $case->name o $case->value
-                            $options[$case->value] = $case->getLabel();
-                        }
+                //         // Aggiungiamo i casi dell'Enum
+                //         foreach (OutcomeType::cases() as $case) {
+                //             // Usa $case->getLabel() se hai implementato HasLabel,
+                //             // altrimenti usa $case->name o $case->value
+                //             $options[$case->value] = $case->getLabel();
+                //         }
 
-                        return $options;
-                    })
+                //         return $options;
+                //     })
+                //     ->multiple()
+                //     // ->query(function (Builder $query, array $data): Builder {
+                //     //     // Se l'utente sceglie la nostra opzione personalizzata
+                //     //     if ($data['value'] === 'void') {
+                //     //         return $query->whereNull('outcome_type');
+                //     //     }
+
+                //     //     // Se l'utente sceglie un'opzione dell'Enum
+                //     //     if (!empty($data['value'])) {
+                //     //         return $query->where('outcome_type', $data['value']);
+                //     //     }
+
+                //     //     return $query;
+                //     // })
+                //     ->query(function (Builder $query, array $data): Builder {
+                //         // Se non c'è nulla di selezionato, usciamo subito
+                //         if (empty($data['values'])) {
+                //             return $query;
+                //         }
+
+                //         $selectedValues = $data['values'];
+
+                //         return $query->where(function (Builder $q) use ($selectedValues) {
+                //             // Controlliamo se 'void' è tra le opzioni selezionate
+                //             if (in_array('void', $selectedValues)) {
+                //                 // Filtriamo per i valori NULL...
+                //                 $q->whereNull('outcome_type');
+
+                //                 // ...e aggiungiamo in OR gli altri valori Enum selezionati (se esistono)
+                //                 $enumValues = array_diff($selectedValues, ['void']);
+                //                 if (!empty($enumValues)) {
+                //                     $q->orWhereIn('outcome_type', $enumValues);
+                //                 }
+                //             } else {
+                //                 // Se 'void' non c'è, facciamo una semplice WhereIn
+                //                 $q->whereIn('outcome_type', $selectedValues);
+                //             }
+                //         });
+                //     }),
+                SelectFilter::make('status_select')
+                    ->label('Stato scadenza (seleziona)')
                     ->multiple()
-                    // ->query(function (Builder $query, array $data): Builder {
-                    //     // Se l'utente sceglie la nostra opzione personalizzata
-                    //     if ($data['value'] === 'void') {
-                    //         return $query->whereNull('outcome_type');
-                    //     }
-
-                    //     // Se l'utente sceglie un'opzione dell'Enum
-                    //     if (!empty($data['value'])) {
-                    //         return $query->where('outcome_type', $data['value']);
-                    //     }
-
-                    //     return $query;
-                    // })
+                    ->options(static::getVisitStatusOptions())
                     ->query(function (Builder $query, array $data): Builder {
-                        // Se non c'è nulla di selezionato, usciamo subito
-                        if (empty($data['values'])) {
+                        $values = $data['values'] ?? [];
+                        if (empty($values)) {
                             return $query;
                         }
-
-                        $selectedValues = $data['values'];
-
-                        return $query->where(function (Builder $q) use ($selectedValues) {
-                            // Controlliamo se 'void' è tra le opzioni selezionate
-                            if (in_array('void', $selectedValues)) {
-                                // Filtriamo per i valori NULL...
-                                $q->whereNull('outcome_type');
-
-                                // ...e aggiungiamo in OR gli altri valori Enum selezionati (se esistono)
-                                $enumValues = array_diff($selectedValues, ['void']);
-                                if (!empty($enumValues)) {
-                                    $q->orWhereIn('outcome_type', $enumValues);
-                                }
-                            } else {
-                                // Se 'void' non c'è, facciamo una semplice WhereIn
-                                $q->whereIn('outcome_type', $selectedValues);
-                            }
-                        });
+                        return static::applyVisitStatuses($query, $values);
                     }),
-                SelectFilter::make('date_status')
-                    ->label('Stato Data')
-                    ->options([
-                        'no_date' => 'Senza data',
-                        'date' => 'Con data programmata',
-                    ])
+                SelectFilter::make('status_exclude')
+                    ->label('Stato scadenza (escludi)')
+                    ->multiple()
+                    ->default(['expired'])
+                    ->options(static::getVisitStatusOptions())
                     ->query(function (Builder $query, array $data): Builder {
-                        return match ($data['value']) {
-                            'no_date' => $query->whereNull('date'),
-                            'date' => $query->whereNotNull('date'),
-                            default => $query,
-                        };
+                        $values = $data['values'] ?? [];
+                        if (empty($values)) {
+                            return $query;
+                        }
+                        // Gli stati sono mutuamente esclusivi: escludere N stati
+                        // equivale a includere tutti gli altri
+                        $remaining = array_diff(array_keys(static::getVisitStatusOptions()), $values);
+                        return static::applyVisitStatuses($query, array_values($remaining));
                     }),
                 Filter::make('date_range')
+                    ->columns(2)
                     ->form([
                         DatePicker::make('from_date')
                             ->label('Da data'),
@@ -332,10 +347,10 @@ class DeadlineResource extends Resource
                             ->label('A data'),
                     ])
                     ->query(function (Builder $query, array $data) {
-                        if (!empty($data['from_date'])) {
+                        if (! empty($data['from_date'])) {
                             $query->whereDate('date', '>=', $data['from_date']);
                         }
-                        if (!empty($data['to_date'])) {
+                        if (! empty($data['to_date'])) {
                             $query->whereDate('date', '<=', $data['to_date']);
                         }
                     })
@@ -350,7 +365,25 @@ class DeadlineResource extends Resource
                             return "Fino a {$data['to_date']}";
                         }
                         return null;
-                    }),
+                    })
+                    ->columnSpan(['default' => 'full', 'lg' => 2]),
+                // SelectFilter::make('date_status')
+                //     ->label('Stato Data')
+                //     ->options([
+                //         'no_date' => 'Senza data',
+                //         'date' => 'Con data programmata',
+                //     ])
+                //     ->query(function (Builder $query, array $data): Builder {
+                //         return match ($data['value']) {
+                //             'no_date' => $query->whereNull('date'),
+                //             'date' => $query->whereNotNull('date'),
+                //             default => $query,
+                //         };
+                //     }),
+                SelectFilter::make('client_id')
+                    ->label('Cliente')
+                    ->relationship('client', 'name')
+                    ->searchable(),
                 SelectFilter::make('user_id')->label('Utente')
                     ->relationship(name: 'user', titleAttribute: 'name')
                     ->searchable()
@@ -367,6 +400,44 @@ class DeadlineResource extends Resource
                 ]),
             ]);
     }
+    
+    /**
+     * Stati della visita, mutuamente esclusivi ed esaustivi.
+     */
+    public static function getVisitStatusOptions(): array
+    {
+        return [
+            'no_date' => 'Senza data',
+            'scheduled' => 'Programmata',
+            'expired' => 'Scaduta',
+        ];
+    }
+
+    /**
+     * Limita la query alle sole visite che rientrano negli stati indicati.
+     */
+    public static function applyVisitStatuses(Builder $query, array $statuses): Builder
+    {
+        if (empty($statuses)) {
+            // Nessuno stato ammesso: nessun risultato
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $group) use ($statuses) {
+            foreach ($statuses as $status) {
+                $group->orWhere(function (Builder $q) use ($status) {
+                    match ($status) {
+                        'no_date' => $q->whereNull('date'),
+                        'scheduled' => $q->whereNotNull('date')
+                            ->whereDate('date', '>=', today()),
+                        'expired' => $q->whereDate('date', '<', today()),
+                        default => $q->whereRaw('1 = 0'),
+                    };
+                });
+            }
+        });
+    }
+    
     public static function getRelations(): array
     {
         return [
